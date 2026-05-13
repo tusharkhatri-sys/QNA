@@ -420,7 +420,7 @@ function renderReview() {
 // ===== SUPABASE CONFIG =====
 const SUPABASE_URL = 'https://gxfojevrtvexfootbzjw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4Zm9qZXZydHZleGZvb3Riemp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDg5MTMsImV4cCI6MjA5MzAyNDkxM30.0MP9rW4UdOYT3irbPqCjY352g8vr1b92zymXeqsnD8w';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const API_URL = '/api';
 
@@ -608,7 +608,7 @@ async function generateTest() {
             isActive: 'active'
         };
 
-        const { error } = await supabase.from('tests').insert({
+        const { error } = await supabaseClient.from('tests').insert({
             code: testCode,
             data: testData
         });
@@ -626,7 +626,7 @@ async function generateTest() {
 
 async function fetchAdminTests() {
     try {
-        const { data: dbTests, error } = await supabase.from('tests').select('*');
+        const { data: dbTests, error } = await supabaseClient.from('tests').select('*');
         if (error) throw error;
         
         // Convert to array of test objects
@@ -1106,7 +1106,7 @@ async function joinLiveTest() {
     try {
         err.style.display = "none";
         
-        const { data: dbTest, error } = await supabase.from('tests').select('data').eq('code', code).single();
+        const { data: dbTest, error } = await supabaseClient.from('tests').select('data').eq('code', code).single();
         
         if (error || !dbTest) {
             err.textContent = "Invalid Code.";
@@ -1198,8 +1198,8 @@ function startLiveQuiz(testData, studentName) {
     reportLiveProgress();
 
     // Supabase Realtime Listener for Hold/Stop Events
-    if (window.studentRealtimeSub) supabase.removeChannel(window.studentRealtimeSub);
-    window.studentRealtimeSub = supabase.channel(`student_test_${testData.code}`)
+    if (window.studentRealtimeSub) window.supabase.removeChannel(window.studentRealtimeSub);
+    window.studentRealtimeSub = window.supabase.channel(`student_test_${testData.code}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests', filter: `code=eq.${testData.code}` }, payload => {
             const data = payload.new.data;
             if (data.isActive === 'hold') {
@@ -1238,7 +1238,7 @@ function updateTimerDisplay() {
 async function submitLiveTestResults() {
     if (liveTestTimer) clearInterval(liveTestTimer);
     document.getElementById('quiz-timer').style.display = 'none';
-    if (window.studentRealtimeSub) supabase.removeChannel(window.studentRealtimeSub);
+    if (window.studentRealtimeSub) window.supabase.removeChannel(window.studentRealtimeSub);
     
     const detailed = currentQuiz.map((q, idx) => ({
         questionText: q.q,
@@ -1258,7 +1258,7 @@ async function submitLiveTestResults() {
     
     try {
         const emailKey = loggedInStudent ? loggedInStudent.email : currentStudentName;
-        const { data: dbTest } = await supabase.from('tests').select('data').eq('code', currentLiveCode).single();
+        const { data: dbTest } = await supabaseClient.from('tests').select('data').eq('code', currentLiveCode).single();
         
         if (dbTest) {
             if (dbTest.data.liveStudents && dbTest.data.liveStudents[emailKey]) {
@@ -1267,7 +1267,7 @@ async function submitLiveTestResults() {
             if (!dbTest.data.students) dbTest.data.students = [];
             dbTest.data.students.push(payload);
             
-            await supabase.from('tests').update({ data: dbTest.data }).eq('code', currentLiveCode);
+            await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', currentLiveCode);
         }
     } catch (e) {
         console.error("Failed to submit results", e);
@@ -1284,7 +1284,7 @@ async function reportLiveProgress() {
     const emailKey = loggedInStudent ? loggedInStudent.email : currentStudentName;
     
     try {
-        const { data: dbTest } = await supabase.from('tests').select('data').eq('code', currentLiveCode).single();
+        const { data: dbTest } = await supabaseClient.from('tests').select('data').eq('code', currentLiveCode).single();
         if (dbTest) {
             if (!dbTest.data.liveStudents) dbTest.data.liveStudents = {};
             dbTest.data.liveStudents[emailKey] = {
@@ -1294,7 +1294,7 @@ async function reportLiveProgress() {
                 total: total,
                 joinedAt: dbTest.data.liveStudents[emailKey]?.joinedAt || new Date().toISOString()
             };
-            await supabase.from('tests').update({ data: dbTest.data }).eq('code', currentLiveCode);
+            await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', currentLiveCode);
         }
     } catch (e) {
         console.error("Failed to report live progress", e);
