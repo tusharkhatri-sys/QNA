@@ -1,7 +1,16 @@
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('adminLoggedIn') === 'true') {
+        document.getElementById('admin-login-screen').classList.remove('active');
+        document.getElementById('admin-dashboard-screen').classList.add('active');
+        fetchAdminTests();
+    }
+});
+
 function adminLogin() {
     const pass = document.getElementById('admin-pass-input').value;
     const err = document.getElementById('admin-error-msg');
     if (pass === 'admin123') { // Hardcoded for demo, normally backend validates
+        localStorage.setItem('adminLoggedIn', 'true');
         document.getElementById('admin-login-screen').classList.remove('active');
         document.getElementById('admin-dashboard-screen').classList.add('active');
         fetchAdminTests();
@@ -12,6 +21,7 @@ function adminLogin() {
 }
 
 function adminLogout() {
+    localStorage.removeItem('adminLoggedIn');
     window.location.href = 'landing.html';
 }
 
