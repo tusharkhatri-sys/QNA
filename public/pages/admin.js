@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('adminLoggedIn') === 'true') {
         document.getElementById('admin-login-screen').classList.remove('active');
-        document.getElementById('admin-dashboard-screen').classList.add('active');
+        document.getElementById('admin-dashboard-screen').style.display = 'flex';
         fetchAdminTests();
     }
 });
@@ -9,13 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function adminLogin() {
     const pass = document.getElementById('admin-pass-input').value;
     const err = document.getElementById('admin-error-msg');
-    if (pass === 'admin123') { // Hardcoded for demo, normally backend validates
+    if (pass === 'admin123') { 
         localStorage.setItem('adminLoggedIn', 'true');
         document.getElementById('admin-login-screen').classList.remove('active');
-        document.getElementById('admin-dashboard-screen').classList.add('active');
+        document.getElementById('admin-dashboard-screen').style.display = 'flex';
         fetchAdminTests();
     } else {
-        err.textContent = "Invalid Password";
+        err.textContent = "Access Denied: Invalid Credentials";
         err.style.display = "block";
     }
 }
@@ -25,74 +25,226 @@ function adminLogout() {
     window.location.href = 'landing.html';
 }
 
-function showAdminTab(tab) {
-    document.getElementById('admin-tab-create').style.display = tab === 'create' ? 'block' : 'none';
-    document.getElementById('admin-tab-results').style.display = tab === 'results' ? 'block' : 'none';
+function showTab(tabName, element) {
+    document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+    if(element) element.classList.add('active');
+    else {
+        document.querySelectorAll('.menu-item').forEach(el => {
+            if(el.textContent.toLowerCase().includes(tabName)) el.classList.add('active');
+        });
+    }
+    
+    document.getElementById('tab-overview').style.display = tabName === 'overview' ? 'block' : 'none';
+    document.getElementById('tab-create').style.display = tabName === 'create' ? 'block' : 'none';
+    document.getElementById('tab-results').style.display = tabName === 'results' ? 'block' : 'none';
+    
+    if (tabName === 'overview' || tabName === 'results') {
+        fetchAdminTests();
+    }
 }
+
+let allTestsData = [];
+let currentAdminTestCode = null;
+let adminLivePollTimer = null;
 
 async function fetchAdminTests() {
     try {
         const { data: dbTests, error } = await supabaseClient.from('tests').select('*');
         if (error) throw error;
         
-        let tests = dbTests.map(t => ({ code: t.code, ...t.data }));
-        tests.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+        allTestsData = dbTests.map(t => ({ code: t.code, ...t.data }));
+        allTestsData.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
         
-        const list = document.getElementById('admin-test-list');
-        if (tests.length === 0) {
-            list.innerHTML = '<div style="color: var(--text-muted); text-align:center;">No tests found</div>';
-            return;
+        updateOverviewStats();
+        renderOverviewTable();
+        renderResultsSidebar();
+        
+        if (currentAdminTestCode) {
+            viewTestResults(currentAdminTestCode);
         }
-        
-        list.innerHTML = tests.map(t => `
-            <div class="admin-list-item" style="padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;" onclick="viewTestResults('${t.code}')">
-                <div style="font-weight: 600; margin-bottom: 4px;">${escapeHTML(t.name)}</div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
-                    <span>${t.code}</span>
-                    <span style="color: ${t.isActive === 'stopped' ? 'var(--red)' : t.isActive === 'hold' ? 'var(--yellow)' : 'var(--green)'}">
-                        ${t.isActive === 'stopped' ? 'Archived' : t.isActive === 'hold' ? 'Paused' : 'Active'}
-                    </span>
-                </div>
-            </div>
-        `).join('');
     } catch (e) {
-        console.error("Failed to fetch admin tests", e);
+        console.error("Failed to fetch tests", e);
     }
 }
 
-let currentAdminTestCode = null;
+function updateOverviewStats() {
+    document.getElementById('stat-total-tests').textContent = allTestsData.length;
+    let totalSubs = 0;
+    let totalLive = 0;
+    allTestsData.forEach(t => {
+        totalSubs += (t.students || []).length;
+        totalLive += Object.keys(t.liveStudents || {}).length;
+    });
+    document.getElementById('stat-total-subs').textContent = totalSubs;
+    document.getElementById('stat-live-students').textContent = totalLive;
+}
 
-async function viewTestResults(code) {
-    showAdminTab('results');
-    currentAdminTestCode = code;
-    try {
-        const { data: dbTest, error } = await supabaseClient.from('tests').select('data').eq('code', code).single();
-        if (error || !dbTest) return;
-        const test = { code, ...dbTest.data };
-
-        const liveCount = Object.keys(test.liveStudents || {}).length;
-        const compCount = (test.students || []).length;
+function renderOverviewTable() {
+    const tbody = document.getElementById('overview-test-list');
+    if (allTestsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">No assessments deployed yet.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = allTestsData.map(t => {
+        const d = new Date(t.createdAt).toLocaleDateString();
+        let badgeClass = t.isActive === 'stopped' ? 'status-archived' : t.isActive === 'hold' ? 'status-hold' : 'status-active';
+        let badgeText = t.isActive === 'stopped' ? 'Archived' : t.isActive === 'hold' ? 'On Hold' : 'Live Active';
         
-        document.getElementById('admin-results-header').innerHTML = `
-            <div>
-                <h3>${escapeHTML(test.name)} (${code})</h3>
-                <p>Status: ${test.isActive}</p>
-                <button onclick="deleteTest('${code}')">Delete</button>
-            </div>
-            <div>Joined: ${liveCount + compCount} | Live: ${liveCount} | Completed: ${compCount}</div>
+        return `
+        <tr>
+            <td style="font-weight: 600;">${escapeHTML(t.name)}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; letter-spacing: 1px; color: var(--accent);">${t.code}</td>
+            <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+            <td>${t.duration} min</td>
+            <td style="color: var(--text-muted);">${d}</td>
+            <td>
+                <button class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;" onclick="viewTestResults('${t.code}'); showTab('results');">Analyze</button>
+            </td>
+        </tr>
         `;
-        
-        const slist = document.getElementById('admin-student-list');
-        let html = (test.students || []).map(s => `<div style="padding:10px; border:1px solid var(--border);">${s.studentName} - Score: ${s.score}/${s.total}</div>`).join('');
-        slist.innerHTML = html || 'No completions yet.';
-    } catch(e) {}
+    }).join('');
+}
+
+function renderResultsSidebar() {
+    const list = document.getElementById('results-test-list');
+    if (allTestsData.length === 0) {
+        list.innerHTML = '<div style="color: var(--text-muted); text-align:center; padding: 20px;">No tests</div>';
+        return;
+    }
+    
+    list.innerHTML = allTestsData.map(t => `
+        <div class="menu-item ${currentAdminTestCode === t.code ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border: 1px solid ${currentAdminTestCode === t.code ? 'var(--accent)' : 'transparent'}; background: ${currentAdminTestCode === t.code ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)'};" onclick="viewTestResults('${t.code}')">
+            <div style="font-weight: 600; font-size: 0.95rem; color: #fff;">${escapeHTML(t.name)}</div>
+            <div style="font-size: 0.8rem; font-family: monospace; color: var(--accent-light);">${t.code}</div>
+        </div>
+    `).join('');
+}
+
+async function setTestStatus(code, newStatus) {
+    let actionText = newStatus === 'hold' ? 'PAUSE' : newStatus === 'active' ? 'RESUME' : 'ARCHIVE';
+    if(!confirm(`Are you sure you want to ${actionText} this assessment?`)) return;
+    try {
+        const { data: dbTest } = await supabaseClient.from('tests').select('data').eq('code', code).single();
+        if (dbTest) {
+            dbTest.data.isActive = newStatus;
+            await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', code);
+        }
+        fetchAdminTests();
+    } catch(e) { alert("Action failed"); }
+}
+
+async function deleteTest(code) {
+    if(!confirm("DANGER: Are you sure you want to PERMANENTLY DELETE this assessment and all its data?")) return;
+    try {
+        await supabaseClient.from('tests').delete().eq('code', code);
+        currentAdminTestCode = null;
+        document.getElementById('results-header').style.display = 'none';
+        document.getElementById('results-table-container').style.display = 'none';
+        document.getElementById('results-empty-state').style.display = 'flex';
+        fetchAdminTests();
+    } catch(e) { alert("Delete failed"); }
+}
+
+function viewTestResults(code) {
+    currentAdminTestCode = code;
+    renderResultsSidebar(); // update active state
+    
+    document.getElementById('results-empty-state').style.display = 'none';
+    const header = document.getElementById('results-header');
+    const table = document.getElementById('results-table-container');
+    header.style.display = 'block';
+    table.style.display = 'flex';
+    
+    const test = allTestsData.find(t => t.code === code);
+    if (!test) return;
+
+    const liveCount = Object.keys(test.liveStudents || {}).length;
+    const compCount = (test.students || []).length;
+    
+    let actionsHtml = '';
+    if (test.isActive === 'stopped') {
+        actionsHtml = `<span class="status-badge status-archived">Archived</span>`;
+    } else if (test.isActive === 'hold') {
+        actionsHtml = `
+            <button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem; border-color: var(--green); color: var(--green);" onclick="setTestStatus('${code}', 'active')">▶ Resume</button>
+            <button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem; border-color: var(--red); color: var(--red);" onclick="setTestStatus('${code}', 'stopped')">⏹ Archive</button>
+        `;
+    } else {
+        actionsHtml = `
+            <button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem; border-color: var(--yellow); color: var(--yellow);" onclick="setTestStatus('${code}', 'hold')">⏸ Pause Test</button>
+            <button class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem; border-color: var(--red); color: var(--red);" onclick="setTestStatus('${code}', 'stopped')">⏹ Archive</button>
+        `;
+    }
+
+    header.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 8px;">${escapeHTML(test.name)}</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem; font-family: monospace;">Access Code: <strong style="color: var(--accent);">${code}</strong> • Duration: ${test.duration}m</p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                ${actionsHtml}
+                <button class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; background: var(--red); border: none; color: white;" onclick="deleteTest('${code}')">🗑️ Delete</button>
+            </div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px;">
+            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Participants</div>
+                <div style="font-size: 1.8rem; font-weight: 700;">${liveCount + compCount}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.2);">
+                <div style="font-size: 0.8rem; color: var(--yellow); text-transform: uppercase;">Currently Live</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: var(--yellow);">${liveCount}</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div style="font-size: 0.8rem; color: var(--green); text-transform: uppercase;">Completed</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: var(--green);">${compCount}</div>
+            </div>
+        </div>
+    `;
+    
+    const tbody = document.getElementById('results-student-list');
+    let html = '';
+    
+    // Live students
+    if (test.liveStudents) {
+        Object.values(test.liveStudents).forEach(s => {
+            html += `
+            <tr>
+                <td style="font-weight: 600;">${escapeHTML(s.studentName)}</td>
+                <td><span class="status-badge status-hold" style="background: transparent; border: none; padding:0;">Live Testing</span></td>
+                <td style="color: var(--text-muted);">-</td>
+                <td style="color: var(--text-muted);">-</td>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">Joined: ${new Date(s.joinedAt).toLocaleTimeString()}</td>
+            </tr>
+            `;
+        });
+    }
+    
+    // Completed students
+    const sorted = [...(test.students || [])].sort((a,b)=>b.score-a.score);
+    sorted.forEach(s => {
+        const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+        const accColor = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--yellow)' : 'var(--red)';
+        html += `
+        <tr>
+            <td style="font-weight: 600;">${escapeHTML(s.studentName)}</td>
+            <td><span class="status-badge status-active" style="background: transparent; border: none; padding:0;">Submitted</span></td>
+            <td style="font-weight: 700;">${s.score} / ${s.total}</td>
+            <td style="color: ${accColor}; font-weight: 600;">${pct}%</td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">${new Date(s.submittedAt).toLocaleTimeString()}</td>
+        </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">No student data available.</td></tr>';
 }
 
 async function generateTest() {
-    const name = document.getElementById('new-test-name').value || 'Untitled Test';
+    const name = document.getElementById('new-test-name').value || 'Untitled Assessment';
     const duration = parseInt(document.getElementById('new-test-duration').value) || 30;
     
-    // Quick random allocation logic
     const totalTopics = QUESTIONS_DATA.length;
     let config = {};
     let remaining = 50;
@@ -103,26 +255,46 @@ async function generateTest() {
     });
 
     const testCode = Array.from({length: 6}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)]).join('');
-    
-    const testData = {
-        name, duration, topicConfig: config,
-        createdAt: new Date().toISOString(), isActive: 'active'
-    };
+    const testData = { name, duration, topicConfig: config, createdAt: new Date().toISOString(), isActive: 'active' };
 
     try {
         await supabaseClient.from('tests').insert({ code: testCode, data: testData });
         document.getElementById('test-creation-result').style.display = 'block';
         document.getElementById('generated-test-code').textContent = testCode;
         fetchAdminTests();
-    } catch(e) { alert('Failed to create test'); }
+    } catch(e) { alert('Failed to deploy assessment'); }
 }
 
-async function deleteTest(code) {
-    if(!confirm("Delete this test forever?")) return;
-    try {
-        await supabaseClient.from('tests').delete().eq('code', code);
-        document.getElementById('admin-results-header').innerHTML = 'Select a test';
-        document.getElementById('admin-student-list').innerHTML = '';
-        fetchAdminTests();
-    } catch(e) {}
+function exportCurrentCSV() {
+    if (!currentAdminTestCode) return;
+    const test = allTestsData.find(t => t.code === currentAdminTestCode);
+    if (!test) return;
+    
+    let csv = 'Status,Student Name,Email,Score,Total Possible,Percentage,Time\\n';
+    
+    (test.students || []).forEach(s => {
+        const d = new Date(s.submittedAt).toLocaleString().replace(/,/g, '');
+        const p = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+        csv += `"Completed","${escapeHTML(s.studentName)}","${s.studentEmail}","${s.score}","${s.total}","${p}%","${d}"\\n`;
+    });
+    
+    if (test.liveStudents) {
+        Object.values(test.liveStudents).forEach(s => {
+            const d = new Date(s.joinedAt).toLocaleString().replace(/,/g, '');
+            csv += `"Live","${escapeHTML(s.studentName)}","${s.studentEmail}","N/A","N/A","N/A","${d}"\\n`;
+        });
+    }
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `${test.name}_Analytics.csv`;
+    a.click();
 }
+
+// Start auto-poll
+setInterval(() => {
+    if (document.getElementById('admin-dashboard-screen').style.display !== 'none') {
+        fetchAdminTests();
+    }
+}, 5000);
