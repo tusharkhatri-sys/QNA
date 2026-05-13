@@ -417,6 +417,11 @@ function renderReview() {
 // ===== ADMIN & LIVE TEST SYSTEM =====
 // ==========================================
 
+// ===== SUPABASE CONFIG =====
+const SUPABASE_URL = 'https://gxfojevrtvexfootbzjw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4Zm9qZXZydHZleGZvb3Riemp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDg5MTMsImV4cCI6MjA5MzAyNDkxM30.0MP9rW4UdOYT3irbPqCjY352g8vr1b92zymXeqsnD8w';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const API_URL = '/api';
 
 // ===== Student Authentication =====
@@ -581,25 +586,51 @@ async function generateTest() {
     if (!name) return alert('Please provide a test name.');
 
     try {
-        const res = await fetch(`${API_URL}/tests`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, duration, topicConfig })
-        });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('generated-code-display').textContent = data.code;
-            document.getElementById('code-modal').style.display = 'flex';
+        const testCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        let testQuestions = [];
+        
+        // Generate random questions from local data
+        for (const [topicName, count] of Object.entries(topicConfig)) {
+            const topic = QUESTIONS_DATA.find(t => t.topic === topicName);
+            if (topic) {
+                const shuffled = [...topic.questions].sort(() => 0.5 - Math.random());
+                testQuestions = testQuestions.concat(shuffled.slice(0, count));
+            }
         }
+        
+        const testData = {
+            name,
+            duration,
+            topicConfig,
+            questions: testQuestions,
+            students: [],
+            liveStudents: {},
+            isActive: 'active'
+        };
+
+        const { error } = await supabase.from('tests').insert({
+            code: testCode,
+            data: testData
+        });
+
+        if (error) throw error;
+
+        document.getElementById('generated-code-display').textContent = testCode;
+        document.getElementById('code-modal').style.display = 'flex';
+        fetchAdminTests();
     } catch (e) {
-        alert('Could not connect to server. Make sure node server is running.');
+        console.error(e);
+        alert('Could not connect to Supabase database.');
     }
 }
 
 async function fetchAdminTests() {
     try {
-        const res = await fetch(`${API_URL}/tests`);
-        const tests = await res.json();
+        const { data: dbTests, error } = await supabase.from('tests').select('*');
+        if (error) throw error;
+        
+        // Convert to array of test objects
+        const tests = dbTests.map(t => ({ code: t.code, ...t.data }));
         const list = document.getElementById('admin-test-list');
         
         if (tests.length === 0) {
@@ -808,9 +839,9 @@ async function showAdminStudentAnalytics(email, name) {
 
 async function exportTestResultsCSV(code) {
     try {
-        const res = await fetch(`${API_URL}/tests`);
-        const tests = await res.json();
-        const test = tests.find(t => t.code === code);
+        const { data: dbTest, error } = await supabase.from('tests').select('data').eq('code', code).single();
+        if (error) throw error;
+        const test = { code, ...dbTest.data };
         
         if (!test || (!test.students.length && !Object.keys(test.liveStudents || {}).length)) {
             return alert('No data to export for this test.');
@@ -874,14 +905,15 @@ async function viewTestResults(code) {
     }, 3000);
 }
 
-async function toggleTestStatus(code, currentStatus) {
-    if(!confirm(`Are you sure you want to ${currentStatus ? 'STOP' : 'RESUME'} this test?`)) return;
+async function setTestStatus(code, newStatus) {
+    let actionText = newStatus === 'hold' ? 'PAUSE' : newStatus === 'active' ? 'RESUME' : 'CLOSE/ARCHIVE';
+    if(!confirm(`Are you sure you want to ${actionText} this test?`)) return;
     try {
-        await fetch(`${API_URL}/tests/${code}/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ isActive: !currentStatus })
-        });
+        const { data: dbTest } = await supabase.from('tests').select('data').eq('code', code).single();
+        if (dbTest) {
+            dbTest.data.isActive = newStatus;
+            await supabase.from('tests').update({ data: dbTest.data }).eq('code', code);
+        }
         fetchAdminTests();
         if (currentAdminTestCode === code) fetchAndRenderTestResults(code);
     } catch(e) {
@@ -892,7 +924,7 @@ async function toggleTestStatus(code, currentStatus) {
 async function deleteTest(code) {
     if(!confirm("Are you sure you want to DELETE this test permanently? All results will be lost.")) return;
     try {
-        await fetch(`${API_URL}/tests/${code}`, { method: 'DELETE' });
+        await supabase.from('tests').delete().eq('code', code);
         document.getElementById('admin-results-header').innerHTML = '<h3 style="font-size: 1.1rem;">Select a test to view results</h3>';
         document.getElementById('admin-student-list').innerHTML = '';
         currentAdminTestCode = null;
@@ -904,10 +936,9 @@ async function deleteTest(code) {
 
 async function fetchAndRenderTestResults(code) {
     try {
-        const res = await fetch(`${API_URL}/tests`);
-        const tests = await res.json();
-        const test = tests.find(t => t.code === code);
-        if (!test) return;
+        const { data: dbTest, error } = await supabase.from('tests').select('data').eq('code', code).single();
+        if (error || !dbTest) return;
+        const test = { code, ...dbTest.data };
 
         const liveEntriesCount = Object.keys(test.liveStudents || {}).length;
         const completedCount = test.students.length;
@@ -918,9 +949,17 @@ async function fetchAndRenderTestResults(code) {
                 <h3 style="font-size: 1.1rem; margin-bottom:4px;">${test.name}</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted);">Code: ${test.code} • Duration: ${test.duration}m</p>
                 <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border); ${test.isActive === false ? 'color: var(--yellow);' : ''}" onclick="toggleTestStatus('${test.code}', ${test.isActive !== false})">
-                        ${test.isActive === false ? 'Resume Test' : 'Stop Test'}
-                    </button>
+                    ${test.isActive === 'stopped' ? 
+                        `<span style="padding: 4px 8px; font-size: 0.8rem; background: var(--border); border-radius:4px; color: var(--text-muted);">Archived Test</span>` 
+                    : 
+                        (test.isActive === 'hold' ? 
+                            `<button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border); color: var(--green);" onclick="setTestStatus('${test.code}', 'active')">▶ Resume</button>
+                             <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border); color: var(--yellow);" onclick="setTestStatus('${test.code}', 'stopped')">⏹ Close Test</button>`
+                        : 
+                            `<button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border); color: var(--yellow);" onclick="setTestStatus('${test.code}', 'hold')">⏸ Hold Test</button>
+                             <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border); color: var(--red);" onclick="setTestStatus('${test.code}', 'stopped')">⏹ Close Test</button>`
+                        )
+                    }
                     <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border);" onclick="exportTestResultsCSV('${test.code}')">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export
                     </button>
@@ -1066,18 +1105,32 @@ async function joinLiveTest() {
 
     try {
         err.style.display = "none";
-        const email = loggedInStudent ? encodeURIComponent(loggedInStudent.email) : '';
-        const res = await fetch(`${API_URL}/tests/${code}?email=${email}`);
-        const data = await res.json();
         
-        if (data.success) {
-            startLiveQuiz(data.test, name);
-        } else {
-            err.textContent = data.message || "Invalid Code.";
+        const { data: dbTest, error } = await supabase.from('tests').select('data').eq('code', code).single();
+        
+        if (error || !dbTest) {
+            err.textContent = "Invalid Code.";
             err.style.display = "block";
+            return;
         }
+
+        const testData = { code, ...dbTest.data };
+        
+        if (testData.isActive === false || testData.isActive === 'stopped') {
+            err.textContent = "This test is no longer active.";
+            err.style.display = "block";
+            return;
+        }
+        if (testData.isActive === 'hold') {
+            err.textContent = "This test is currently on hold by the admin.";
+            err.style.display = "block";
+            return;
+        }
+
+        startLiveQuiz(testData, name);
     } catch (e) {
-        err.textContent = "Could not connect to server.";
+        console.error(e);
+        err.textContent = "Could not connect to database.";
         err.style.display = "block";
     }
 }
@@ -1143,6 +1196,32 @@ function startLiveQuiz(testData, studentName) {
     showScreen('quiz-screen');
     renderQuestion();
     reportLiveProgress();
+
+    // Supabase Realtime Listener for Hold/Stop Events
+    if (window.studentRealtimeSub) supabase.removeChannel(window.studentRealtimeSub);
+    window.studentRealtimeSub = supabase.channel(`student_test_${testData.code}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests', filter: `code=eq.${testData.code}` }, payload => {
+            const data = payload.new.data;
+            if (data.isActive === 'hold') {
+                document.getElementById('quiz-screen').style.opacity = '0.5';
+                document.getElementById('quiz-screen').style.pointerEvents = 'none';
+                if (!document.getElementById('hold-alert-msg')) {
+                    const msg = document.createElement('div');
+                    msg.id = 'hold-alert-msg';
+                    msg.innerHTML = '<h2 style="color:var(--red); text-align:center; margin-top:20px;">TEST PAUSED BY ADMIN</h2>';
+                    document.getElementById('quiz-screen').prepend(msg);
+                }
+            } else if (data.isActive === 'active') {
+                document.getElementById('quiz-screen').style.opacity = '1';
+                document.getElementById('quiz-screen').style.pointerEvents = 'auto';
+                const msg = document.getElementById('hold-alert-msg');
+                if (msg) msg.remove();
+            } else if (data.isActive === 'stopped' || data.isActive === false) {
+                alert('Test was closed by admin. Submitting your current progress...');
+                showResultsScreen(); // auto-submits what they have
+            }
+        })
+        .subscribe();
 }
 
 function updateTimerDisplay() {
@@ -1159,6 +1238,7 @@ function updateTimerDisplay() {
 async function submitLiveTestResults() {
     if (liveTestTimer) clearInterval(liveTestTimer);
     document.getElementById('quiz-timer').style.display = 'none';
+    if (window.studentRealtimeSub) supabase.removeChannel(window.studentRealtimeSub);
     
     const detailed = currentQuiz.map((q, idx) => ({
         questionText: q.q,
@@ -1172,15 +1252,23 @@ async function submitLiveTestResults() {
         studentEmail: loggedInStudent ? loggedInStudent.email : '',
         score: score,
         total: currentQuiz.length,
+        submittedAt: new Date().toISOString(),
         detailedResults: detailed
     };
     
     try {
-        await fetch(`${API_URL}/tests/${currentLiveCode}/submit`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+        const emailKey = loggedInStudent ? loggedInStudent.email : currentStudentName;
+        const { data: dbTest } = await supabase.from('tests').select('data').eq('code', currentLiveCode).single();
+        
+        if (dbTest) {
+            if (dbTest.data.liveStudents && dbTest.data.liveStudents[emailKey]) {
+                delete dbTest.data.liveStudents[emailKey];
+            }
+            if (!dbTest.data.students) dbTest.data.students = [];
+            dbTest.data.students.push(payload);
+            
+            await supabase.from('tests').update({ data: dbTest.data }).eq('code', currentLiveCode);
+        }
     } catch (e) {
         console.error("Failed to submit results", e);
     }
@@ -1193,17 +1281,21 @@ async function reportLiveProgress() {
     
     const answered = Object.keys(userAnswers).length;
     const total = currentQuiz.length;
+    const emailKey = loggedInStudent ? loggedInStudent.email : currentStudentName;
     
     try {
-        await fetch(`${API_URL}/tests/${currentLiveCode}/progress`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        const { data: dbTest } = await supabase.from('tests').select('data').eq('code', currentLiveCode).single();
+        if (dbTest) {
+            if (!dbTest.data.liveStudents) dbTest.data.liveStudents = {};
+            dbTest.data.liveStudents[emailKey] = {
                 studentName: currentStudentName,
+                studentEmail: loggedInStudent ? loggedInStudent.email : '',
                 answered: answered,
-                total: total
-            })
-        });
+                total: total,
+                joinedAt: dbTest.data.liveStudents[emailKey]?.joinedAt || new Date().toISOString()
+            };
+            await supabase.from('tests').update({ data: dbTest.data }).eq('code', currentLiveCode);
+        }
     } catch (e) {
         console.error("Failed to report live progress", e);
     }
