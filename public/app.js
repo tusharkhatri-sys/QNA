@@ -204,7 +204,10 @@ function renderQuestion() {
     card.style.animation = 'slideUp 0.35s ease';
 
     document.getElementById('question-number').textContent = `Q${currentIndex + 1}`;
-    document.getElementById('question-text').textContent = q.q;
+    
+    const questionHTML = q.q_hi ? `${escapeHTML(q.q)}<br><span style="color:var(--text-secondary); font-size: 0.9em; margin-top: 8px; display: block;">${escapeHTML(q.q_hi)}</span>` : escapeHTML(q.q);
+    document.getElementById('question-text').innerHTML = questionHTML;
+    
     document.getElementById('quiz-counter').textContent = `${currentIndex + 1} / ${currentQuiz.length}`;
     document.getElementById('quiz-progress-fill').style.width = `${((currentIndex + 1) / currentQuiz.length) * 100}%`;
 
@@ -214,17 +217,20 @@ function renderQuestion() {
         let cls = 'option-btn';
         const answered = userAnswers[currentIndex] !== undefined;
         if (answered) {
-            cls += ' disabled';
             if (!isLiveTest) {
+                cls += ' disabled';
                 if (i === q.a) cls += ' correct';
                 if (i === userAnswers[currentIndex] && i !== q.a) cls += ' wrong';
             } else {
                 if (i === userAnswers[currentIndex]) cls += ' selected';
             }
         }
-        return `<button class="${cls}" ${answered ? 'disabled' : ''} onclick="selectOption(${i})" id="opt-${i}">
+        
+        const optText = (q.o_hi && q.o_hi[i]) ? `${escapeHTML(opt)} <span style="color:var(--text-secondary); font-size: 0.9em; margin-left: 8px;">(${escapeHTML(q.o_hi[i])})</span>` : escapeHTML(opt);
+        
+        return `<button class="${cls}" ${answered && !isLiveTest ? 'disabled' : ''} onclick="selectOption(${i})" id="opt-${i}">
             <span class="option-letter">${letters[i]}</span>
-            <span class="option-text">${escapeHTML(opt)}</span>
+            <span class="option-text">${optText}</span>
         </button>`;
     }).join('');
 
@@ -239,7 +245,7 @@ function renderQuestion() {
 }
 
 function selectOption(i) {
-    if (userAnswers[currentIndex] !== undefined) return;
+    if (userAnswers[currentIndex] !== undefined && !isLiveTest) return;
     
     const q = currentQuiz[currentIndex];
     userAnswers[currentIndex] = i;
@@ -250,13 +256,12 @@ function selectOption(i) {
     });
     score = newScore;
     
-    // Disable all options
-    document.querySelectorAll('.option-btn').forEach(btn => {
-        btn.classList.add('disabled');
-        btn.disabled = true;
-    });
-    
     if (!isLiveTest) {
+        // Disable all options
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.classList.add('disabled');
+            btn.disabled = true;
+        });
         document.getElementById('quiz-score').textContent = score;
         // Show correct/wrong
         document.querySelectorAll('.option-btn').forEach((btn, idx) => {
@@ -266,6 +271,7 @@ function selectOption(i) {
     } else {
         // Just mark as selected
         document.querySelectorAll('.option-btn').forEach((btn, idx) => {
+            btn.classList.remove('selected');
             if (idx === i) btn.classList.add('selected');
         });
         reportLiveProgress();
@@ -384,14 +390,19 @@ function renderReview() {
         
         if (reviewFilter !== 'all' && reviewFilter !== status) return;
 
+        const qHTML = q.q_hi ? `${escapeHTML(q.q)}<br><span style="color:var(--text-secondary); font-size: 0.9em;">${escapeHTML(q.q_hi)}</span>` : escapeHTML(q.q);
+
         html += `<div class="review-item review-${status}">
             <div class="review-q-number">Question ${idx + 1} — <span style="color:${status === 'correct' ? 'var(--green)' : status === 'wrong' ? 'var(--red)' : 'var(--yellow)'}">${status.toUpperCase()}</span></div>
-            <div class="review-q-text">${escapeHTML(q.q)}</div>
+            <div class="review-q-text">${qHTML}</div>
             <div class="review-options">${q.o.map((opt, i) => {
                 let cls = 'review-opt';
                 if (i === q.a) cls += ' is-correct';
                 else if (i === userAns && i !== q.a) cls += ' is-wrong';
-                return `<div class="${cls}"><span class="review-opt-letter">${letters[i]}</span><span>${escapeHTML(opt)}</span></div>`;
+                
+                const optText = (q.o_hi && q.o_hi[i]) ? `${escapeHTML(opt)} <span style="font-size: 0.9em; opacity: 0.8;">(${escapeHTML(q.o_hi[i])})</span>` : escapeHTML(opt);
+                
+                return `<div class="${cls}"><span class="review-opt-letter">${letters[i]}</span><span>${optText}</span></div>`;
             }).join('')}</div>
         </div>`;
     });
