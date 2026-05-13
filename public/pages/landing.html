@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QNA Platform - Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <style>
+        .portal-cards { display: flex; gap: 24px; max-width: 900px; margin: 40px auto; justify-content: center; flex-wrap: wrap; }
+        .portal-card { background: var(--surface); padding: 40px 30px; border-radius: var(--radius-lg); text-align: center; border: 1px solid var(--border); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; flex: 1; min-width: 280px; position: relative; overflow: hidden; }
+        .portal-card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: 0 12px 40px rgba(0,206,201,0.15); }
+        .portal-icon { font-size: 3.5rem; margin-bottom: 24px; color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <div class="screen active">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">Q</div>
+                    <span>QNA Platform</span>
+                </div>
+            </div>
+        </header>
+        <div class="container" style="text-align: center; padding-top: 100px;">
+            <h1 style="font-size: 3.5rem; margin-bottom: 16px; background: linear-gradient(135deg, #fff 0%, #a0a5b1 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Select Your Portal</h1>
+            <p style="color: var(--text-secondary); font-size: 1.2rem; margin-bottom: 40px;">Choose your role to continue</p>
+            <div class="portal-cards">
+                <div class="portal-card" onclick="window.location.href='student.html'">
+                    <div class="portal-icon">🎓</div>
+                    <h2 style="font-size: 1.8rem; margin-bottom: 12px;">Student Portal</h2>
+                    <p style="color: var(--text-muted); line-height: 1.6;">Take live tests, practice topics, and view your detailed performance analytics.</p>
+                </div>
+                <div class="portal-card" onclick="window.location.href='admin.html'">
+                    <div class="portal-icon">👨‍🏫</div>
+                    <h2 style="font-size: 1.8rem; margin-bottom: 12px;">Teacher / Admin</h2>
+                    <p style="color: var(--text-muted); line-height: 1.6;">Create tests, monitor live student progress, and manage results.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

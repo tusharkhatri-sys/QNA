@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../questions.js"></script>
+</head>
+<body>
+    <div class="animated-bg"></div>
+    <!-- Admin Login -->
+    <div class="screen active" id="admin-login-screen">
+        <div class="container" style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+            <div style="background: var(--surface); padding: 40px; border-radius: var(--radius-lg); border: 1px solid var(--border); width: 100%; max-width: 400px; text-align: center;">
+                <h2 style="margin-bottom: 20px;">Admin Login</h2>
+                <div id="admin-error-msg" style="color: var(--red); display: none; margin-bottom: 20px;"></div>
+                <div class="form-group" style="text-align: left;">
+                    <label>Admin Password</label>
+                    <input type="password" id="admin-pass-input" placeholder="Enter password" class="input-field">
+                </div>
+                <button class="btn btn-primary" style="width: 100%;" onclick="adminLogin()">Login</button>
+                <div style="margin-top: 20px;"><a href="landing.html" style="color: var(--text-muted);">Back to Home</a></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Dashboard -->
+    <div class="screen" id="admin-dashboard-screen">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon" style="background:var(--accent);">A</div>
+                    <span>Admin Panel</span>
+                </div>
+                <button class="btn btn-outline" onclick="adminLogout()">Logout</button>
+            </div>
+        </header>
+        <div class="container" style="padding-top: 100px;">
+            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+                <!-- Left Sidebar -->
+                <div>
+                    <button class="btn btn-primary" style="width: 100%; margin-bottom: 20px; font-size: 1.1rem; padding: 16px;" onclick="showAdminTab('create')">+ Create New Test</button>
+                    <button class="btn btn-outline" style="width: 100%; margin-bottom: 20px; font-size: 1.1rem; padding: 16px;" onclick="showAdminTab('results')">📊 View Past Results</button>
+                    <div style="background: var(--surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border);">
+                        <h3 style="margin-bottom: 16px; font-size: 1.1rem; color: var(--text-secondary);">Active Tests</h3>
+                        <div id="admin-test-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 500px; overflow-y: auto;">
+                            <div style="color: var(--text-muted); text-align: center; padding: 20px 0;">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right Content -->
+                <div style="background: var(--surface); padding: 30px; border-radius: var(--radius-lg); border: 1px solid var(--border); min-height: 600px;">
+                    <!-- Create Tab -->
+                    <div id="admin-tab-create">
+                        <h2 style="margin-bottom: 20px; font-size: 1.8rem;">Create Custom Test</h2>
+                        <div class="form-group">
+                            <label>Test Name / Title</label>
+                            <input type="text" id="new-test-name" class="input-field" placeholder="e.g. Weekly Assessment - Batch A">
+                        </div>
+                        <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div>
+                                <label>Duration (Minutes)</label>
+                                <input type="number" id="new-test-duration" class="input-field" value="30" min="5" max="180">
+                            </div>
+                            <div>
+                                <label>Total Questions</label>
+                                <input type="number" id="new-test-count" class="input-field" value="50" disabled style="background: var(--bg); opacity: 0.7;">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="generateTest()" style="margin-top: 20px;">Create & Go Live</button>
+                        <div id="test-creation-result" style="margin-top: 20px; padding: 20px; background: rgba(0,206,201,0.1); border: 1px dashed var(--primary); border-radius: var(--radius-md); display: none; text-align: center;">
+                            <p style="color: var(--text-secondary); margin-bottom: 10px;">Test generated successfully! Share this code with students:</p>
+                            <div id="generated-test-code" style="font-family: 'JetBrains Mono', monospace; font-size: 2.5rem; font-weight: 800; color: var(--primary); letter-spacing: 4px;"></div>
+                        </div>
+                    </div>
+                    <!-- Results Tab -->
+                    <div id="admin-tab-results" style="display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border);" id="admin-results-header">
+                            <h3 style="font-size: 1.1rem; color: var(--text-muted);">Select a test from the sidebar to view results</h3>
+                        </div>
+                        <div id="admin-student-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="shared.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
