@@ -255,11 +255,17 @@
             <!-- Students Management Tab -->
             <div id="admin-tab-students" class="admin-tab-content" style="display: none; padding-bottom: 50px;">
                 <div class="question-card" style="padding: 24px; margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
                         <h3 style="margin: 0; font-size: 1.2rem;">Registered Students</h3>
-                        <button class="btn-ghost" onclick="fetchStudents()" style="padding: 6px 12px; font-size: 0.85rem;">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.08 5.08"/></svg> Refresh
-                        </button>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <input type="text" id="admin-student-search" class="modern-input" placeholder="Search by name or email..." style="padding: 6px 12px; font-size: 0.85rem; width: 220px;" onkeyup="filterAdminStudents()">
+                            <button class="btn-primary" onclick="exportStudentsCSV()" style="padding: 6px 12px; font-size: 0.85rem;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export CSV
+                            </button>
+                            <button class="btn-ghost" onclick="fetchStudents()" style="padding: 6px 12px; font-size: 0.85rem;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.92-10.44l5.08 5.08"/></svg> Refresh
+                            </button>
+                        </div>
                     </div>
                     
                     <div style="overflow-x: auto;">

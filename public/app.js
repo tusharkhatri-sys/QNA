@@ -19,6 +19,9 @@ let timeRemaining = 0;
 let loggedInStudent = null;
 let authMode = 'login'; // 'login' or 'register'
 
+// ===== Admin State =====
+let adminStudentsList = [];
+
 function escapeHTML(str) {
     if (!str) return '';
     return str.toString().replace(/[&<>'"]/g, 
@@ -622,6 +625,7 @@ async function fetchStudents() {
     try {
         const res = await fetch(`${API_URL}/students`);
         const students = await res.json();
+        adminStudentsList = students || [];
         
         const list = document.getElementById('admin-students-list');
         if (!students || students.length === 0) {
@@ -629,7 +633,20 @@ async function fetchStudents() {
             return;
         }
         
-        list.innerHTML = students.map((s, idx) => `
+        renderAdminStudents(students);
+    } catch(e) {
+        console.error(e);
+        document.getElementById('admin-students-list').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--red); padding:20px;">Failed to load students.</td></tr>';
+    }
+}
+
+function renderAdminStudents(students) {
+    const list = document.getElementById('admin-students-list');
+    if (students.length === 0) {
+        list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">No matching students found.</td></tr>';
+        return;
+    }
+    list.innerHTML = students.map((s, idx) => `
             <tr style="border-bottom: 1px solid var(--border);">
                 <td style="padding: 12px; font-weight: 500;">${escapeHTML(s.name)}</td>
                 <td style="padding: 12px;">${escapeHTML(s.email)}</td>
@@ -649,10 +666,34 @@ async function fetchStudents() {
                 </td>
             </tr>
         `).join('');
-    } catch(e) {
-        console.error(e);
-        document.getElementById('admin-students-list').innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--red); padding:20px;">Failed to load students.</td></tr>';
-    }
+}
+
+function filterAdminStudents() {
+    const query = document.getElementById('admin-student-search').value.toLowerCase();
+    const filtered = adminStudentsList.filter(s => 
+        (s.name && s.name.toLowerCase().includes(query)) || 
+        (s.email && s.email.toLowerCase().includes(query))
+    );
+    renderAdminStudents(filtered);
+}
+
+function exportStudentsCSV() {
+    if (adminStudentsList.length === 0) return alert('No students to export.');
+    let csv = 'Name,Email,Joined Date\\n';
+    adminStudentsList.forEach(s => {
+        const date = new Date(s.created_at).toLocaleString().replace(/,/g, '');
+        csv += `"${s.name}","${s.email}","${date}"\\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', 'registered_students.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 function togglePasswordVisibility(idx) {
@@ -765,6 +806,48 @@ async function showAdminStudentAnalytics(email, name) {
     }
 }
 
+async function exportTestResultsCSV(code) {
+    try {
+        const res = await fetch(`${API_URL}/tests`);
+        const tests = await res.json();
+        const test = tests.find(t => t.code === code);
+        
+        if (!test || (!test.students.length && !Object.keys(test.liveStudents || {}).length)) {
+            return alert('No data to export for this test.');
+        }
+
+        let csv = 'Status,Student Name,Email,Score,Total Possible,Percentage,Submitted At\\n';
+        
+        // Add completed students
+        test.students.forEach(s => {
+            const date = new Date(s.submittedAt).toLocaleString().replace(/,/g, '');
+            const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+            csv += `"Completed","${escapeHTML(s.studentName)}","${s.studentEmail}","${s.score}","${s.total}","${pct}%","${date}"\\n`;
+        });
+        
+        // Add live students
+        if (test.liveStudents) {
+            Object.values(test.liveStudents).forEach(s => {
+                const date = new Date(s.joinedAt).toLocaleString().replace(/,/g, '');
+                csv += `"Live (In Progress)","${escapeHTML(s.studentName)}","${s.studentEmail}","N/A","N/A","N/A","${date}"\\n`;
+            });
+        }
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `${test.name}_results.csv`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch(e) {
+        console.error(e);
+        alert('Failed to export data.');
+    }
+}
+
 let loadedTests = {};
 let currentAdminTestCode = null;
 
@@ -834,9 +917,12 @@ async function fetchAndRenderTestResults(code) {
             <div>
                 <h3 style="font-size: 1.1rem; margin-bottom:4px;">${test.name}</h3>
                 <p style="font-size:0.85rem; color:var(--text-muted);">Code: ${test.code} • Duration: ${test.duration}m</p>
-                <div style="margin-top: 8px; display: flex; gap: 8px;">
+                <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border); ${test.isActive === false ? 'color: var(--yellow);' : ''}" onclick="toggleTestStatus('${test.code}', ${test.isActive !== false})">
                         ${test.isActive === false ? 'Resume Test' : 'Stop Test'}
+                    </button>
+                    <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; border: 1px solid var(--border);" onclick="exportTestResultsCSV('${test.code}')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export
                     </button>
                     <button class="btn-ghost" style="padding: 4px 8px; font-size: 0.8rem; color: var(--red); border: 1px solid var(--border);" onclick="deleteTest('${test.code}')">
                         Delete
