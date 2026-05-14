@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QNA Platform | Next-Gen Testing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css?v=2">
+    <style>
+        body {
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+        }
+        .landing-title {
+            font-size: 4rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .landing-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 60px;
+            text-align: center;
+            max-width: 600px;
+        }
+        .portal-grid {
+            display: flex;
+            gap: 30px;
+            z-index: 10;
+        }
+        .portal-card {
+            background: rgba(20, 20, 20, 0.5);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 50px 40px;
+            width: 320px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.05), transparent);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        .portal-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-glow);
+        }
+        .portal-card:hover::before {
+            opacity: 1;
+        }
+        .portal-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            transition: var(--transition);
+        }
+        .portal-card:hover .portal-icon {
+            transform: scale(1.1);
+        }
+        .portal-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .portal-desc {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <div style="z-index: 10; text-align: center;">
+        <h1 class="landing-title">Welcome to QNA</h1>
+        <p class="landing-subtitle">The next-generation assessment platform for seamless testing and powerful analytics.</p>
+        
+        <div class="portal-grid">
+            <a href="auth.html" class="portal-card">
+                <div class="portal-icon">🎓</div>
+                <div class="portal-name">Student Portal</div>
+                <div class="portal-desc">Login to join live assessments and review your past scores.</div>
+            </a>
+            
+            <a href="admin.html" class="portal-card">
+                <div class="portal-icon">🛡️</div>
+                <div class="portal-name">Admin Console</div>
+                <div class="portal-desc">Manage tests, monitor live students, and analyze data.</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

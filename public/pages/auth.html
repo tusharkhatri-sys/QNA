@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login | QNA Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css?v=2">
+    <style>
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+        }
+        .auth-container {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            padding: 50px;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: var(--shadow-glow);
+            position: relative;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <div class="auth-container">
+        <a href="landing.html" style="position: absolute; top: 20px; left: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">← Back</a>
+        
+        <div style="font-size: 3rem; margin-bottom: 20px;">🎓</div>
+        <h2 id="auth-title" style="font-size: 2rem; margin-bottom: 10px; color: var(--text);">Student Login</h2>
+        <p id="auth-subtitle" style="color: var(--text-muted); margin-bottom: 30px;">Login to access your dashboard</p>
+        
+        <div id="auth-error-msg" style="color: var(--red); background: var(--red-bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px; display: none; font-size: 0.9rem;"></div>
+        
+        <div id="auth-name-group" class="form-group" style="text-align: left; display: none;">
+            <label>Full Name</label>
+            <input type="text" id="auth-name" class="modern-input" placeholder="e.g. Rahul Kumar">
+        </div>
+        
+        <div class="form-group" style="text-align: left;">
+            <label>Email Address</label>
+            <input type="email" id="auth-email" class="modern-input" placeholder="student@example.com">
+        </div>
+        
+        <div class="form-group" style="text-align: left;">
+            <label>Password</label>
+            <input type="password" id="auth-password" class="modern-input" placeholder="••••••••">
+        </div>
+        
+        <button class="btn btn-primary" id="auth-submit-btn" style="width: 100%; margin-top: 10px; justify-content: center;" onclick="submitAuth()">Login</button>
+        
+        <div style="margin-top: 24px; font-size: 0.95rem; color: var(--text-secondary);">
+            <span id="auth-toggle-text">Don't have an account?</span> 
+            <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-btn" style="color: var(--accent); text-decoration: none; font-weight: 600;">Register</a>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="auth.js"></script>
+</body>
+</html>
