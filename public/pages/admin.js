@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function adminLogin() {
     const pass = document.getElementById('admin-pass-input').value;
     const err = document.getElementById('admin-error-msg');
-    if (pass === 'admin123') { 
+    if (pass === 'ITI@345001') { 
         localStorage.setItem('adminLoggedIn', 'true');
         document.getElementById('admin-login-screen').classList.remove('active');
         document.getElementById('admin-dashboard-screen').style.display = 'flex';
@@ -115,7 +115,7 @@ function renderResultsSidebar() {
     
     list.innerHTML = allTestsData.map(t => `
         <div class="menu-item ${currentAdminTestCode === t.code ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border: 1px solid ${currentAdminTestCode === t.code ? 'var(--accent)' : 'transparent'}; background: ${currentAdminTestCode === t.code ? 'var(--accent-glow)' : 'rgba(15,23,42,0.02)'};" onclick="viewTestResults('${t.code}')">
-            <div style="font-weight: 600; font-size: 0.95rem; color: #fff;">${escapeHTML(t.name)}</div>
+            <div style="font-weight: 600; font-size: 0.95rem; color: var(--text);">${escapeHTML(t.name)}</div>
             <div style="font-size: 0.8rem; font-family: monospace; color: var(--accent-light);">${t.code}</div>
         </div>
     `).join('');
