@@ -361,17 +361,17 @@ async function fetchAdminStudents() {
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">No registered students found.</td></tr>';
             return;
         }
-        tbody.innerHTML = data.map(s => \`
-            <tr>
-                <td style="font-weight: 600;">\${escapeHTML(s.name)}</td>
-                <td>\${escapeHTML(s.email)}</td>
-                <td style="font-family: monospace;">\${escapeHTML(s.password)}</td>
-                <td style="color: var(--text-muted);">\${new Date(s.created_at).toLocaleString()}</td>
-                <td>
-                    <button class="btn btn-outline" style="border-color: var(--red); color: var(--red); padding: 6px 12px; font-size: 0.8rem;" onclick="deleteStudent('\${s.id}')">🗑️ Delete</button>
-                </td>
-            </tr>
-        \`).join('');
+        tbody.innerHTML = data.map(function(s) {
+            return '<tr>' +
+                '<td style="font-weight: 600;">' + escapeHTML(s.name) + '</td>' +
+                '<td>' + escapeHTML(s.email) + '</td>' +
+                '<td style="font-family: monospace;">' + escapeHTML(s.password) + '</td>' +
+                '<td style="color: var(--text-muted);">' + new Date(s.created_at).toLocaleString() + '</td>' +
+                '<td>' +
+                    '<button class="btn btn-outline" style="border-color: var(--red); color: var(--red); padding: 6px 12px; font-size: 0.8rem;" onclick="deleteStudent(\'' + s.id + '\')">\u{1F5D1}\uFE0F Delete</button>' +
+                '</td>' +
+            '</tr>';
+        }).join('');
     } catch(e) {
         console.error(e);
     }

@@ -247,26 +247,31 @@
             </div>
         </main>
         
-        <main class="content-area" id="tab-students" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="font-size: 1.8rem;">Registered Students</h2>
+    </div>
+    
+    <!-- Students Tab (hidden, toggled by JS) -->
+    <div id="tab-students" style="display: none; position: fixed; top: 0; left: 280px; right: 0; bottom: 0; background: var(--bg); z-index: 5; padding: 40px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h2 style="font-size: 1.8rem;">Registered Students</h2>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-outline" style="padding: 10px 20px;" onclick="showTab('overview')">← Back</button>
                 <button class="btn btn-primary" onclick="fetchAdminStudents()">🔄 Refresh</button>
             </div>
-            <div class="lux-table-container">
-                <table class="lux-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Password</th>
-                            <th>Registration Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-students-list"></tbody>
-                </table>
-            </div>
-        </main>
+        </div>
+        <div class="lux-table-container">
+            <table class="lux-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th>Registration Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-students-list"></tbody>
+            </table>
+        </div>
     </div>
     <script src="shared.js"></script>
     <script src="admin.js"></script>
