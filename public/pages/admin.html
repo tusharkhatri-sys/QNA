@@ -102,6 +102,9 @@
                 </div>
                 
                 <div class="menu-label" style="margin-top: 30px;">Manage</div>
+                <div class="menu-item" onclick="showTab('students', this)">
+                    <span class="menu-icon">👥</span> Registered Students
+                </div>
                 <div class="menu-item" onclick="showTab('results', this)">
                     <span class="menu-icon">📋</span> Test Results
                 </div>
@@ -177,9 +180,12 @@
                             </div>
                         </div>
                         
-                        <div style="padding: 20px; background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: var(--radius-sm); margin-bottom: 30px;">
-                            <h4 style="color: var(--accent); margin-bottom: 10px;">💡 Intelligent Generation</h4>
-                            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">The engine will automatically balance 50 questions across all available topics to ensure a comprehensive assessment.</p>
+                        <div style="margin-bottom: 30px;">
+                            <h4 style="color: var(--accent); margin-bottom: 15px;">📚 Topic Configuration (Questions per chapter)</h4>
+                            <div id="topic-config-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                                <!-- Dynamically populated by JS -->
+                            </div>
+                            <div style="margin-top: 15px; font-weight: 600; text-align: right;">Total Questions: <span id="total-questions-count" style="color: var(--accent); font-size: 1.2rem;">0</span></div>
                         </div>
                         
                         <button class="btn btn-primary" style="width: 100%;" onclick="generateTest()">Deploy Assessment</button>
@@ -238,6 +244,27 @@
                     </div>
                 </div>
                 
+            </div>
+        </main>
+        
+        <main class="content-area" id="tab-students" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-size: 1.8rem;">Registered Students</h2>
+                <button class="btn btn-primary" onclick="fetchAdminStudents()">🔄 Refresh</button>
+            </div>
+            <div class="lux-table-container">
+                <table class="lux-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Password</th>
+                            <th>Registration Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-students-list"></tbody>
+                </table>
             </div>
         </main>
     </div>

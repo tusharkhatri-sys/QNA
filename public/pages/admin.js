@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('admin-login-screen').style.display = 'none';
         document.getElementById('admin-dashboard-screen').style.display = 'flex';
         fetchAdminTests();
+        renderTopicConfigUI();
     }
 });
 
@@ -14,6 +15,7 @@ function adminLogin() {
         document.getElementById('admin-login-screen').style.display = 'none';
         document.getElementById('admin-dashboard-screen').style.display = 'flex';
         fetchAdminTests();
+        renderTopicConfigUI();
     } else {
         err.textContent = "Access Denied: Invalid Credentials";
         err.style.display = "block";
@@ -38,8 +40,14 @@ function showTab(tabName, element) {
     document.getElementById('tab-create').style.display = tabName === 'create' ? 'block' : 'none';
     document.getElementById('tab-results').style.display = tabName === 'results' ? 'block' : 'none';
     
+    const ts = document.getElementById('tab-students');
+    if(ts) ts.style.display = tabName === 'students' ? 'block' : 'none';
+    
     if (tabName === 'overview' || tabName === 'results') {
         fetchAdminTests();
+    }
+    if (tabName === 'students' && typeof fetchAdminStudents === 'function') {
+        fetchAdminStudents();
     }
 }
 
@@ -245,14 +253,20 @@ async function generateTest() {
     const name = document.getElementById('new-test-name').value || 'Untitled Assessment';
     const duration = parseInt(document.getElementById('new-test-duration').value) || 30;
     
-    const totalTopics = QUESTIONS_DATA.length;
     let config = {};
-    let remaining = 50;
+    let totalQuestions = 0;
     QUESTIONS_DATA.forEach((t, idx) => {
-        let alloc = idx === totalTopics - 1 ? remaining : Math.floor(50 / totalTopics);
-        config[t.topic] = alloc;
-        remaining -= alloc;
+        let alloc = parseInt(document.getElementById(`topic-range-${idx}`).value) || 0;
+        if (alloc > 0) {
+            config[t.topic] = alloc;
+            totalQuestions += alloc;
+        }
     });
+
+    if (totalQuestions === 0) {
+        alert("Please select at least 1 question from any topic.");
+        return;
+    }
 
     const testCode = Array.from({length: 6}, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random()*36)]).join('');
     const testData = { name, duration, topicConfig: config, createdAt: new Date().toISOString(), isActive: 'active' };
@@ -298,3 +312,75 @@ setInterval(() => {
         fetchAdminTests();
     }
 }, 5000);
+
+// --- New Features ---
+
+function renderTopicConfigUI() {
+    const container = document.getElementById('topic-config-container');
+    if (!container || typeof QUESTIONS_DATA === 'undefined') return;
+    let html = '';
+    QUESTIONS_DATA.forEach((topic, idx) => {
+        const initialVal = Math.min(10, topic.questions.length);
+        html += `
+            <div style="background: rgba(15, 23, 42, 0.02); border: 1px solid var(--border); padding: 15px; border-radius: var(--radius-sm);">
+                <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 10px; color: var(--text);">${escapeHTML(topic.topic)}</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px;">
+                    <span>0</span>
+                    <span>Max: ${topic.questions.length}</span>
+                </div>
+                <input type="range" id="topic-range-${idx}" min="0" max="${topic.questions.length}" value="${initialVal}" class="modern-input" style="width: 100%; padding: 0; cursor: pointer;" oninput="updateTotalQuestions()">
+                <div style="text-align: center; font-weight: bold; margin-top: 8px; color: var(--accent);" id="topic-val-${idx}">${initialVal}</div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+    updateTotalQuestions();
+}
+
+function updateTotalQuestions() {
+    let total = 0;
+    if (typeof QUESTIONS_DATA === 'undefined') return;
+    QUESTIONS_DATA.forEach((topic, idx) => {
+        const rangeEl = document.getElementById(`topic-range-${idx}`);
+        if(rangeEl) {
+            const val = parseInt(rangeEl.value) || 0;
+            document.getElementById(`topic-val-${idx}`).textContent = val;
+            total += val;
+        }
+    });
+    const totalEl = document.getElementById('total-questions-count');
+    if(totalEl) totalEl.textContent = total;
+}
+
+async function fetchAdminStudents() {
+    try {
+        const { data, error } = await supabaseClient.from('students').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        const tbody = document.getElementById('admin-students-list');
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">No registered students found.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(s => \`
+            <tr>
+                <td style="font-weight: 600;">\${escapeHTML(s.name)}</td>
+                <td>\${escapeHTML(s.email)}</td>
+                <td style="font-family: monospace;">\${escapeHTML(s.password)}</td>
+                <td style="color: var(--text-muted);">\${new Date(s.created_at).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-outline" style="border-color: var(--red); color: var(--red); padding: 6px 12px; font-size: 0.8rem;" onclick="deleteStudent('\${s.id}')">🗑️ Delete</button>
+                </td>
+            </tr>
+        \`).join('');
+    } catch(e) {
+        console.error(e);
+    }
+}
+
+async function deleteStudent(id) {
+    if(!confirm("Are you sure you want to permanently delete this student account?")) return;
+    try {
+        await supabaseClient.from('students').delete().eq('id', id);
+        fetchAdminStudents();
+    } catch(e) { alert("Failed to delete student"); }
+}
