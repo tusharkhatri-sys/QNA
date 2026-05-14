@@ -13,26 +13,26 @@
         .admin-layout { display: flex; height: 100vh; }
         
         /* Sidebar */
-        .admin-sidebar { width: 280px; background: rgba(10,10,10,0.8); backdrop-filter: blur(20px); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
+        .admin-sidebar { width: 280px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10; }
         .sidebar-header { height: 80px; display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border); }
         .sidebar-menu { flex: 1; padding: 24px 16px; overflow-y: auto; }
         .menu-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 12px; padding-left: 12px; }
         .menu-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: var(--transition); margin-bottom: 4px; font-weight: 500; }
-        .menu-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+        .menu-item:hover { background: rgba(15, 23, 42, 0.05); color: var(--accent); }
         .menu-item.active { background: var(--accent-glow); color: var(--accent); border-left: 3px solid var(--accent); }
         .menu-icon { font-size: 1.2rem; }
         
         /* Main Content */
         .admin-main { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; position: relative; }
-        .topbar { height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: rgba(5,5,5,0.6); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); z-index: 10; }
-        .topbar-search { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px; width: 300px; color: var(--text); font-family: inherit; }
+        .topbar { height: 80px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); z-index: 10; }
+        .topbar-search { background: rgba(15, 23, 42, 0.05); border: 1px solid var(--border); border-radius: 100px; padding: 10px 20px; width: 300px; color: var(--text); font-family: inherit; }
         .topbar-search:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.05); }
         
         .content-area { flex: 1; padding: 40px; overflow-y: auto; }
         
         /* Dashboard Stats */
         .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 40px; }
-        .stat-card-lux { background: rgba(20,20,20,0.4); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; align-items: center; gap: 20px; transition: var(--transition); position: relative; overflow: hidden; }
+        .stat-card-lux { background: rgba(255, 255, 255, 0.85); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; display: flex; align-items: center; gap: 20px; transition: var(--transition); position: relative; overflow: hidden; }
         .stat-card-lux::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(212,175,55,0.05), transparent); opacity: 0; transition: var(--transition); }
         .stat-card-lux:hover { border-color: var(--accent); transform: translateY(-4px); }
         .stat-card-lux:hover::before { opacity: 1; }
@@ -41,12 +41,12 @@
         .stat-info .value { font-size: 2rem; font-weight: 800; color: var(--text); line-height: 1; }
         
         /* Tests Table */
-        .lux-table-container { background: rgba(20,20,20,0.6); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-        .lux-table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); }
+        .lux-table-container { background: rgba(255, 255, 255, 0.9); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .lux-table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.02); }
         .lux-table { width: 100%; border-collapse: collapse; text-align: left; }
         .lux-table th { padding: 16px 24px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; }
-        .lux-table td { padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.03); vertical-align: middle; }
-        .lux-table tr:hover { background: rgba(255,255,255,0.02); }
+        .lux-table td { padding: 16px 24px; border-bottom: 1px solid rgba(15, 23, 42, 0.05); vertical-align: middle; }
+        .lux-table tr:hover { background: rgba(15, 23, 42, 0.02); }
         
         .status-badge { padding: 6px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
         .status-badge::before { content:''; width: 6px; height: 6px; border-radius: 50%; }
@@ -59,10 +59,10 @@
 
         /* Login Screen */
         .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 999; display: flex; justify-content: center; align-items: center; }
-        .login-box { background: rgba(20,20,20,0.8); backdrop-filter: blur(20px); border: 1px solid var(--border); padding: 50px; border-radius: var(--radius-lg); width: 100%; max-width: 450px; text-align: center; box-shadow: var(--shadow-glow); }
+        .login-box { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border: 1px solid var(--border); padding: 50px; border-radius: var(--radius-lg); width: 100%; max-width: 450px; text-align: center; box-shadow: var(--shadow-glow); }
         
         /* Wizard Form */
-        .wizard-panel { background: rgba(20,20,20,0.6); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; max-width: 800px; }
+        .wizard-panel { background: rgba(255, 255, 255, 0.9); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; max-width: 800px; }
     </style>
 </head>
 <body>
@@ -177,7 +177,7 @@
                             </div>
                         </div>
                         
-                        <div style="padding: 20px; background: rgba(212,175,55,0.05); border: 1px solid rgba(212,175,55,0.2); border-radius: var(--radius-sm); margin-bottom: 30px;">
+                        <div style="padding: 20px; background: rgba(79, 70, 229, 0.05); border: 1px solid rgba(79, 70, 229, 0.2); border-radius: var(--radius-sm); margin-bottom: 30px;">
                             <h4 style="color: var(--accent); margin-bottom: 10px;">💡 Intelligent Generation</h4>
                             <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">The engine will automatically balance 50 questions across all available topics to ensure a comprehensive assessment.</p>
                         </div>
@@ -195,7 +195,7 @@
                 <div id="tab-results" style="display: none;">
                     <div style="display: flex; gap: 30px; height: 100%;">
                         <!-- Test Selector -->
-                        <div style="width: 300px; background: rgba(20,20,20,0.6); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column;">
+                        <div style="width: 300px; background: rgba(255, 255, 255, 0.9); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column;">
                             <div style="padding: 20px; border-bottom: 1px solid var(--border);">
                                 <h3 style="font-size: 1.1rem;">Select Assessment</h3>
                             </div>
@@ -204,7 +204,7 @@
                         
                         <!-- Details View -->
                         <div style="flex: 1; display: flex; flex-direction: column;">
-                            <div id="results-header" style="background: rgba(20,20,20,0.6); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; margin-bottom: 24px; display: none;">
+                            <div id="results-header" style="background: rgba(255, 255, 255, 0.9); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; margin-bottom: 24px; display: none;">
                                 <!-- Dynamic Header Injection -->
                             </div>
                             

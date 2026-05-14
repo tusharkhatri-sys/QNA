@@ -114,7 +114,7 @@ function renderResultsSidebar() {
     }
     
     list.innerHTML = allTestsData.map(t => `
-        <div class="menu-item ${currentAdminTestCode === t.code ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border: 1px solid ${currentAdminTestCode === t.code ? 'var(--accent)' : 'transparent'}; background: ${currentAdminTestCode === t.code ? 'var(--accent-glow)' : 'rgba(255,255,255,0.02)'};" onclick="viewTestResults('${t.code}')">
+        <div class="menu-item ${currentAdminTestCode === t.code ? 'active' : ''}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; border: 1px solid ${currentAdminTestCode === t.code ? 'var(--accent)' : 'transparent'}; background: ${currentAdminTestCode === t.code ? 'var(--accent-glow)' : 'rgba(15,23,42,0.02)'};" onclick="viewTestResults('${t.code}')">
             <div style="font-weight: 600; font-size: 0.95rem; color: #fff;">${escapeHTML(t.name)}</div>
             <div style="font-size: 0.8rem; font-family: monospace; color: var(--accent-light);">${t.code}</div>
         </div>
@@ -189,15 +189,15 @@ function viewTestResults(code) {
             </div>
         </div>
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px;">
-            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <div style="background: rgba(15,23,42,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
                 <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Participants</div>
                 <div style="font-size: 1.8rem; font-weight: 700;">${liveCount + compCount}</div>
             </div>
-            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.2);">
+            <div style="background: rgba(15,23,42,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(245, 158, 11, 0.2);">
                 <div style="font-size: 0.8rem; color: var(--yellow); text-transform: uppercase;">Currently Live</div>
                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--yellow);">${liveCount}</div>
             </div>
-            <div style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
+            <div style="background: rgba(15,23,42,0.02); padding: 16px; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.2);">
                 <div style="font-size: 0.8rem; color: var(--green); text-transform: uppercase;">Completed</div>
                 <div style="font-size: 1.8rem; font-weight: 700; color: var(--green);">${compCount}</div>
             </div>
