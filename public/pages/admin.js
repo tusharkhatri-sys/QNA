@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('adminLoggedIn') === 'true') {
-        document.getElementById('admin-login-screen').classList.remove('active');
+        document.getElementById('admin-login-screen').style.display = 'none';
         document.getElementById('admin-dashboard-screen').style.display = 'flex';
         fetchAdminTests();
     }
@@ -11,7 +11,7 @@ function adminLogin() {
     const err = document.getElementById('admin-error-msg');
     if (pass === 'ITI@345001') { 
         localStorage.setItem('adminLoggedIn', 'true');
-        document.getElementById('admin-login-screen').classList.remove('active');
+        document.getElementById('admin-login-screen').style.display = 'none';
         document.getElementById('admin-dashboard-screen').style.display = 'flex';
         fetchAdminTests();
     } else {
