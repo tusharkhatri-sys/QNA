@@ -22,8 +22,8 @@ function initQuiz() {
 }
 
 function initLiveTest() {
-    document.getElementById('quiz-topic-name').textContent = testData.name;
-    const config = testData.topicConfig;
+    document.getElementById('quiz-topic-name').textContent = testData.name || 'Untitled Test';
+    const config = testData.topicConfig || {};
     for (const [topicName, count] of Object.entries(config)) {
         const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
         if (tObj) {
@@ -110,7 +110,12 @@ function updateTimerDisplay() {
 }
 
 function renderQuestion() {
-    if (currentQuiz.length === 0) return;
+    if (!currentQuiz || currentQuiz.length === 0) {
+        document.getElementById('question-text').textContent = 'Error: No questions found! Admin might not have selected any questions for this test.';
+        document.getElementById('question-text-hi').textContent = '';
+        document.getElementById('options-grid').innerHTML = '';
+        return;
+    }
     const q = currentQuiz[currentIndex];
     
     document.getElementById('current-q-num').textContent = currentIndex + 1;
