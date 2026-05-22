@@ -112,6 +112,73 @@
             background: #dc2626;
             transform: scale(1.08);
         }
+        .admin-top-link {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+            z-index: 100;
+        }
+        .admin-top-link:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .download-section {
+            margin: 40px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            background: var(--accent);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+            background: #4338ca;
+        }
+        .download-hint {
+            margin-top: 15px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .about-section {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 30px;
+            margin-top: 20px;
+            text-align: left;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            box-shadow: var(--shadow-sm);
+        }
+        .about-section h2 {
+            color: var(--text);
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
     </style>
 </head>
 <body>
@@ -128,22 +195,28 @@
         </svg>
     </button>
 
-    <div style="z-index: 10; text-align: center;">
-        <h1 class="landing-title">Welcome to QNA</h1>
-        <p class="landing-subtitle">The next-generation assessment platform for seamless testing and powerful analytics.</p>
+    <!-- Top Right Admin Login -->
+    <a href="admin-login.html" class="admin-top-link">Admin Login</a>
+
+    <div style="z-index: 10; text-align: center; max-width: 800px; padding: 0 20px;">
+        <h1 class="landing-title">Welcome to QNA Platform</h1>
+        <p class="landing-subtitle">The next-generation, secure assessment platform for students and institutions.</p>
         
-        <div class="portal-grid">
-            <a href="auth.html" class="portal-card">
-                <div class="portal-icon">🎓</div>
-                <div class="portal-name">Student Portal</div>
-                <div class="portal-desc">Login to join live assessments and review your past scores.</div>
+        <div class="download-section">
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe" class="download-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download Safe Browser (.exe)
             </a>
-            
-            <a href="admin-login.html" class="portal-card">
-                <div class="portal-icon">🛡️</div>
-                <div class="portal-name">Admin Console</div>
-                <div class="portal-desc">Manage tests, monitor live students, and analyze data.</div>
-            </a>
+            <p class="download-hint">Note: Students must use the QNA Safe Browser to take their exams.</p>
+        </div>
+
+        <div class="about-section">
+            <h2>About QNA Platform</h2>
+            <p>QNA is a specialized examination platform built to ensure the highest integrity during tests. By using our custom Safe Lockdown Browser, students are prevented from accessing other tabs, windows, or applications while the test is active, creating a fair and secure testing environment for everyone.</p>
         </div>
     </div>
 
