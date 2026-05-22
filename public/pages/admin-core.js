@@ -5,7 +5,6 @@ if (localStorage.getItem('admin_auth') !== 'true' && !window.location.href.inclu
     window.location.href = 'admin-login.html';
 }
 
-const socket = typeof io !== 'undefined' ? io() : null;
 let activeProctoring = {};
 
 // --- SHARED UTILS ---
@@ -94,15 +93,24 @@ async function initDashboard() {
         }
     });
 
-    // 3. Socket.io for Live Proctoring
-    if (socket) {
-        socket.emit('admin:join');
-        socket.on('admin:update-student', (data) => {
-            // data: { name, email, testCode, progress, isMinimized }
-            activeProctoring[data.email] = data;
-            renderLiveGrid();
-        });
-    }
+    // 3. Supabase Realtime for Live Proctoring
+    if (window.adminDashboardSub) window.supabase.removeChannel(window.adminDashboardSub);
+    window.adminDashboardSub = window.supabase.channel('admin_dashboard_realtime')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests' }, payload => {
+            const data = payload.new.data;
+            if (data && data.liveStudents) {
+                Object.values(data.liveStudents).forEach(s => {
+                    activeProctoring[s.studentEmail || s.studentName] = {
+                        name: s.studentName,
+                        email: s.studentEmail,
+                        testCode: payload.new.code,
+                        progress: `${s.answered}/${s.total}`,
+                        isMinimized: false // Can be added later if needed
+                    };
+                });
+                renderLiveGrid();
+            }
+        }).subscribe();
 }
 
 function renderLiveGrid() {
@@ -449,7 +457,7 @@ async function initStudentsList() {
                     </div>
                 </td>
                 <td class="px-8 py-6 text-right">
-                    <button onclick="forceCloseStudent('${s.email}')" class="p-2 text-slate-600 hover:text-red-500" title="Force Disconnect">
+                    <button onclick="forceCloseApp('${s.email}', null)" class="p-2 text-slate-600 hover:text-red-500" title="Force Disconnect">
                         <i data-lucide="shield-off" class="w-5 h-5"></i>
                     </button>
                 </td>
@@ -462,12 +470,34 @@ async function initStudentsList() {
     }
 }
 
-function forceCloseStudent(email) {
-    if (confirm(`Are you sure you want to force disconnect ${email}?`)) {
-        if (socket) {
-            socket.emit('admin:force-close', { studentEmail: email });
-            alert('Kill signal sent to student browser.');
+async function forceCloseApp(email, testCode) {
+    if (!confirm(`Are you sure you want to force close the app for ${email}?`)) return;
+    try {
+        let codesToUpdate = testCode ? [testCode] : [];
+        if (!testCode) {
+            const { data: tests } = await supabaseClient.from('tests').select('code, data').eq('data->>isActive', 'active');
+            if (tests) {
+                for (let t of tests) {
+                    if (t.data.liveStudents && (t.data.liveStudents[email] || Object.values(t.data.liveStudents).some(s => s.studentName === email))) {
+                        codesToUpdate.push(t.code);
+                    }
+                }
+            }
         }
+        
+        for (let code of codesToUpdate) {
+            const { data: dbData } = await supabaseClient.from('tests').select('data').eq('code', code).single();
+            if (dbData) {
+                if (!dbData.data.forceClosedStudents) dbData.data.forceClosedStudents = [];
+                if (!dbData.data.forceClosedStudents.includes(email)) {
+                    dbData.data.forceClosedStudents.push(email);
+                    await supabaseClient.from('tests').update({ data: dbData.data }).eq('code', code);
+                }
+            }
+        }
+        alert('Kill signal sent via database.');
+    } catch(e) {
+        console.error('Failed to force close:', e);
     }
 }
 

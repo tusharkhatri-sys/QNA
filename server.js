@@ -4,37 +4,10 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const http = require('http');
-const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-    cors: { origin: "*" }
-});
 const PORT = process.env.PORT || 3000;
-
-// Socket.io Real-time Logic
-io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
-
-    socket.on('admin:join', () => {
-        socket.join('admin-room');
-    });
-
-    socket.on('student:status', (data) => {
-        // data: { name, email, testCode, progress, isMinimized }
-        io.to('admin-room').emit('admin:update-student', data);
-    });
-
-    socket.on('admin:force-close', (data) => {
-        // data: { studentEmail }
-        io.emit(`student:close:${data.studentEmail}`);
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected');
-    });
-});
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));

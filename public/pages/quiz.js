@@ -75,6 +75,12 @@ function initLiveTest() {
                 alert('Test was closed by admin. Submitting your current progress...');
                 submitQuiz(); 
             }
+            
+            const emailKey = student ? student.email : studentName;
+            if (data.forceClosedStudents && data.forceClosedStudents.includes(emailKey)) {
+                alert('Admin has force closed your session.');
+                submitQuiz();
+            }
         }).subscribe();
         
     renderQuestion();
