@@ -18,7 +18,7 @@ var SAFE_BROWSER_UA = 'QnaCopa-Safe-Browser-v1';
 // Option C: Any direct file hosting URL
 //
 // Replace the URL below with your actual download link:
-var DOWNLOAD_URL = 'https://github.com/YOUR_GITHUB_USERNAME/qna-safe-browser/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe';
+var DOWNLOAD_URL = 'https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe';
 
 
 // ─── PAGE INIT: DETECT USER-AGENT ──────────────────────────
