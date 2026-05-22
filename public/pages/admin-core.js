@@ -93,9 +93,9 @@ async function initDashboard() {
         }
     });
 
-    // 3. Supabase Realtime for Live Proctoring
-    if (window.adminDashboardSub) window.supabase.removeChannel(window.adminDashboardSub);
-    window.adminDashboardSub = window.supabase.channel('admin_dashboard_realtime')
+    // 3. Supabase Realtime
+    if (window.adminDashboardSub) supabaseClient.removeChannel(window.adminDashboardSub);
+    window.adminDashboardSub = supabaseClient.channel('admin_dashboard_realtime')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests' }, payload => {
             const data = payload.new.data;
             if (data && data.liveStudents) {

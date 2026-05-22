@@ -53,8 +53,8 @@ function initLiveTest() {
     }, 1000);
 
     // Supabase Realtime Listener
-    if (window.studentRealtimeSub) window.supabase.removeChannel(window.studentRealtimeSub);
-    window.studentRealtimeSub = window.supabase.channel(`student_test_${testData.code}`)
+    if (window.studentRealtimeSub) supabaseClient.removeChannel(window.studentRealtimeSub);
+    window.studentRealtimeSub = supabaseClient.channel(`student_test_${testData.code}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests', filter: `code=eq.${testData.code}` }, payload => {
             const data = payload.new.data;
             if (data.isActive === 'hold') {
@@ -197,7 +197,7 @@ async function reportLiveProgress() {
 
 async function submitQuiz() {
     if (liveTestTimer) clearInterval(liveTestTimer);
-    if (window.studentRealtimeSub) window.supabase.removeChannel(window.studentRealtimeSub);
+    if (window.studentRealtimeSub) supabaseClient.removeChannel(window.studentRealtimeSub);
     
     score = 0;
     currentQuiz.forEach((q, idx) => {
