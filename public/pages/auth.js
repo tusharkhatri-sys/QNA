@@ -103,8 +103,9 @@ async function submitAuth() {
     btn.disabled = true;
 
     try {
-        var payload = { action: authMode, email: email, password: password, name: name };
-        var res = await fetch(API_URL + '/students', {
+        var endpoint = authMode === 'login' ? '/students/login' : '/students/register';
+        var payload = { email: email, password: password, name: name };
+        var res = await fetch(API_URL + endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)

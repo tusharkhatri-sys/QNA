@@ -590,6 +590,9 @@ setInterval(async () => {
     }
 }, 60 * 1000);
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    server.listen(PORT, () => {
+        console.log(`Server running at http://localhost:${PORT}`);
+    });
+}
+module.exports = app;
