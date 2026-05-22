@@ -104,8 +104,10 @@ async function initDashboard() {
                         name: s.studentName,
                         email: s.studentEmail,
                         testCode: payload.new.code,
+                        answered: s.answered,
+                        total: s.total,
                         progress: `${s.answered}/${s.total}`,
-                        isMinimized: false // Can be added later if needed
+                        isMinimized: false
                     };
                 });
                 renderLiveGrid();
@@ -118,7 +120,10 @@ function renderLiveGrid() {
     if (!grid) return;
     
     const entries = Object.values(activeProctoring);
-    if (entries.length === 0) return;
+    if (entries.length === 0) {
+        grid.innerHTML = '<p class="text-xs text-slate-500">No active students.</p>';
+        return;
+    }
 
     grid.innerHTML = entries.map(s => `
         <div class="glass-card p-4 rounded-2xl border ${s.isMinimized ? 'border-red-500/50 bg-red-500/5' : 'border-white/5'}">
@@ -126,6 +131,7 @@ function renderLiveGrid() {
                 <div>
                     <p class="font-bold text-sm">${s.name || 'Unknown'}</p>
                     <p class="text-[10px] text-slate-500 uppercase">${s.email || ''}</p>
+                    <p class="text-[10px] text-blue-400 font-bold mt-1">Answered: ${s.answered} / ${s.total}</p>
                 </div>
                 ${s.isMinimized ? '<span class="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-black">MINIMIZED</span>' : '<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>'}
             </div>

@@ -21,7 +21,7 @@ const APP_TITLE = 'QNA Safe Browser';
 // Paths where the user is allowed to completely close the safe browser
 const ALLOWED_EXIT_PATHS = [
     '/pages/landing.html', '/pages/auth.html', '/auth.html', '/landing.html',
-    '/pages/landing', '/pages/auth', '/auth', '/landing'
+    '/pages/landing', '/pages/auth', '/auth', '/landing', '/pages/student.html', '/student.html'
 ];
 
 // ─── AUTO-UPDATER (Ready to enable) ─────────────────────────
@@ -67,8 +67,8 @@ function createLockdownWindow() {
         // Security settings
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
-            contextIsolation: false,
-            nodeIntegration: true,
+            contextIsolation: true,
+            nodeIntegration: false,
             sandbox: false,  // Required for contextBridge IPC
             devTools: false,
             webSecurity: true,

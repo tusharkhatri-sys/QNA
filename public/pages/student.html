@@ -60,20 +60,42 @@
         }
     </style>
 </head>
-<body>
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
+<body class="bg-[#0f172a] text-white min-h-screen font-sans selection:bg-blue-500/30 overflow-x-hidden relative">
 
-    <nav class="top-nav">
-        <div style="font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; color: var(--accent);">QNA Student</div>
-        <div style="display: flex; gap: 20px; align-items: center;">
-            <div class="profile-badge">
-                <div class="profile-avatar" id="badge-initial">S</div>
-                <span id="badge-name" style="font-weight: 500; font-size: 0.9rem;">Student</span>
+    <!-- Global Background Elements -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <!-- Glows -->
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/10 blur-[120px]"></div>
+        <!-- Grid -->
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdHRlcm4gaWQ9InNtYWxsR3JpZCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNMTAgMEwwIDBMMCAxMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSJ1cmwoI3NtYWxsR3JpZCkiLz48cGF0aCBkPSJNNDAgMEwwIDBMMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDcpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="glass-nav fixed top-0 w-full z-50 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-black text-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-white/20 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                    <span class="relative z-10 tracking-tighter">Q</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">QNA Portal</h1>
+                    <p class="text-[10px] text-blue-400 font-medium tracking-widest uppercase">Student Access</p>
+                </div>
             </div>
-            <button class="btn btn-outline" style="padding: 10px 20px; font-size: 0.9rem;" onclick="logout()">Logout</button>
+            
+            <div class="flex items-center gap-4">
+                <div class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/5 text-sm backdrop-blur-md">
+                    <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                    <span id="header-student-name" class="font-medium">Loading...</span>
+                </div>
+                <button onclick="exitSafeBrowser()" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm font-bold border border-red-500/20 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                    Exit App
+                </button>
+            </div>
         </div>
-    </nav>
+    </header>
 
     <div class="dashboard-container">
         <!-- Live Test Panel -->

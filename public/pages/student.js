@@ -12,6 +12,14 @@ function logout() {
     window.location.href = 'landing.html';
 }
 
+function exitSafeBrowser() {
+    if (window.qnaBrowser && typeof window.qnaBrowser.closeApp === 'function') {
+        window.qnaBrowser.closeApp();
+    } else {
+        alert("This feature only works in the QNA Safe Browser.");
+    }
+}
+
 async function joinLiveTest() {
     const name = document.getElementById('student-name-input').value.trim();
     const code = document.getElementById('test-code-input').value.trim().toUpperCase();
