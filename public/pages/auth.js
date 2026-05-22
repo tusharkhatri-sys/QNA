@@ -134,10 +134,6 @@ async function submitAuth() {
 
 // ─── EXIT SAFE BROWSER ─────────────────────────────────────
 function exitSafeBrowser() {
-    if (!confirm('Are you sure you want to exit QNA Safe Browser?\n\nOnly exit if you have NOT started an exam.')) {
-        return;
-    }
-
     // Electron IPC bridge (set up via preload.js)
     if (window.qnaBrowser && typeof window.qnaBrowser.closeApp === 'function') {
         window.qnaBrowser.closeApp();
