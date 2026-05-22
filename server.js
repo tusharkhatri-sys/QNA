@@ -455,7 +455,7 @@ app.post('/api/ocr/process', async (req, res) => {
         }
 
         // Gemini API Key
-        const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyB7wB251ZlaqMO-7LmajsP8xj3ne50j6FE';
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
         const prompt = `You are an expert at reading OCR-extracted text from handwritten Indian exam question papers.
 
