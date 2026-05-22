@@ -323,17 +323,16 @@ function renderStep() {
         `;
     } else if (currentStep === 2) {
         const topicsHTML = (typeof QUESTIONS_DATA !== 'undefined' && QUESTIONS_DATA.length > 0)
-            ? '<div class="flex justify-end mb-2"><button onclick="document.querySelectorAll(\'.topic-cb\').forEach(cb => { cb.checked = true; const row = cb.closest(\'.topic-row\'); if(row) { const tc = row.querySelector(\'.topic-count\'); tc.value = tc.max; } })" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer">Select All Topics & Max Questions</button></div>' + 
+            ? '<div class="flex justify-end mb-2"><button onclick="document.querySelectorAll(\'.topic-count\').forEach(tc => tc.value = tc.max)" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer">Select All Max Questions</button></div>' + 
               QUESTIONS_DATA.map(t => `
                 <div class="topic-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div class="flex items-center gap-4">
-                        <input type="checkbox" onchange="if(this.checked){ const tc = this.closest('.topic-row').querySelector('.topic-count'); tc.value = tc.max; }" class="topic-cb w-5 h-5 rounded border-white/10 bg-slate-800">
                         <div>
                             <p class="topic-name text-sm font-bold">${t.topic}</p>
                             <p class="text-[10px] text-slate-500">${t.questions.length} Questions Available</p>
                         </div>
                     </div>
-                    <input type="number" placeholder="Pick N" min="1" max="${t.questions.length}" class="topic-count w-20 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-blue-500 outline-none">
+                    <input type="number" placeholder="Pick N" min="0" max="${t.questions.length}" class="topic-count w-20 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-blue-500 outline-none">
                 </div>
             `).join('')
             : '<p class="text-slate-500 text-center py-8">Question bank not loaded. Please refresh.</p>';
@@ -370,16 +369,15 @@ document.getElementById('next-btn')?.addEventListener('click', async () => {
         currentStep++;
         renderStep();
     } else if (currentStep === 2) {
-        const rows = document.querySelectorAll('#stepper-content .topic-cb');
+        const rows = document.querySelectorAll('#stepper-content .topic-row');
         testConfig.topicConfig = {};
-        rows.forEach(cb => {
-            const row = cb.closest('.topic-row');
+        rows.forEach(row => {
             if (!row) return;
             const topicEl = row.querySelector('.topic-name');
             const numEl = row.querySelector('.topic-count');
             const topic = topicEl ? topicEl.textContent.trim() : null;
             const count = parseInt(numEl ? numEl.value : 0);
-            if (cb.checked && topic && count > 0) {
+            if (topic && count > 0) {
                 testConfig.topicConfig[topic] = count;
             }
         });
