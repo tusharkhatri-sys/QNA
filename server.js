@@ -3,8 +3,38 @@ const cors = require('cors');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
 const PORT = process.env.PORT || 3000;
+
+// Socket.io Real-time Logic
+io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
+
+    socket.on('admin:join', () => {
+        socket.join('admin-room');
+    });
+
+    socket.on('student:status', (data) => {
+        // data: { name, email, testCode, progress, isMinimized }
+        io.to('admin-room').emit('admin:update-student', data);
+    });
+
+    socket.on('admin:force-close', (data) => {
+        // data: { studentEmail }
+        io.emit(`student:close:${data.studentEmail}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
 
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
@@ -416,6 +446,114 @@ app.get('/api/leaderboard', async (req, res) => {
     }
 });
 
+// 14. OCR: AI-Powered Question Structuring (Gemini API)
+app.post('/api/ocr/process', async (req, res) => {
+    try {
+        const { rawText } = req.body;
+        if (!rawText || rawText.trim().length < 20) {
+            return res.status(400).json({ success: false, message: 'Text is too short to process.' });
+        }
+
+        // Gemini API Key
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyB7wB251ZlaqMO-7LmajsP8xj3ne50j6FE';
+
+        const prompt = `You are an expert at reading OCR-extracted text from handwritten Indian exam question papers.
+
+The following text was extracted via OCR from a handwritten question paper. It may contain Hindi (Devanagari), English, or Hinglish (Hindi written in English/Roman script). The OCR may have errors, misspellings, or garbled characters.
+
+Your task:
+1. Identify each MCQ question from the text.
+2. For each question, extract: the question text, 4 options (a, b, c, d), and the correct answer.
+3. If the correct answer is marked in the original text (like a tick, star, underline, or any indicator), use that. If not clearly marked, make your best educated guess based on the subject matter.
+4. Clean up OCR artifacts, fix obvious spelling errors, and make the text readable.
+5. If a question is in Hindi/Devanagari, keep it in Hindi. If in English, keep in English. If Hinglish, keep as Hinglish.
+
+IMPORTANT: Return ONLY a valid JSON array. No explanations, no markdown, no code fences. Just the raw JSON array.
+
+JSON Schema for each question:
+{"q": "question text", "a": "option A text", "b": "option B text", "c": "option C text", "d": "option D text", "correct": "a"}
+
+The "correct" field must be one of: "a", "b", "c", or "d" (lowercase).
+
+Here is the OCR-extracted text:
+---
+${rawText.substring(0, 15000)}
+---
+
+Return the JSON array now:`;
+
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+
+        const geminiRes = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.2,
+                    maxOutputTokens: 8192
+                }
+            })
+        });
+
+        if (!geminiRes.ok) {
+            const errText = await geminiRes.text();
+            console.error('Gemini API error:', geminiRes.status, errText);
+            return res.status(500).json({ success: false, message: 'Gemini API returned error: ' + geminiRes.status });
+        }
+
+        const geminiData = await geminiRes.json();
+
+        // Extract text from Gemini response
+        let aiText = '';
+        if (geminiData.candidates && geminiData.candidates[0] && geminiData.candidates[0].content) {
+            aiText = geminiData.candidates[0].content.parts.map(p => p.text).join('');
+        }
+
+        if (!aiText) {
+            return res.status(500).json({ success: false, message: 'Gemini returned empty response.' });
+        }
+
+        // Extract JSON array from AI response (handle markdown code fences)
+        let jsonStr = aiText.trim();
+        // Remove markdown code fences if present
+        jsonStr = jsonStr.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+        // Find the JSON array
+        const arrayStart = jsonStr.indexOf('[');
+        const arrayEnd = jsonStr.lastIndexOf(']');
+        if (arrayStart !== -1 && arrayEnd !== -1) {
+            jsonStr = jsonStr.substring(arrayStart, arrayEnd + 1);
+        }
+
+        let questions;
+        try {
+            questions = JSON.parse(jsonStr);
+        } catch (parseErr) {
+            console.error('JSON parse error:', parseErr.message);
+            console.error('Raw AI output:', aiText.substring(0, 500));
+            return res.status(500).json({ success: false, message: 'AI output could not be parsed as JSON. Try again or edit the raw text.' });
+        }
+
+        if (!Array.isArray(questions) || questions.length === 0) {
+            return res.status(400).json({ success: false, message: 'No questions could be extracted from the text.' });
+        }
+
+        // Validate and clean each question
+        questions = questions.filter(q => q.q && q.a && q.b && q.c && q.d && q.correct);
+        questions.forEach(q => {
+            q.correct = String(q.correct).toLowerCase();
+            if (!['a', 'b', 'c', 'd'].includes(q.correct)) {
+                q.correct = 'a'; // fallback
+            }
+        });
+
+        res.json({ success: true, questions, count: questions.length });
+    } catch (e) {
+        console.error('POST /api/ocr/process error:', e.message);
+        res.status(500).json({ success: false, message: 'Server error during AI processing.' });
+    }
+});
+
 // Serve frontend
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -427,6 +565,31 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, message: 'Internal server error.' });
 });
 
-app.listen(PORT, () => {
+// --- AUTO-ARCHIVE BACKGROUND JOB ---
+// Runs every 1 minute to check for tests that have been active for > 5 hours
+setInterval(async () => {
+    try {
+        const { data: tests, error } = await supabase.from('tests').select('*');
+        if (error || !tests) return;
+
+        const now = Date.now();
+        const FIVE_HOURS = 5 * 60 * 60 * 1000;
+
+        for (const t of tests) {
+            if (t.data && t.data.isActive !== 'archived') {
+                const createdAt = t.data.createdAt ? new Date(t.data.createdAt).getTime() : 0;
+                if (createdAt && (now - createdAt > FIVE_HOURS)) {
+                    t.data.isActive = 'archived';
+                    await supabase.from('tests').update({ data: t.data }).eq('code', t.code);
+                    console.log(`[Auto-Archive] Test ${t.code} archived after 5 hours.`);
+                }
+            }
+        }
+    } catch (err) {
+        console.error('[Auto-Archive] Error:', err.message);
+    }
+}, 60 * 1000);
+
+server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });

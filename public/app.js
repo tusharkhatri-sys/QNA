@@ -1216,8 +1216,8 @@ function startLiveQuiz(testData, studentName) {
                 document.getElementById('quiz-screen').style.pointerEvents = 'auto';
                 const msg = document.getElementById('hold-alert-msg');
                 if (msg) msg.remove();
-            } else if (data.isActive === 'stopped' || data.isActive === false) {
-                alert('Test was closed by admin. Submitting your current progress...');
+            } else if (data.isActive === 'stopped' || data.isActive === false || data.isActive === 'archived') {
+                alert('Test was closed or archived. Submitting your current progress...');
                 showResultsScreen(); // auto-submits what they have
             }
         })

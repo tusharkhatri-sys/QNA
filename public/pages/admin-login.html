@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QNA Admin | Secure Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background: #0f172a; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="h-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-md glass p-10 rounded-[2.5rem] shadow-2xl text-center space-y-8 animate-in fade-in zoom-in duration-500">
+        <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-600/30">
+            <i data-lucide="shield-lock" class="text-white w-8 h-8"></i>
+        </div>
+        <div>
+            <h1 class="text-2xl font-black text-white tracking-tight">QNA COPA ADMIN</h1>
+            <p class="text-slate-400 text-sm mt-2 font-medium">Enter your credentials to access the console</p>
+        </div>
+        <div class="space-y-4">
+            <div class="relative group">
+                <i data-lucide="key-round" class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors"></i>
+                <input type="password" id="admin-pass" placeholder="Admin Password" class="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 pl-14 pr-6 text-white outline-none focus:border-blue-500 transition-all">
+            </div>
+            <button onclick="handleLogin()" class="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/20 hover:bg-blue-700 hover:scale-[1.02] transition-all">SIGN IN</button>
+        </div>
+        <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Protocol v3.0 | Secure Session</p>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const pass = document.getElementById('admin-pass').value;
+            if (pass === 'ITI@345001') {
+                localStorage.setItem('admin_auth', 'true');
+                window.location.href = 'admin-dashboard.html';
+            } else {
+                alert('Invalid Password');
+            }
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>

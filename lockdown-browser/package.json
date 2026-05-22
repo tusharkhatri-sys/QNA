@@ -1,0 +1,63 @@
+{
+  "name": "qna-safe-browser",
+  "version": "1.0.0",
+  "description": "QNA Safe Lockdown Browser for secure exam delivery",
+  "main": "main.js",
+  "author": "QNA Admin",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "electron . --dev",
+    "clean": "if exist dist rmdir /s /q dist",
+    "build": "electron-builder --win --x64",
+    "build:portable": "electron-builder --win portable",
+    "rebuild": "npm run clean && npm run build",
+    "rebuild:portable": "npm run clean && npm run build:portable",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.qna.safebrowser",
+    "productName": "QNA Safe Browser",
+    "copyright": "Copyright © 2026 QNA Platform",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "QNA-Safe-Browser-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "QNA Safe Browser"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "YOUR_GITHUB_USERNAME",
+        "repo": "qna-safe-browser"
+      }
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "splash.html",
+      "assets/**/*"
+    ]
+  }
+}

@@ -2,3 +2,7 @@ node_modules/
 .env
 *.log
 .DS_Store
+
+# Lockdown Browser Ignores
+lockdown-browser/dist/
+lockdown-browser/node_modules/

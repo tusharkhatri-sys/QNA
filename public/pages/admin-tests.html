@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Manager | QNA Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .sidebar-item.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-right: 3px solid #3b82f6; }
+        .stepper-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex">
+    <!-- Sidebar -->
+    <nav class="w-64 glass-card border-r border-white/5 flex flex-col h-full z-50">
+        <div class="p-8 flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="text-white w-5 h-5"></i></div>
+            <span class="font-black text-xl tracking-tight">QNA <span class="text-blue-500">COPA</span></span>
+        </div>
+        <div class="flex-1 px-4 space-y-2 mt-4">
+            <a href="admin-dashboard.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </a>
+            <a href="admin-tests.html" class="sidebar-item active flex items-center gap-3 p-4 rounded-xl font-bold transition-all">
+                <i data-lucide="file-text" class="w-5 h-5"></i> Test Manager
+            </a>
+            <a href="admin-students.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+                <i data-lucide="users" class="w-5 h-5"></i> Student List
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto p-10">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-white">Test Manager</h1>
+                <p class="text-slate-400 font-medium">Create and deploy assessments.</p>
+            </div>
+            <button onclick="openModal('create-modal')" class="bg-blue-600 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20">
+                <i data-lucide="plus" class="w-5 h-5"></i> New Test
+            </button>
+        </header>
+
+        <!-- Search & Filter -->
+        <div class="glass-card p-6 rounded-[2rem] mb-10 flex gap-4">
+            <div class="flex-1 relative">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
+                <input type="text" placeholder="Search assessments..." class="w-full bg-slate-800/50 border border-white/5 rounded-xl py-3 pl-12 text-white outline-none">
+            </div>
+            <select id="status-filter" onchange="initTestManager()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
+                <option value="all">All Status</option>
+                <option value="active" selected>Active</option>
+                <option value="archived">Archived</option>
+            </select>
+        </div>
+
+        <!-- Tests List -->
+        <div id="tests-list" class="grid grid-cols-1 gap-4">
+            <div class="py-20 text-center text-slate-500 italic">Loading active tests...</div>
+        </div>
+
+        <!-- Create Test Modal (The Big Stepper) -->
+        <div id="create-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+            <div class="glass-card w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative">
+                <button onclick="closeModal('create-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                
+                <h2 class="text-2xl font-black mb-8">Deploy New Assessment</h2>
+                
+                <!-- Stepper Headers -->
+                <div class="flex gap-4 mb-10">
+                    <div class="stepper-btn active px-6 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-widest transition-all">Step 1: Core Info</div>
+                    <div class="stepper-btn px-6 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-widest transition-all">Step 2: Question Pool</div>
+                    <div class="stepper-btn px-6 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-widest transition-all">Step 3: Protocol</div>
+                </div>
+
+                <div id="stepper-content" class="min-h-[400px]">
+                    <!-- Dynamic Step Content -->
+                </div>
+
+                <div class="flex justify-between mt-10">
+                    <button id="prev-btn" class="hidden px-8 py-3 rounded-2xl border border-white/10 font-bold">Back</button>
+                    <button id="next-btn" class="ml-auto bg-blue-600 px-10 py-3 rounded-2xl font-bold">Continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Modal -->
+        <div id="results-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
+            <div class="glass-card w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
+                <button onclick="closeModal('results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                
+                <h2 class="text-2xl font-black mb-2" id="results-title">Test Results</h2>
+                <p class="text-slate-400 mb-8 text-sm" id="results-subtitle">Loading...</p>
+
+                <div class="overflow-y-auto flex-1 pr-2">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/5 text-xs font-black text-slate-500 uppercase tracking-widest">
+                                <th class="pb-4">Student</th>
+                                <th class="pb-4">Email</th>
+                                <th class="pb-4">Score</th>
+                                <th class="pb-4 text-right">Submitted At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../questions.js"></script>
+    <script src="shared.js"></script>
+    <script src="admin-core.js"></script>
+    <script>
+        lucide.createIcons();
+        initTestManager();
+    </script>
+</body>
+</html>

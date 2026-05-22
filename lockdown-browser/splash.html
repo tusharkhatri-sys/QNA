@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QNA Safe Browser — Loading</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .splash-container {
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .shield-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+        .loader {
+            margin-top: 30px;
+            width: 200px;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 100px;
+            overflow: hidden;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .loader-fill {
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, #6366f1, #059669);
+            border-radius: 100px;
+            animation: slide 1.5s ease-in-out infinite;
+        }
+        @keyframes slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="shield-icon">🛡️</div>
+        <h1>QNA Safe Browser</h1>
+        <p>Initializing secure exam environment...</p>
+        <div class="loader"><div class="loader-fill"></div></div>
+    </div>
+</body>
+</html>

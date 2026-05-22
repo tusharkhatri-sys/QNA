@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | QNA Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #0f172a; color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .sidebar-item.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-right: 3px solid #3b82f6; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="h-screen flex">
+    <!-- Sidebar -->
+    <nav class="w-64 glass-card border-r border-white/5 flex flex-col h-full z-50">
+        <div class="p-8 flex items-center gap-3">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="text-white w-5 h-5"></i></div>
+            <span class="font-black text-xl tracking-tight">QNA <span class="text-blue-500">COPA</span></span>
+        </div>
+        <div class="flex-1 px-4 space-y-2 mt-4">
+            <a href="admin-dashboard.html" class="sidebar-item active flex items-center gap-3 p-4 rounded-xl font-bold transition-all">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+            </a>
+            <a href="admin-tests.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+                <i data-lucide="file-text" class="w-5 h-5"></i> Test Manager
+            </a>
+            <a href="admin-students.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+                <i data-lucide="users" class="w-5 h-5"></i> Student List
+            </a>
+        </div>
+        <div class="p-6 mt-auto">
+            <button onclick="logout()" class="w-full flex items-center gap-3 p-4 rounded-xl text-red-400 font-bold hover:bg-red-500/10 transition-all">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Logout
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto p-10 scrollbar-hide">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight">Console Overview</h1>
+                <p class="text-slate-400 font-medium">Real-time system metrics and student telemetry.</p>
+            </div>
+            <div class="flex items-center gap-4 bg-slate-800/50 p-2 rounded-2xl border border-white/5">
+                <div class="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center text-blue-500">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+                <div class="pr-4">
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest">Operator</p>
+                    <p class="text-sm font-bold">Admin_ITI</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-4 gap-6 mb-10">
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Registered Students</p>
+                <div class="flex items-end justify-between">
+                    <span id="stat-students" class="text-3xl font-black">0</span>
+                    <i data-lucide="users-2" class="w-8 h-8 text-blue-500/20"></i>
+                </div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Live Exam Sessions</p>
+                <div class="flex items-end justify-between">
+                    <span id="stat-live" class="text-3xl font-black text-blue-500">0</span>
+                    <i data-lucide="activity" class="w-8 h-8 text-blue-500 animate-pulse"></i>
+                </div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Questions</p>
+                <div class="flex items-end justify-between">
+                    <span id="stat-questions" class="text-3xl font-black">0</span>
+                    <i data-lucide="database" class="w-8 h-8 text-slate-500/20"></i>
+                </div>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Security Alerts</p>
+                <div class="flex items-end justify-between">
+                    <span id="stat-alerts" class="text-3xl font-black text-red-500">0</span>
+                    <i data-lucide="shield-alert" class="w-8 h-8 text-red-500/20"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-8">
+            <!-- Analytics -->
+            <div class="col-span-2 space-y-8">
+                <div class="glass-card p-8 rounded-[2rem]">
+                    <h3 class="font-bold mb-6 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-blue-500"></i> Performance Trends</h3>
+                    <canvas id="trendsChart" height="120"></canvas>
+                </div>
+                
+                <!-- Live Monitor (Mixed Grid) -->
+                <div class="glass-card p-8 rounded-[2rem]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold">Live Proctoring Grid</h3>
+                        <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest animate-pulse">Scanning Active...</span>
+                    </div>
+                    <div id="live-grid" class="grid grid-cols-3 gap-4">
+                        <div class="col-span-full py-20 text-center text-slate-500 italic">No active sessions found.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Feed -->
+            <div class="space-y-6">
+                <div class="glass-card p-8 rounded-[2rem] flex-1">
+                    <h3 class="font-bold mb-6">Recent Deployments</h3>
+                    <div id="recent-tests" class="space-y-4">
+                        <div class="p-4 bg-white/5 rounded-2xl animate-pulse h-16"></div>
+                        <div class="p-4 bg-white/5 rounded-2xl animate-pulse h-16"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="../questions.js"></script>
+    <script src="shared.js"></script>
+    <script src="admin-core.js"></script>
+    <script>
+        lucide.createIcons();
+        initDashboard();
+    </script>
+</body>
+</html>

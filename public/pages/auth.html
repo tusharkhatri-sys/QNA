@@ -3,70 +3,489 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Login | QNA Platform</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css?v=2">
+    <title>QNA Copa — Secure Exam Platform</title>
+    <meta name="description" content="Download QNA Copa Safe Browser for secure online examinations. Login with your student credentials.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; scroll-behavior: smooth; }
+
         body {
-            background: var(--bg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-            overflow: hidden;
-            font-family: 'Outfit', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
         }
-        .auth-container {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            padding: 50px;
-            border-radius: var(--radius-lg);
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
-            box-shadow: var(--shadow-glow);
+
+        /* ===== ANIMATED BACKGROUND ===== */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+            animation: orbFloat 20s ease-in-out infinite alternate;
+        }
+        .bg-orb-1 {
+            width: 500px; height: 500px;
+            background: rgba(99, 102, 241, 0.12);
+            top: -150px; right: -100px;
+        }
+        .bg-orb-2 {
+            width: 400px; height: 400px;
+            background: rgba(59, 130, 246, 0.08);
+            bottom: -120px; left: -80px;
+            animation-delay: -7s;
+        }
+        .bg-orb-3 {
+            width: 300px; height: 300px;
+            background: rgba(139, 92, 246, 0.06);
+            top: 40%; left: 50%;
+            animation-delay: -14s;
+        }
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(40px, 30px) scale(1.15); }
+        }
+
+        /* Subtle grid overlay */
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== MAIN CARD ===== */
+        .main-card {
             position: relative;
             z-index: 10;
+            width: 100%;
+            max-width: 480px;
+            margin: 20px;
+            animation: cardSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes cardSlideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(24px) saturate(1.5);
+            -webkit-backdrop-filter: blur(24px) saturate(1.5);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 24px;
+            padding: 44px 40px;
+            box-shadow: 
+                0 25px 60px -12px rgba(0, 0, 0, 0.5),
+                0 0 1px rgba(148, 163, 184, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* ===== BRAND HEADER ===== */
+        .brand-logo {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.6rem;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35); }
+            50% { box-shadow: 0 10px 40px rgba(99, 102, 241, 0.5); }
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.3px;
+        }
+        .page-subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.92rem;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        /* ===== DOWNLOAD SECTION ===== */
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .alert-banner {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.18);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+        }
+        .alert-banner svg { flex-shrink: 0; color: #f59e0b; margin-top: 1px; }
+        .alert-banner p { font-size: 0.82rem; color: #fbbf24; line-height: 1.5; font-weight: 500; }
+
+        /* Download Button */
+        .download-btn {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .download-btn::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        .download-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 14px 40px rgba(99, 102, 241, 0.55);
+        }
+        .download-btn:hover::before { opacity: 1; }
+        .download-btn:active { transform: scale(0.98); }
+        .download-btn svg { flex-shrink: 0; }
+
+        .download-meta {
+            display: flex; justify-content: center; gap: 16px;
+            margin-top: 14px;
+            font-size: 0.73rem;
+            color: #64748b;
+            letter-spacing: 0.2px;
+        }
+        .download-meta span {
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        /* Steps Section */
+        .steps-box {
+            margin-top: 28px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            border-radius: 16px;
+            padding: 22px 20px;
+        }
+        .steps-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+        }
+        .step {
+            display: flex; align-items: flex-start; gap: 14px;
+            padding: 10px 0;
+        }
+        .step + .step { border-top: 1px solid rgba(148, 163, 184, 0.06); }
+        .step-badge {
+            min-width: 30px; height: 30px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; font-weight: 800;
+            color: #818cf8;
+            flex-shrink: 0;
+        }
+        .step-text { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; padding-top: 4px; }
+        .step-text strong { color: #cbd5e1; }
+
+        /* ===== LOGIN SECTION ===== */
+        .conn-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 16px;
+            background: rgba(16, 185, 129, 0.08);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 100px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #34d399;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+        .conn-badge .dot {
+            width: 7px; height: 7px;
+            background: #34d399;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #34d399;
+            animation: dotBlink 1.8s infinite;
+        }
+        @keyframes dotBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        /* Form Inputs */
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 12px;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+        .form-input::placeholder { color: #475569; }
+        .form-input:focus {
+            border-color: #6366f1;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.98rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
+            margin-top: 6px;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5);
+        }
+        .submit-btn:active { transform: scale(0.98); }
+        .submit-btn:disabled {
+            opacity: 0.6; cursor: not-allowed;
+            transform: none; box-shadow: none;
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.88rem;
+            color: #64748b;
+        }
+        .auth-toggle a {
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+        .auth-toggle a:hover { color: #a5b4fc; }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            margin-bottom: 18px;
+            display: none;
+            text-align: left;
+        }
+
+        /* Exit Button */
+        .exit-btn {
+            width: 100%;
+            margin-top: 14px;
+            padding: 11px;
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 10px;
+            color: #f87171;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: none;
+        }
+        .exit-btn:hover {
+            background: rgba(239, 68, 68, 0.08);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* ===== ADMIN LINK ===== */
+        .admin-link {
+            position: fixed;
+            bottom: 14px; right: 18px;
+            font-size: 0.7rem;
+            color: #334155;
+            text-decoration: none;
+            z-index: 100;
+            transition: color 0.3s;
+            letter-spacing: 0.3px;
+        }
+        .admin-link:hover { color: #818cf8; }
+
+        /* ===== FOOTER TEXT ===== */
+        .footer-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.72rem;
+            color: #334155;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 520px) {
+            .glass-card { padding: 32px 24px; border-radius: 20px; }
+            .page-title { font-size: 1.4rem; }
+            .download-meta { flex-direction: column; gap: 4px; align-items: center; }
+            .main-card { margin: 12px; }
         }
     </style>
 </head>
 <body>
-    <div class="bg-glow bg-glow-1"></div>
-    <div class="bg-glow bg-glow-2"></div>
-    <div class="bg-glow bg-glow-3"></div>
 
-    <div class="auth-container">
-        <a href="landing.html" style="position: absolute; top: 20px; left: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem;">← Back</a>
-        
-        <div style="font-size: 3rem; margin-bottom: 20px;">🎓</div>
-        <h2 id="auth-title" style="font-size: 2rem; margin-bottom: 10px; color: var(--text);">Student Login</h2>
-        <p id="auth-subtitle" style="color: var(--text-muted); margin-bottom: 30px;">Login to access your dashboard</p>
-        
-        <div id="auth-error-msg" style="color: var(--red); background: var(--red-bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px; display: none; font-size: 0.9rem;"></div>
-        
-        <div id="auth-name-group" class="form-group" style="text-align: left; display: none;">
-            <label>Full Name</label>
-            <input type="text" id="auth-name" class="modern-input" placeholder="e.g. Rahul Kumar">
+    <!-- Animated Background Orbs -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="main-card">
+        <div class="glass-card">
+
+            <!-- Brand -->
+            <div class="brand-logo">📝</div>
+
+            <!-- ============================================ -->
+            <!-- STATE 1: DOWNLOAD PAGE (Normal Browser)       -->
+            <!-- ============================================ -->
+            <div class="section" id="download-section">
+                <h1 class="page-title">QNA Copa Safe Browser</h1>
+                <p class="page-subtitle">Secure exam environment required. Download the official app to take your exam.</p>
+
+                <div class="alert-banner">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <p>Exams cannot be taken in a regular browser. Install QNA Copa Safe Browser to continue.</p>
+                </div>
+
+                <!-- ======= DOWNLOAD BUTTON ======= -->
+                <!-- UPDATE THIS href WITH YOUR ACTUAL GITHUB RELEASE URL -->
+                <a href="#" id="download-exe-btn" class="download-btn" onclick="handleDownload(event)">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.45H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.45L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+                    Download for Windows (.exe)
+                </a>
+
+                <div class="download-meta">
+                    <span>📦 ~82 MB</span>
+                    <span>🖥️ Windows 10 / 11</span>
+                    <span>🔒 Kiosk Mode</span>
+                </div>
+
+                <div class="steps-box">
+                    <div class="steps-title">How to get started</div>
+                    <div class="step">
+                        <div class="step-badge">1</div>
+                        <div class="step-text">Click <strong>Download</strong> above to get the installer</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-badge">2</div>
+                        <div class="step-text">Run the <strong>.exe</strong> file — it creates a desktop shortcut</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-badge">3</div>
+                        <div class="step-text">Open <strong>"QNA Safe Browser"</strong> from your desktop</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-badge">4</div>
+                        <div class="step-text">Login with your credentials and <strong>start your exam</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- STATE 2: LOGIN / REGISTER (Safe Browser)      -->
+            <!-- ============================================ -->
+            <div class="section" id="login-section">
+                <div style="text-align: center;">
+                    <div class="conn-badge"><span class="dot"></span> Safe Browser Connected</div>
+                </div>
+                <h1 class="page-title" id="auth-title">Student Login</h1>
+                <p class="page-subtitle" id="auth-subtitle">Login to access your exam dashboard</p>
+
+                <div class="error-msg" id="auth-error-msg"></div>
+
+                <div class="form-group" id="auth-name-group" style="display: none;">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="auth-name" class="form-input" placeholder="e.g. Rahul Kumar">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="auth-email" class="form-input" placeholder="student@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="auth-password" class="form-input" placeholder="••••••••">
+                </div>
+
+                <button class="submit-btn" id="auth-submit-btn" onclick="submitAuth()">Login</button>
+
+                <div class="auth-toggle">
+                    <span id="auth-toggle-text">Don't have an account?</span>
+                    <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-btn">Register</a>
+                </div>
+
+                <!-- Exit App (Safe Browser only) -->
+                <button class="exit-btn" id="exit-app-btn" onclick="exitSafeBrowser()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 4px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Exit Safe Browser
+                </button>
+            </div>
+
         </div>
-        
-        <div class="form-group" style="text-align: left;">
-            <label>Email Address</label>
-            <input type="email" id="auth-email" class="modern-input" placeholder="student@example.com">
-        </div>
-        
-        <div class="form-group" style="text-align: left;">
-            <label>Password</label>
-            <input type="password" id="auth-password" class="modern-input" placeholder="••••••••">
-        </div>
-        
-        <button class="btn btn-primary" id="auth-submit-btn" style="width: 100%; margin-top: 10px; justify-content: center;" onclick="submitAuth()">Login</button>
-        
-        <div style="margin-top: 24px; font-size: 0.95rem; color: var(--text-secondary);">
-            <span id="auth-toggle-text">Don't have an account?</span> 
-            <a href="javascript:void(0)" onclick="toggleAuthMode()" id="auth-toggle-btn" style="color: var(--accent); text-decoration: none; font-weight: 600;">Register</a>
-        </div>
+        <div class="footer-text">© 2026 QNA Copa — Secure Examination Platform</div>
     </div>
+
+    <!-- Hidden Admin Access -->
+    <a href="admin-login.html" class="admin-link" title="Admin Console">⚙ Admin</a>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="shared.js"></script>
