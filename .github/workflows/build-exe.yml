@@ -11,16 +11,10 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: Install Wine
-      run: |
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends wine64 wine32
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -33,9 +27,9 @@ jobs:
       working-directory: ./lockdown-browser
       run: npm install
 
-    - name: Build Electron App
+    - name: Build Electron App for Windows
       working-directory: ./lockdown-browser
-      run: npm run build
+      run: npx electron-builder --win --x64
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         CSC_IDENTITY_AUTO_DISCOVERY: false
