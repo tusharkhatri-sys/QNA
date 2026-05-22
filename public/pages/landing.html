@@ -224,8 +224,7 @@
         (function () {
             var SAFE_BROWSER_UA = 'QnaCopa-Safe-Browser-v1';
             var ua = navigator.userAgent || '';
-            // For testing: Temporarily making it true so you can see the logout button in normal browser
-            var isSafeBrowser = true; // ua.indexOf(SAFE_BROWSER_UA) !== -1;
+            var isSafeBrowser = ua.indexOf(SAFE_BROWSER_UA) !== -1;
 
             if (isSafeBrowser) {
                 var exitBtn = document.getElementById('exit-btn');
