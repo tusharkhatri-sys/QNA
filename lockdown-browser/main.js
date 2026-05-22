@@ -12,14 +12,17 @@ const path = require('path');
 // Without the flag, full lockdown/kiosk mode is active.
 const DEV_MODE = process.argv.includes('--dev');
 
-// ─── CONFIGURATION ──────────────────────────────────────────
-// Change this URL to your deployed website URL
+// ─── CONFIGURATION ───────────────────────────────────────────────
 const EXAM_URL = 'https://qnacopa.vercel.app/pages/auth.html';
+const ADMIN_DASHBOARD_URL = 'https://qnacopa.vercel.app/pages/admin-login.html';
 const CUSTOM_USER_AGENT = 'QnaCopa-Safe-Browser-v1';
 const APP_TITLE = 'QNA Safe Browser';
 
-// URLs where Exit button is allowed (landing + login/register pages only)
-const ALLOWED_EXIT_PATHS = ['/pages/landing.html', '/pages/auth.html', '/auth.html', '/landing.html'];
+// Paths where the user is allowed to completely close the safe browser
+const ALLOWED_EXIT_PATHS = [
+    '/pages/landing.html', '/pages/auth.html', '/auth.html', '/landing.html',
+    '/pages/landing', '/pages/auth', '/auth', '/landing'
+];
 
 // ─── AUTO-UPDATER (Ready to enable) ─────────────────────────
 // Uncomment the lines below when you set up GitHub Releases:
