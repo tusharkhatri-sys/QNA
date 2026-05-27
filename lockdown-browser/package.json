@@ -48,8 +48,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "YOUR_GITHUB_USERNAME",
-        "repo": "qna-safe-browser"
+        "owner": "tusharkhatri-sys",
+        "repo": "QNA"
       }
     ],
     "files": [

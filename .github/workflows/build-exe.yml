@@ -34,11 +34,4 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         CSC_IDENTITY_AUTO_DISCOVERY: false
 
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: lockdown-browser/dist/*.exe
-        name: QNA Safe Browser Release ${{ github.ref_name }}
-        tag_name: ${{ github.ref_name }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
