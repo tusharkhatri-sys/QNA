@@ -48,7 +48,7 @@ function initLiveTest() {
         if (timeRemaining <= 0) {
             clearInterval(liveTestTimer);
             alert("Time's up! Your test will be auto-submitted.");
-            submitQuiz();
+            submitQuiz(true);
         }
     }, 1000);
 
@@ -73,13 +73,13 @@ function initLiveTest() {
                 if (msg) msg.remove();
             } else if (data.isActive === 'stopped' || data.isActive === false) {
                 alert('Test was closed by admin. Submitting your current progress...');
-                submitQuiz(); 
+                submitQuiz(true); 
             }
             
             const emailKey = student ? student.email : studentName;
             if (data.forceClosedStudents && data.forceClosedStudents.includes(emailKey)) {
                 alert('Admin has force closed your session.');
-                submitQuiz();
+                submitQuiz(true);
             }
         }).subscribe();
         
@@ -89,6 +89,9 @@ function initLiveTest() {
 
 function initPracticeMode() {
     document.getElementById('quiz-timer').style.display = 'none';
+    const endBtn = document.getElementById('end-practice-btn');
+    if(endBtn) endBtn.style.display = 'block';
+    
     currentQuiz = [];
     QUESTIONS_DATA.forEach(t => currentQuiz = currentQuiz.concat(t.questions));
     
@@ -195,11 +198,27 @@ async function reportLiveProgress() {
     } catch(e) {}
 }
 
-async function submitQuiz() {
+function confirmEarlySubmit() {
+    const answered = Object.keys(userAnswers).length;
+    if (confirm(`You have attempted ${answered} out of ${currentQuiz.length} questions. Are you sure you want to end practice early?`)) {
+        submitQuiz(true);
+    }
+}
+
+async function submitQuiz(force = false) {
+    if (testData && !force) {
+        const answered = Object.keys(userAnswers).length;
+        if (answered < currentQuiz.length) {
+            alert(`Please answer all questions before submitting. You have answered ${answered} out of ${currentQuiz.length}.`);
+            return;
+        }
+    }
+
     if (liveTestTimer) clearInterval(liveTestTimer);
     if (window.studentRealtimeSub) supabaseClient.removeChannel(window.studentRealtimeSub);
     
     score = 0;
+    const attempted = Object.keys(userAnswers).length;
     currentQuiz.forEach((q, idx) => {
         if (userAnswers[idx] === q.a) score++;
     });
@@ -227,10 +246,18 @@ async function submitQuiz() {
     }
     
     // Save results to local storage to show in results screen
-    localStorage.setItem('lastQuizResults', JSON.stringify({ score, total: currentQuiz.length }));
+    const incorrect = attempted - score;
+    localStorage.setItem('lastQuizResults', JSON.stringify({ 
+        score, 
+        attempted,
+        incorrect,
+        total: currentQuiz.length,
+        isPractice: !testData
+    }));
+    
     localStorage.removeItem('activeTest');
     localStorage.removeItem('activeTestStudentName');
-    window.location.href = 'student.html'; // Or results.html if implemented
+    window.location.href = 'student.html';
 }
 
 initQuiz();

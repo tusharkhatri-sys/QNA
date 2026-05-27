@@ -10,6 +10,24 @@ if (!student) {
     
     document.getElementById('student-name-input').value = student.name;
 }
+    
+const lastResults = localStorage.getItem('lastQuizResults');
+if (lastResults) {
+    try {
+        const res = JSON.parse(lastResults);
+        const scoreText = document.getElementById('result-score-text');
+        if (scoreText) {
+            scoreText.textContent = `${res.score} / ${res.total}`;
+            document.getElementById('result-attempted').textContent = res.attempted;
+            document.getElementById('result-total').textContent = res.total;
+            document.getElementById('result-correct').textContent = res.score;
+            document.getElementById('result-incorrect').textContent = res.incorrect;
+            
+            document.getElementById('results-modal').style.display = 'flex';
+        }
+    } catch(e) {}
+    localStorage.removeItem('lastQuizResults');
+}
 
 function logout() {
     localStorage.removeItem('loggedInStudent');

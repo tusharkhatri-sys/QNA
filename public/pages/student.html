@@ -145,6 +145,34 @@
         </div>
     </div>
 
+    <div id="results-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-card); padding: 30px; border-radius: 20px; border: 1px solid var(--border); width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+            <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 20px;">Assessment Complete</h2>
+            <div style="font-size: 3rem; font-weight: 800; color: var(--green); margin-bottom: 20px;" id="result-score-text">0 / 0</div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;">
+                    <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Attempted</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;" id="result-attempted">0</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;">
+                    <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px;">Total</div>
+                    <div style="font-size: 1.5rem; font-weight: 700;" id="result-total">0</div>
+                </div>
+                <div style="background: rgba(16,185,129,0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(16,185,129,0.2);">
+                    <div style="font-size: 0.9rem; color: var(--green); margin-bottom: 5px;">Correct</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--green);" id="result-correct">0</div>
+                </div>
+                <div style="background: rgba(239,68,68,0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(239,68,68,0.2);">
+                    <div style="font-size: 0.9rem; color: var(--red); margin-bottom: 5px;">Incorrect</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: var(--red);" id="result-incorrect">0</div>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="document.getElementById('results-modal').style.display='none'">Continue to Dashboard</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../questions.js"></script>
     <script src="shared.js"></script>

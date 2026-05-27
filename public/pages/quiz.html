@@ -167,7 +167,10 @@
             <div>
                 <h2 id="quiz-topic-name" style="font-size: 1.4rem; font-weight: 700;">Loading Assessment...</h2>
             </div>
-            <div id="quiz-timer" class="timer-badge">⏱️ 00:00</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div id="quiz-timer" class="timer-badge">⏱️ 00:00</div>
+                <button id="end-practice-btn" class="btn btn-outline" style="display: none; padding: 6px 12px; font-size: 0.9rem;" onclick="confirmEarlySubmit()">End Practice</button>
+            </div>
         </header>
 
         <div class="quiz-container">
