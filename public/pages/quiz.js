@@ -126,9 +126,24 @@ function initPracticeMode() {
     if(endBtn) endBtn.style.display = 'block';
     
     currentQuiz = [];
-    QUESTIONS_DATA.forEach(t => currentQuiz = currentQuiz.concat(t.questions));
+    const mode = localStorage.getItem('practiceMode');
     
-    if(localStorage.getItem('practiceMode') === 'random') {
+    if (mode === 'topic') {
+        const selectedTopic = localStorage.getItem('practiceTopic');
+        const tObj = QUESTIONS_DATA.find(t => t.topic === selectedTopic);
+        if (tObj) {
+            let pool = [...tObj.questions];
+            // Shuffle
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            // Limit to 50 questions for topic practice
+            currentQuiz = pool.slice(0, 50);
+        }
+    } else {
+        // Full Mock
+        QUESTIONS_DATA.forEach(t => currentQuiz = currentQuiz.concat(t.questions));
         for (let i = currentQuiz.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [currentQuiz[i], currentQuiz[j]] = [currentQuiz[j], currentQuiz[i]];

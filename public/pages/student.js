@@ -16,15 +16,17 @@ if (lastResults) {
     try {
         const res = JSON.parse(lastResults);
         
-        // Save to history
-        let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
-        history.push({
-            date: new Date().toISOString(),
-            score: res.score,
-            total: res.total,
-            percent: Math.round((res.score / res.total) * 100)
-        });
-        localStorage.setItem('studentTestHistory', JSON.stringify(history));
+        // Save to history only if it's an admin live test
+        if (!res.isPractice) {
+            let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+            history.push({
+                date: new Date().toISOString(),
+                score: res.score,
+                total: res.total,
+                percent: Math.round((res.score / res.total) * 100)
+            });
+            localStorage.setItem('studentTestHistory', JSON.stringify(history));
+        }
 
         const scoreText = document.getElementById('result-score-text');
         if (scoreText) {
@@ -154,6 +156,32 @@ async function joinLiveTest() {
 }
 
 function startLocalPractice(mode) {
+    if (mode === 'topic') {
+        let options = QUESTIONS_DATA.map(t => `<button class="btn btn-secondary" style="margin-bottom:10px; width:100%; text-align:left;" onclick="launchTopicPractice('${t.topic}')">${t.topic} (${t.questions.length} Qs)</button>`).join('');
+        
+        let modal = document.createElement('div');
+        modal.id = 'topic-select-modal';
+        modal.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;";
+        modal.innerHTML = `
+            <div style="background:var(--bg-card); padding:30px; border-radius:20px; border:1px solid var(--border); width:100%; max-width:400px; max-height:80vh; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="font-size:1.2rem; font-weight:700;">Select a Topic</h3>
+                    <button onclick="document.getElementById('topic-select-modal').remove()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.5rem;">&times;</button>
+                </div>
+                <div style="overflow-y:auto; flex-1; padding-right:10px;">
+                    ${options}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return;
+    }
     localStorage.setItem('practiceMode', mode);
+    window.location.href = 'quiz.html';
+}
+
+function launchTopicPractice(topic) {
+    localStorage.setItem('practiceMode', 'topic');
+    localStorage.setItem('practiceTopic', topic);
     window.location.href = 'quiz.html';
 }
