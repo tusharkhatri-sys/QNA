@@ -135,12 +135,11 @@ async function submitAuth() {
 
 // ─── EXIT SAFE BROWSER ─────────────────────────────────────
 function exitSafeBrowser() {
-    // Electron IPC bridge (set up via preload.js)
-    if (window.qnaBrowser && typeof window.qnaBrowser.closeApp === 'function') {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+        window.Capacitor.Plugins.App.exitApp();
+    } else if (window.qnaBrowser && typeof window.qnaBrowser.closeApp === 'function') {
         window.qnaBrowser.closeApp();
-        return;
+    } else {
+        alert("This feature only works in the QNA Safe Browser.");
     }
-
-    // Fallback
-    window.close();
 }

@@ -1,0 +1,16 @@
+{
+  "appId": "com.qna.safebrowser",
+  "appName": "QNA Exam Browser",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://qnacopa.vercel.app/pages/auth.html",
+    "cleartext": true
+  },
+  "plugins": {
+    "PrivacyScreen": {
+      "enable": true,
+      "imageName": "Splashscreen"
+    }
+  }
+}
