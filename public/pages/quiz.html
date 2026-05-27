@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Live Assessment | QNA Platform</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../style.css?v=2">
+    <link rel="stylesheet" href="../style.css?v=3">
     <style>
         body {
             background: var(--bg);
@@ -121,6 +121,40 @@
             align-items: center;
             padding-top: 30px;
             border-top: 1px solid var(--border);
+        }
+        @media (max-width: 640px) {
+            .quiz-container {
+                margin: 20px auto;
+                padding: 24px 20px;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            .quiz-topbar {
+                padding: 16px 20px;
+            }
+            .question-text {
+                font-size: 1.3rem;
+            }
+            .question-text-hi {
+                font-size: 1.1rem;
+                margin-bottom: 24px;
+            }
+            .option-card {
+                padding: 16px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .quiz-footer {
+                padding-top: 20px;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
