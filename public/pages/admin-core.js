@@ -42,12 +42,27 @@ async function initDashboard() {
 
         if (tests) {
             let liveCount = 0;
+            activeProctoring = {};
             tests.forEach(t => {
                 if (t.data && t.data.liveStudents) {
-                    liveCount += Object.keys(t.data.liveStudents).length;
+                    const keys = Object.keys(t.data.liveStudents);
+                    liveCount += keys.length;
+                    keys.forEach(emailKey => {
+                        const s = t.data.liveStudents[emailKey];
+                        activeProctoring[emailKey] = {
+                            name: s.name || 'Unknown',
+                            email: emailKey,
+                            testCode: t.code,
+                            answered: s.answered,
+                            total: s.total,
+                            progress: `${s.answered}/${s.total}`,
+                            isMinimized: false
+                        };
+                    });
                 }
             });
             document.getElementById('stat-live').textContent = liveCount;
+            renderLiveGrid();
 
             // Populate Recent Feed
             const feed = document.getElementById('recent-tests');
@@ -98,20 +113,29 @@ async function initDashboard() {
     window.adminDashboardSub = supabaseClient.channel('admin_dashboard_realtime')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests' }, payload => {
             const data = payload.new.data;
+            const tCode = payload.new.code;
+            
+            Object.keys(activeProctoring).forEach(k => {
+                if (activeProctoring[k].testCode === tCode) delete activeProctoring[k];
+            });
+            
             if (data && data.liveStudents) {
-                Object.values(data.liveStudents).forEach(s => {
-                    activeProctoring[s.studentEmail || s.studentName] = {
-                        name: s.studentName,
-                        email: s.studentEmail,
-                        testCode: payload.new.code,
+                Object.keys(data.liveStudents).forEach(emailKey => {
+                    const s = data.liveStudents[emailKey];
+                    activeProctoring[emailKey] = {
+                        name: s.name || 'Unknown',
+                        email: emailKey,
+                        testCode: tCode,
                         answered: s.answered,
                         total: s.total,
                         progress: `${s.answered}/${s.total}`,
                         isMinimized: false
                     };
                 });
-                renderLiveGrid();
             }
+            
+            document.getElementById('stat-live').textContent = Object.keys(activeProctoring).length;
+            renderLiveGrid();
         }).subscribe();
 }
 
