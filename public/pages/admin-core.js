@@ -306,10 +306,10 @@ async function viewResults(code) {
                 return;
             }
 
-            // Sort by score descending
             students.sort((a, b) => b.score - a.score);
+            window.currentTestStudents = students;
 
-            document.getElementById('results-table-body').innerHTML = students.map(s => `
+            document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
                 <tr class="group hover:bg-white/[0.02] transition-all">
                     <td class="py-4 border-b border-white/5">
                         <p class="font-bold text-white">${escapeHTML(s.studentName || 'Unknown')}</p>
@@ -317,15 +317,53 @@ async function viewResults(code) {
                     <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
                     <td class="py-4 border-b border-white/5 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-green-500' : 'text-red-500'}">${s.score} / ${s.total}</td>
                     <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${new Date(s.submittedAt).toLocaleString()}</td>
+                    <td class="py-4 border-b border-white/5 text-right">
+                        ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-3 py-1 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/40 border border-blue-500/20 transition-all">Details</button>` : `<span class="text-xs text-slate-500">N/A</span>`}
+                    </td>
                 </tr>
             `).join('');
+            lucide.createIcons();
         } else {
-            document.getElementById('results-table-body').innerHTML = '<tr><td colspan="4" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
+            document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
         }
     } catch (err) {
-        console.error('Error fetching results:', err);
-        document.getElementById('results-table-body').innerHTML = '<tr><td colspan="4" class="py-10 text-center text-red-500">Failed to load results.</td></tr>';
+        console.error('Results fetch error:', err);
+        document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-red-500 italic">Error loading results.</td></tr>';
     }
+}
+
+function viewDetailedResults(studentIndex) {
+    if (!window.currentTestStudents) return;
+    const s = window.currentTestStudents[studentIndex];
+    if (!s || !s.detailedResults) return;
+
+    document.getElementById('detailed-student-name').textContent = s.studentName || 'Unknown';
+    document.getElementById('detailed-student-score').textContent = `Score: ${s.score} / ${s.total} | Submitted: ${new Date(s.submittedAt).toLocaleString()}`;
+    
+    const list = document.getElementById('detailed-questions-list');
+    list.innerHTML = s.detailedResults.map((dr, qIdx) => {
+        const isCorrect = dr.studentAnswerIndex === dr.correctAnswerIndex;
+        let optionsHtml = dr.options.map((opt, oIdx) => {
+            let className = "p-2 rounded mt-1 text-sm ";
+            if (oIdx === dr.correctAnswerIndex) className += "bg-green-500/20 text-green-400 border border-green-500/30 font-bold";
+            else if (oIdx === dr.studentAnswerIndex) className += "bg-red-500/20 text-red-400 border border-red-500/30";
+            else className += "bg-slate-800/50 text-slate-400 border border-white/5";
+            
+            return `<div class="${className}">${String.fromCharCode(65+oIdx)}. ${escapeHTML(opt)}</div>`;
+        }).join('');
+        
+        return `
+            <div class="p-4 rounded-xl border ${isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}">
+                <p class="font-bold text-sm mb-2">Q${qIdx+1}: ${escapeHTML(dr.questionText)}</p>
+                <div class="space-y-1">
+                    ${optionsHtml}
+                </div>
+                ${dr.studentAnswerIndex === null ? '<p class="text-xs text-red-500 mt-2 font-bold">Unanswered</p>' : ''}
+            </div>
+        `;
+    }).join('');
+    
+    openModal('detailed-results-modal');
 }
 
 function renderStep() {
