@@ -98,21 +98,42 @@
                 
                 <h2 class="text-2xl font-black mb-2" id="results-title">Test Results</h2>
                 <p class="text-slate-400 mb-8 text-sm" id="results-subtitle">Loading...</p>
-
-                <div class="overflow-y-auto flex-1 pr-2">
-                    <table class="w-full text-left border-collapse">
+                
+                <div class="overflow-y-auto flex-1 pr-4">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-white/5 text-xs font-black text-slate-500 uppercase tracking-widest">
-                                <th class="pb-4">Student</th>
-                                <th class="pb-4">Email</th>
-                                <th class="pb-4">Score</th>
-                                <th class="pb-4 text-right">Submitted At</th>
+                            <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                                <th class="py-4">Student Name</th>
+                                <th>Roll No</th>
+                                <th>Score</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody id="results-table-body">
-                            <!-- Populated dynamically -->
-                        </tbody>
+                        <tbody id="results-table-body" class="divide-y divide-white/5"></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Select Modal -->
+        <div id="manual-select-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[120] flex items-center justify-center p-6">
+            <div class="glass-card w-full max-w-5xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
+                <button onclick="closeModal('manual-select-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+                
+                <h2 class="text-2xl font-black mb-2">Select Questions</h2>
+                <p class="text-slate-400 mb-6 text-sm" id="manual-select-topic">Topic Name</p>
+                
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="selectAllManual()" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded hover:bg-slate-700">Select All</button>
+                    <span class="text-sm font-bold text-blue-400" id="manual-selected-count">0 Selected</span>
+                </div>
+                
+                <div id="manual-questions-list" class="overflow-y-auto flex-1 pr-4 space-y-3 mb-6">
+                    <!-- QnAs -->
+                </div>
+                
+                <div class="flex justify-end mt-4">
+                    <button onclick="saveManualSelection()" class="bg-blue-600 px-8 py-3 rounded-2xl font-bold">Save Selection</button>
                 </div>
             </div>
         </div>

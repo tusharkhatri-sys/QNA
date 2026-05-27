@@ -36,15 +36,21 @@ function initLiveTest() {
         currentQuiz = allPool.slice(0, testData.randomTotal || 50);
     } else {
         const config = testData.topicConfig || {};
-        for (const [topicName, count] of Object.entries(config)) {
+        for (const [topicName, val] of Object.entries(config)) {
             const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
             if (tObj) {
-                let pool = [...tObj.questions];
-                for (let i = pool.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                if (typeof val === 'object' && val.mode === 'manual') {
+                    let selectedQuestions = val.indices.map(i => tObj.questions[i]).filter(q => q);
+                    currentQuiz = currentQuiz.concat(selectedQuestions);
+                } else {
+                    const count = typeof val === 'number' ? val : 0;
+                    let pool = [...tObj.questions];
+                    for (let i = pool.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [pool[i], pool[j]] = [pool[j], pool[i]];
+                    }
+                    currentQuiz = currentQuiz.concat(pool.slice(0, count));
                 }
-                currentQuiz = currentQuiz.concat(pool.slice(0, count));
             }
         }
         for (let i = currentQuiz.length - 1; i > 0; i--) {

@@ -339,15 +339,19 @@ function renderStep() {
                 </div>
                 <div class="text-center text-xs font-bold text-slate-500 mb-4 tracking-widest uppercase">-- OR PICK BY TOPIC --</div>
                 <div class="flex justify-end mb-2"><button onclick="document.querySelectorAll('.topic-count').forEach(tc => { tc.value = tc.max; document.getElementById('random-total-count').value = ''; })" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer">Select All Max Questions</button></div>
-              ` + QUESTIONS_DATA.map(t => `
-                <div class="topic-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+            ` + QUESTIONS_DATA.map((t, idx) => `
+                <div class="topic-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5" data-topic="${t.topic}">
                     <div class="flex items-center gap-4">
                         <div>
                             <p class="topic-name text-sm font-bold">${t.topic}</p>
                             <p class="text-[10px] text-slate-500">${t.questions.length} Questions Available</p>
                         </div>
                     </div>
-                    <input type="number" placeholder="Pick N" min="0" max="${t.questions.length}" class="topic-count w-20 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-blue-500 outline-none">
+                    <div class="flex items-center gap-2">
+                        <button onclick="openManualSelect(${idx})" class="text-xs font-bold px-3 py-2 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600/30 transition-all border border-blue-500/20">Browse</button>
+                        <input type="number" placeholder="Pick N" min="0" max="${t.questions.length}" class="topic-count w-20 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-blue-500 outline-none">
+                        <input type="hidden" class="topic-manual-data" value="">
+                    </div>
                 </div>
             `).join('')
             : '<p class="text-slate-500 text-center py-8">Question bank not loaded. Please refresh.</p>';
@@ -400,11 +404,20 @@ document.getElementById('next-btn')?.addEventListener('click', async () => {
             rows.forEach(row => {
                 const topicEl = row.querySelector('.topic-name');
                 const numEl = row.querySelector('.topic-count');
+                const manualDataEl = row.querySelector('.topic-manual-data');
+                
                 const topic = topicEl ? topicEl.textContent.trim() : null;
                 const count = numEl ? parseInt(numEl.value || 0) : 0;
-                if (topic && count > 0) {
-                    testConfig.topicConfig[topic] = count;
-                    totalQ += count;
+                const manualData = manualDataEl && manualDataEl.value ? JSON.parse(manualDataEl.value) : null;
+                
+                if (topic) {
+                    if (manualData && manualData.length > 0) {
+                        testConfig.topicConfig[topic] = { mode: 'manual', indices: manualData };
+                        totalQ += manualData.length;
+                    } else if (count > 0) {
+                        testConfig.topicConfig[topic] = count;
+                        totalQ += count;
+                    }
                 }
             });
             
@@ -564,4 +577,76 @@ async function exportStudentsCSV() {
         alert("Failed to export CSV.");
     }
     if (btn) btn.textContent = "Export CSV";
+}
+
+// --- Manual Selection Logic ---
+let currentManualTopicIdx = null;
+
+function openManualSelect(topicIdx) {
+    currentManualTopicIdx = topicIdx;
+    const t = QUESTIONS_DATA[topicIdx];
+    document.getElementById('manual-select-topic').textContent = t.topic;
+    
+    const row = document.querySelector(`.topic-row[data-topic="${t.topic}"]`);
+    const manualInput = row.querySelector('.topic-manual-data');
+    let selectedIndices = [];
+    if (manualInput && manualInput.value) {
+        selectedIndices = JSON.parse(manualInput.value);
+    }
+    
+    let html = '';
+    t.questions.forEach((q, idx) => {
+        const isChecked = selectedIndices.includes(idx) ? 'checked' : '';
+        html += `
+            <div class="flex items-start gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-blue-500/30 transition-all cursor-pointer" onclick="const cb = this.querySelector('input[type=checkbox]'); cb.checked = !cb.checked; updateManualCount();">
+                <input type="checkbox" class="manual-q-cb mt-1 cursor-pointer w-4 h-4 rounded" value="${idx}" ${isChecked} onclick="event.stopPropagation(); updateManualCount();">
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-slate-200 mb-1">${q.q}</p>
+                    ${q.q_hi ? `<p class="text-[10px] text-slate-400 mb-2">${q.q_hi}</p>` : ''}
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        ${q.o.map((opt, oIdx) => `<div class="text-[10px] px-2 py-1 rounded bg-slate-800 ${oIdx === q.a ? 'border border-green-500/50 text-green-400' : 'text-slate-500'}">${opt}</div>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('manual-questions-list').innerHTML = html;
+    updateManualCount();
+    openModal('manual-select-modal');
+}
+
+function updateManualCount() {
+    const count = document.querySelectorAll('.manual-q-cb:checked').length;
+    document.getElementById('manual-selected-count').textContent = count + ' Selected';
+}
+
+function selectAllManual() {
+    const cbs = document.querySelectorAll('.manual-q-cb');
+    const allChecked = Array.from(cbs).every(cb => cb.checked);
+    cbs.forEach(cb => cb.checked = !allChecked);
+    updateManualCount();
+}
+
+function saveManualSelection() {
+    if (currentManualTopicIdx === null) return;
+    const t = QUESTIONS_DATA[currentManualTopicIdx];
+    const selected = Array.from(document.querySelectorAll('.manual-q-cb:checked')).map(cb => parseInt(cb.value));
+    
+    const row = document.querySelector(`.topic-row[data-topic="${t.topic}"]`);
+    const numEl = row.querySelector('.topic-count');
+    const manualInput = row.querySelector('.topic-manual-data');
+    const randomInput = document.getElementById('random-total-count');
+    
+    if (selected.length > 0) {
+        manualInput.value = JSON.stringify(selected);
+        numEl.value = selected.length;
+        numEl.disabled = true;
+        if (randomInput) randomInput.value = '';
+    } else {
+        manualInput.value = "";
+        numEl.disabled = false;
+    }
+    
+    closeModal('manual-select-modal');
 }
