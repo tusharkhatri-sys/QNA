@@ -30,8 +30,15 @@ jobs:
     - name: Build Electron App for Windows
       working-directory: ./lockdown-browser
       run: npx electron-builder --win --x64
+
+    - name: Release EXE
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: lockdown-browser/dist/*.exe
+        name: QNA Safe Browser Release ${{ github.ref_name }}
+        tag_name: ${{ github.ref_name }}
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        CSC_IDENTITY_AUTO_DISCOVERY: false
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
