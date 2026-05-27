@@ -23,22 +23,49 @@ function initQuiz() {
 
 function initLiveTest() {
     document.getElementById('quiz-topic-name').textContent = testData.name || 'Untitled Test';
-    const config = testData.topicConfig || {};
-    for (const [topicName, count] of Object.entries(config)) {
-        const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
-        if (tObj) {
-            let pool = [...tObj.questions];
-            for (let i = pool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pool[i], pool[j]] = [pool[j], pool[i]];
+    
+    if (testData.isRandomMix) {
+        let allPool = [];
+        QUESTIONS_DATA.forEach(tObj => {
+            allPool = allPool.concat(tObj.questions);
+        });
+        for (let i = allPool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allPool[i], allPool[j]] = [allPool[j], allPool[i]];
+        }
+        currentQuiz = allPool.slice(0, testData.randomTotal || 50);
+    } else {
+        const config = testData.topicConfig || {};
+        for (const [topicName, count] of Object.entries(config)) {
+            const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
+            if (tObj) {
+                let pool = [...tObj.questions];
+                for (let i = pool.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [pool[i], pool[j]] = [pool[j], pool[i]];
+                }
+                currentQuiz = currentQuiz.concat(pool.slice(0, count));
             }
-            currentQuiz = currentQuiz.concat(pool.slice(0, count));
+        }
+        for (let i = currentQuiz.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [currentQuiz[i], currentQuiz[j]] = [currentQuiz[j], currentQuiz[i]];
         }
     }
-    for (let i = currentQuiz.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [currentQuiz[i], currentQuiz[j]] = [currentQuiz[j], currentQuiz[i]];
-    }
+    
+    // ANTI-CHEAT: Randomize Option Order for each student
+    currentQuiz = currentQuiz.map(orig => {
+        const q = JSON.parse(JSON.stringify(orig));
+        let opts = q.o.map((text, idx) => ({ text, idx, hiText: q.o_hi ? q.o_hi[idx] : null }));
+        for (let i = opts.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+        q.o = opts.map(o => o.text);
+        if (q.o_hi) q.o_hi = opts.map(o => o.hiText);
+        q.a = opts.findIndex(o => o.idx === orig.a);
+        return q;
+    });
     
     timeRemaining = testData.duration * 60;
     updateTimerDisplay();
@@ -261,3 +288,29 @@ async function submitQuiz(force = false) {
 }
 
 initQuiz();
+
+// --- ANTI-CHEAT SECURITY MODULE ---
+let cheatWarnings = 0;
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && testData) {
+        cheatWarnings++;
+        if (cheatWarnings >= 3) {
+            alert('SECURITY VIOLATION: You switched apps/tabs 3 times. Your test has been auto-submitted.');
+            submitQuiz(true);
+        } else {
+            alert(`WARNING (${cheatWarnings}/3): Do not switch apps or tabs during a live test. Your test will auto-submit after 3 warnings!`);
+        }
+    }
+});
+
+// Prevent copy, paste, and right-click during live test
+document.addEventListener('contextmenu', e => { if (testData) e.preventDefault(); });
+document.addEventListener('copy', e => { if (testData) e.preventDefault(); });
+document.addEventListener('paste', e => { if (testData) e.preventDefault(); });
+document.addEventListener('keydown', e => {
+    if (testData && (e.ctrlKey || e.metaKey)) {
+        if (['c', 'v', 'x', 'p', 's'].includes(e.key.toLowerCase())) {
+            e.preventDefault();
+        }
+    }
+});

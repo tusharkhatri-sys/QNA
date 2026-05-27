@@ -329,8 +329,17 @@ function renderStep() {
         `;
     } else if (currentStep === 2) {
         const topicsHTML = (typeof QUESTIONS_DATA !== 'undefined' && QUESTIONS_DATA.length > 0)
-            ? '<div class="flex justify-end mb-2"><button onclick="document.querySelectorAll(\'.topic-count\').forEach(tc => tc.value = tc.max)" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer">Select All Max Questions</button></div>' + 
-              QUESTIONS_DATA.map(t => `
+            ? `
+                <div class="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl mb-4 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-purple-400">Random Mix from All Topics</h4>
+                        <p class="text-[10px] text-slate-400">Specify total questions to randomly pick across everything.</p>
+                    </div>
+                    <input type="number" id="random-total-count" placeholder="Total Qs" class="w-24 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-purple-500 outline-none">
+                </div>
+                <div class="text-center text-xs font-bold text-slate-500 mb-4 tracking-widest uppercase">-- OR PICK BY TOPIC --</div>
+                <div class="flex justify-end mb-2"><button onclick="document.querySelectorAll('.topic-count').forEach(tc => { tc.value = tc.max; document.getElementById('random-total-count').value = ''; })" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer">Select All Max Questions</button></div>
+              ` + QUESTIONS_DATA.map(t => `
                 <div class="topic-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div class="flex items-center gap-4">
                         <div>
@@ -372,21 +381,38 @@ document.getElementById('next-btn')?.addEventListener('click', async () => {
     if (currentStep === 1) {
         testConfig.name = document.getElementById('t-name').value;
         testConfig.duration = document.getElementById('t-time').value;
+        testConfig.passScore = document.getElementById('t-pass').value;
         currentStep++;
         renderStep();
     } else if (currentStep === 2) {
-        const rows = document.querySelectorAll('#stepper-content .topic-row');
+        const randomInput = document.getElementById('random-total-count');
+        const randomCount = randomInput ? parseInt(randomInput.value) : 0;
         testConfig.topicConfig = {};
-        rows.forEach(row => {
-            if (!row) return;
-            const topicEl = row.querySelector('.topic-name');
-            const numEl = row.querySelector('.topic-count');
-            const topic = topicEl ? topicEl.textContent.trim() : null;
-            const count = parseInt(numEl ? numEl.value : 0);
-            if (topic && count > 0) {
-                testConfig.topicConfig[topic] = count;
+        
+        if (randomCount > 0) {
+            testConfig.isRandomMix = true;
+            testConfig.randomTotal = randomCount;
+        } else {
+            testConfig.isRandomMix = false;
+            testConfig.randomTotal = 0;
+            let totalQ = 0;
+            const rows = document.querySelectorAll('#stepper-content .topic-row');
+            rows.forEach(row => {
+                const topicEl = row.querySelector('.topic-name');
+                const numEl = row.querySelector('.topic-count');
+                const topic = topicEl ? topicEl.textContent.trim() : null;
+                const count = numEl ? parseInt(numEl.value || 0) : 0;
+                if (topic && count > 0) {
+                    testConfig.topicConfig[topic] = count;
+                    totalQ += count;
+                }
+            });
+            
+            if (totalQ === 0) {
+                alert('Please select at least 1 question from topics OR enter a Random Mix Total.');
+                return;
             }
-        });
+        }
         currentStep++;
         renderStep();
     } else {
@@ -402,7 +428,11 @@ document.getElementById('next-btn')?.addEventListener('click', async () => {
                 data: {
                     name: testConfig.name || 'Untitled Test',
                     duration: parseInt(testConfig.duration) || 60,
+                    passScore: parseInt(testConfig.passScore) || 40,
                     topicConfig: testConfig.topicConfig,
+                    isRandomMix: testConfig.isRandomMix,
+                    randomTotal: testConfig.randomTotal,
+                    createdAt: new Date().toISOString(),
                     isActive: 'active',
                     students: [],
                     liveStudents: {}
