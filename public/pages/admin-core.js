@@ -539,3 +539,29 @@ function logout() {
     localStorage.removeItem('admin_auth');
     window.location.href = 'admin-login.html';
 }
+
+async function exportStudentsCSV() {
+    const btn = document.querySelector('button[onclick="exportStudentsCSV()"]');
+    if (btn) btn.textContent = "Exporting...";
+    try {
+        const { data, error } = await supabaseClient.from('students').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        
+        let csv = "Name,Roll No,Trade,Year,Password,Created At\n";
+        data.forEach(s => {
+            csv += `"${s.name}","${s.roll_no}","${s.trade}","${s.year}","${s.plain_password}","${new Date(s.created_at).toLocaleString()}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qna_students_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error("Export failed", e);
+        alert("Failed to export CSV.");
+    }
+    if (btn) btn.textContent = "Export CSV";
+}

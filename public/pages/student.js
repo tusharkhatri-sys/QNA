@@ -15,6 +15,17 @@ const lastResults = localStorage.getItem('lastQuizResults');
 if (lastResults) {
     try {
         const res = JSON.parse(lastResults);
+        
+        // Save to history
+        let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+        history.push({
+            date: new Date().toISOString(),
+            score: res.score,
+            total: res.total,
+            percent: Math.round((res.score / res.total) * 100)
+        });
+        localStorage.setItem('studentTestHistory', JSON.stringify(history));
+
         const scoreText = document.getElementById('result-score-text');
         if (scoreText) {
             scoreText.textContent = `${res.score} / ${res.total}`;
@@ -24,9 +35,75 @@ if (lastResults) {
             document.getElementById('result-incorrect').textContent = res.incorrect;
             
             document.getElementById('results-modal').style.display = 'flex';
+            
+            // Confetti if score > 80%
+            if ((res.score / res.total) >= 0.8 && window.confetti) {
+                setTimeout(() => {
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                }, 300);
+            }
         }
     } catch(e) {}
     localStorage.removeItem('lastQuizResults');
+}
+
+// Tab Switching & Analytics
+function switchTab(tabName) {
+    document.querySelectorAll('.section-view').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    document.getElementById(`section-${tabName}`).classList.add('active');
+    document.getElementById(`nav-${tabName}`).classList.add('active');
+    
+    if (tabName === 'analytics') {
+        renderAnalytics();
+    }
+}
+
+function renderAnalytics() {
+    let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+    document.getElementById('analytics-total-tests').textContent = history.length;
+    
+    if (history.length === 0) return;
+    
+    let totalPercent = history.reduce((sum, h) => sum + h.percent, 0);
+    document.getElementById('analytics-avg-score').textContent = Math.round(totalPercent / history.length) + '%';
+    
+    // Render Chart
+    const ctx = document.getElementById('performanceChart');
+    if (!ctx) return;
+    
+    // Get last 10 tests
+    const recent = history.slice(-10);
+    const labels = recent.map((_, i) => `T${i+1}`);
+    const data = recent.map(h => h.percent);
+    
+    if (window.perfChart) window.perfChart.destroy();
+    
+    window.perfChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Score %',
+                data: data,
+                borderColor: '#60a5fa',
+                backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
 }
 
 function logout() {

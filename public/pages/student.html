@@ -50,6 +50,10 @@
             z-index: 10;
             position: relative;
         }
+        @media (max-width: 640px) {
+            .dashboard-container { margin-bottom: 80px; display: flex; flex-direction: column; gap: 20px; padding: 20px; }
+            .top-nav { display: none; }
+        }
         .panel-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
@@ -58,6 +62,28 @@
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-glow);
         }
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        @media (max-width: 640px) {
+            .bottom-nav { display: flex; justify-content: space-around; padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            color: var(--text-muted); cursor: pointer; transition: all 0.3s ease;
+        }
+        .nav-item.active { color: var(--accent); }
+        .nav-item span { font-size: 0.75rem; font-weight: 600; }
+        .section-view { display: none; animation: fadeIn 0.3s ease; }
+        .section-view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 640px) {
             .dashboard-container {
                 grid-template-columns: 1fr;
@@ -111,7 +137,7 @@
         </div>
     </header>
 
-    <div class="dashboard-container">
+    <div id="section-home" class="section-view active dashboard-container">
         <!-- Live Test Panel -->
         <div class="panel-card">
             <div style="font-size: 3rem; margin-bottom: 20px;">⚡</div>
@@ -145,6 +171,38 @@
         </div>
     </div>
 
+    <!-- Analytics Section -->
+    <div id="section-analytics" class="section-view dashboard-container max-w-4xl">
+        <div class="panel-card" style="grid-column: 1 / -1;">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="bar-chart-2"></i> Performance Analytics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Average Score</h3>
+                    <div class="text-4xl font-black text-blue-400" id="analytics-avg-score">--%</div>
+                </div>
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Total Tests Taken</h3>
+                    <div class="text-4xl font-black text-purple-400" id="analytics-total-tests">0</div>
+                </div>
+            </div>
+            <div class="mt-8 bg-white/5 border border-white/10 rounded-2xl p-6 h-[300px] flex items-center justify-center">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('home')" id="nav-home">
+            <i data-lucide="home"></i>
+            <span>Home</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('analytics')" id="nav-analytics">
+            <i data-lucide="pie-chart"></i>
+            <span>Analytics</span>
+        </div>
+    </nav>
+
     <div id="results-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: var(--bg-card); padding: 30px; border-radius: 20px; border: 1px solid var(--border); width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
             <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 20px;">Assessment Complete</h2>
@@ -174,8 +232,12 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="../questions.js"></script>
     <script src="shared.js"></script>
     <script src="student.js"></script>
+    <script>lucide.createIcons();</script>
 </body>
 </html>
