@@ -231,14 +231,18 @@ async function initTestManager() {
                         <p class="text-xs text-slate-500 mt-1">${t.data.createdAt ? new Date(t.data.createdAt).toLocaleDateString() : 'N/A'} | ${t.data.duration} Mins</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-8">
+                <div class="flex items-center gap-6">
+                    <div class="text-center">
+                        <p class="text-[10px] font-black text-green-500/80 uppercase">Live</p>
+                        <p class="font-bold text-green-400">${t.data.liveStudents ? Object.keys(t.data.liveStudents).length : 0}</p>
+                    </div>
                     <div class="text-center" onclick="viewResults('${t.code}')">
                         <p class="text-[10px] font-black text-slate-500 uppercase">Students</p>
                         <p class="font-bold">${(t.data.students || []).length}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="viewResults('${t.code}')" class="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-blue-400 transition-all" title="View Results"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></button>
-                        ${!isArchived ? `<button onclick="deleteTest('${t.code}')" class="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-red-500 transition-all" title="Archive Test"><i data-lucide="archive" class="w-5 h-5"></i></button>` : ''}
+                        <button onclick="viewResults('${t.code}')" class="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-blue-400 transition-all border border-transparent hover:border-blue-500/30" title="View Results"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></button>
+                        ${!isArchived ? `<button onclick="deleteTest('${t.code}')" class="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-red-500 transition-all border border-transparent hover:border-red-500/30" title="Archive Test"><i data-lucide="archive" class="w-5 h-5"></i></button>` : ''}
                     </div>
                 </div>
             </div>

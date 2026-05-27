@@ -258,8 +258,9 @@ async function submitQuiz(force = false) {
     if (testData && !force) {
         const answered = Object.keys(userAnswers).length;
         if (answered < currentQuiz.length) {
-            alert(`Please answer all questions before submitting. You have answered ${answered} out of ${currentQuiz.length}.`);
-            return;
+            if (!confirm(`You have only answered ${answered} out of ${currentQuiz.length} questions. Are you sure you want to submit? Unanswered questions will be marked as incorrect.`)) {
+                return;
+            }
         }
     }
 
