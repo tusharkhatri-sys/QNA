@@ -296,22 +296,39 @@ async function deleteTest(code) {
 async function viewResults(code) {
     document.getElementById('results-title').textContent = `Results for ${code}`;
     document.getElementById('results-subtitle').textContent = 'Loading...';
-    document.getElementById('results-table-body').innerHTML = '<tr><td colspan="4" class="py-10 text-center text-slate-500">Loading...</td></tr>';
+    document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500">Loading...</td></tr>';
+    document.getElementById('live-results-section').classList.add('hidden');
     openModal('results-modal');
 
     try {
         const { data: dbData } = await supabaseClient.from('tests').select('data').eq('code', code).single();
-        if (dbData && dbData.data.students) {
-            const students = dbData.data.students;
-            document.getElementById('results-subtitle').textContent = `${students.length} submissions found.`;
-            
-            if (students.length === 0) {
-                document.getElementById('results-table-body').innerHTML = '<tr><td colspan="4" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
-                return;
+        if (dbData) {
+            // Render Live Students
+            const liveStudents = dbData.data.liveStudents ? Object.values(dbData.data.liveStudents) : [];
+            if (liveStudents.length > 0) {
+                document.getElementById('live-results-section').classList.remove('hidden');
+                document.getElementById('live-results-table-body').innerHTML = liveStudents.map(s => `
+                    <tr class="group hover:bg-white/[0.02] transition-all">
+                        <td class="py-4 border-b border-white/5 font-bold text-white">${escapeHTML(s.studentName || 'Unknown')}</td>
+                        <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
+                        <td class="py-4 border-b border-white/5 font-bold text-green-400">${s.answered} / ${s.total} <span class="text-[10px] text-slate-500 font-normal ml-2">Attempted</span></td>
+                        <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${new Date(s.joinedAt).toLocaleTimeString()}</td>
+                    </tr>
+                `).join('');
             }
 
-            students.sort((a, b) => b.score - a.score);
-            window.currentTestStudents = students;
+            // Render Submitted Students
+            if (dbData.data.students) {
+                const students = dbData.data.students;
+                document.getElementById('results-subtitle').textContent = `${students.length} submissions found.`;
+                
+                if (students.length === 0) {
+                    document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
+                    return;
+                }
+
+                students.sort((a, b) => b.score - a.score);
+                window.currentTestStudents = students;
 
             document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
                 <tr class="group hover:bg-white/[0.02] transition-all">

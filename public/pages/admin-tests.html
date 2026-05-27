@@ -98,9 +98,24 @@
                 
                 <h2 class="text-2xl font-black mb-2" id="results-title">Test Results</h2>
                 <p class="text-slate-400 mb-8 text-sm" id="results-subtitle">Loading...</p>
-                
-                <div class="overflow-y-auto flex-1 pr-4">
-                    <table class="w-full text-left">
+                <div class="overflow-x-auto">
+                    <div id="live-results-section" class="mb-8 hidden">
+                        <h4 class="text-xs font-black text-green-400 uppercase tracking-widest mb-4">Live Students (Currently Testing)</h4>
+                        <table class="w-full text-left border-collapse mb-8">
+                            <thead>
+                                <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                                    <th class="py-4">Student Name</th>
+                                    <th>Roll No</th>
+                                    <th>Progress</th>
+                                    <th class="text-right">Joined At</th>
+                                </tr>
+                            </thead>
+                            <tbody id="live-results-table-body" class="divide-y divide-white/5"></tbody>
+                        </table>
+                    </div>
+                    
+                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Submitted Results</h4>
+                    <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
                                 <th class="py-4">Student Name</th>
