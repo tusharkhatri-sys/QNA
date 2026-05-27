@@ -151,6 +151,7 @@ function initPracticeMode() {
         currentQuiz = currentQuiz.slice(0, 50);
     }
     renderQuestion();
+    if (testData) reportLiveProgress();
 }
 
 function updateTimerDisplay() {
