@@ -2,8 +2,12 @@ const student = getLoggedInStudent();
 if (!student) {
     window.location.href = 'auth.html';
 } else {
-    document.getElementById('badge-name').textContent = student.name;
-    document.getElementById('badge-initial').textContent = student.name.charAt(0).toUpperCase();
+    const headerName = document.getElementById('header-student-name');
+    if (headerName) headerName.textContent = student.name;
+    
+    const initialSpan = document.getElementById('badge-initial');
+    if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
+    
     document.getElementById('student-name-input').value = student.name;
 }
 
