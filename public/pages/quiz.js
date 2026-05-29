@@ -405,6 +405,43 @@ async function submitQuiz(force = false) {
         score, attempted, incorrect, total: currentQuiz.length, isPractice: !testData
     }));
     
+    // --- Gamification: Update Streak ---
+    if (student && student.email) {
+        try {
+            const { data: sData, error: sErr } = await supabaseClient.from('students').select('current_streak, last_activity_date').eq('email', student.email).single();
+            if (!sErr && sData) {
+                const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+                let newStreak = sData.current_streak || 0;
+                
+                if (sData.last_activity_date === todayStr) {
+                    // Case B: Already practiced today, unchanged.
+                } else if (sData.last_activity_date) {
+                    const lastDate = new Date(sData.last_activity_date);
+                    const todayDate = new Date(todayStr);
+                    const diffTime = Math.abs(todayDate - lastDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays === 1) {
+                        newStreak += 1;
+                    } else {
+                        newStreak = 1; // Missed a day
+                    }
+                } else {
+                    newStreak = 1; // First time
+                }
+                
+                if (sData.last_activity_date !== todayStr) {
+                    await supabaseClient.from('students').update({
+                        current_streak: newStreak,
+                        last_activity_date: todayStr
+                    }).eq('email', student.email);
+                }
+            }
+        } catch(e) {
+            console.error("Failed to update streak:", e);
+        }
+    }
+    
     localStorage.removeItem('activeTest');
     localStorage.removeItem('activeTestStudentName');
     window.location.href = 'student.html';

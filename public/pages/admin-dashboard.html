@@ -115,8 +115,39 @@
 
             <!-- Side Feed -->
             <div class="space-y-6">
-                <div class="glass-card p-8 rounded-[2rem] flex-1">
-                    <h3 class="font-bold mb-6">Recent Deployments</h3>
+                <!-- Announcement Engine -->
+                <div class="glass-card p-6 rounded-[2rem]">
+                    <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="bell" class="w-5 h-5 text-blue-500"></i> Notice Board Engine</h3>
+                    <div class="space-y-4">
+                        <textarea id="notice-msg" rows="2" class="w-full bg-slate-800/50 border border-white/5 rounded-xl p-3 text-sm outline-none focus:border-blue-500" placeholder="Type important announcement..."></textarea>
+                        <div class="flex gap-2">
+                            <select id="notice-session" class="bg-slate-800/50 border border-white/5 rounded-xl px-3 py-2 text-xs outline-none flex-1">
+                                <option value="All">All Batches</option>
+                                <option value="2025-2026">2025-2026</option>
+                                <option value="2024-2025">2024-2025</option>
+                            </select>
+                            <button onclick="broadcastNotice()" id="btn-broadcast" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center min-w-[80px]">Broadcast</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wall of Fame Add -->
+                <div class="glass-card p-6 rounded-[2rem]">
+                    <h3 class="font-bold mb-4 flex items-center gap-2"><i data-lucide="star" class="w-5 h-5 text-yellow-500"></i> Add to Wall of Fame</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="wof-name" class="w-full bg-slate-800/50 border border-white/5 rounded-xl p-3 text-xs outline-none" placeholder="Student Name">
+                        <div class="flex gap-2">
+                            <input type="text" id="wof-session" class="w-1/2 bg-slate-800/50 border border-white/5 rounded-xl p-3 text-xs outline-none" placeholder="Session (e.g. 2025-2026)">
+                            <input type="number" id="wof-percent" class="w-1/2 bg-slate-800/50 border border-white/5 rounded-xl p-3 text-xs outline-none" placeholder="NCVT % (e.g. 95.5)">
+                        </div>
+                        <input type="text" id="wof-badge" class="w-full bg-slate-800/50 border border-white/5 rounded-xl p-3 text-xs outline-none" placeholder="Achievement (e.g. DRDO Selected)">
+                        <input type="text" id="wof-photo" class="w-full bg-slate-800/50 border border-white/5 rounded-xl p-3 text-xs outline-none" placeholder="Photo URL (Optional)">
+                        <button onclick="addToWallOfFame()" id="btn-wof" class="w-full bg-yellow-600 hover:bg-yellow-500 text-white px-4 py-3 rounded-xl text-xs font-bold transition-all">Publish to Dashboard</button>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 rounded-[2rem] flex-1">
+                    <h3 class="font-bold mb-4">Recent Deployments</h3>
                     <div id="recent-tests" class="space-y-4">
                         <div class="p-4 bg-white/5 rounded-2xl animate-pulse h-16"></div>
                         <div class="p-4 bg-white/5 rounded-2xl animate-pulse h-16"></div>

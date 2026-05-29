@@ -130,12 +130,24 @@
                     <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
                     <span id="header-student-name" class="font-medium">Loading...</span>
                 </div>
+                <!-- Streak Counter -->
+                <div class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 font-bold text-sm backdrop-blur-md shadow-[0_0_15px_rgba(249,115,22,0.15)]">
+                    <i data-lucide="flame" class="w-4 h-4 fill-orange-500"></i>
+                    <span id="header-streak">0 Day Streak</span>
+                </div>
                 <button onclick="exitSafeBrowser()" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm font-bold border border-red-500/20 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
                     Exit App
                 </button>
             </div>
         </div>
     </header>
+
+    <!-- Announcement Bar -->
+    <div id="announcement-bar" class="fixed top-20 left-0 w-full z-40 bg-blue-600 text-white py-2 px-4 shadow-[0_5px_15px_rgba(37,99,235,0.4)] transform -translate-y-full transition-transform duration-500 ease-out flex items-center justify-center gap-3">
+        <i data-lucide="bell-ring" class="w-4 h-4 animate-bounce"></i>
+        <marquee scrollamount="5" class="font-bold text-sm max-w-4xl" id="announcement-text"></marquee>
+        <button onclick="document.getElementById('announcement-bar').classList.add('-translate-y-full')" class="text-white/80 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
 
     <div id="section-home" class="section-view active dashboard-container">
         <!-- Live Test Panel -->
@@ -169,6 +181,17 @@
                 <button class="btn btn-secondary" onclick="startLocalPractice('topic')">Topic-wise Practice</button>
             </div>
         </div>
+        
+        <!-- Wall of Fame Panel -->
+        <div class="panel-card" style="grid-column: 1 / -1; padding: 30px;">
+            <div class="flex items-center gap-3 mb-6">
+                <i data-lucide="star" class="w-8 h-8 text-yellow-500 fill-yellow-500"></i>
+                <h2 style="font-size: 1.8rem; font-weight: 800;">🌟 Hamare Sitare</h2>
+            </div>
+            <div class="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory scrollbar-hide" id="wof-container">
+                <div class="py-10 text-center text-slate-400 w-full italic">Loading superstars...</div>
+            </div>
+        </div>
     </div>
 
     <!-- Analytics Section -->
@@ -191,6 +214,27 @@
         </div>
     </div>
 
+    <!-- Alumni Section -->
+    <div id="section-alumni" class="section-view dashboard-container max-w-4xl">
+        <div class="panel-card" style="grid-column: 1 / -1;">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="award" class="text-yellow-500"></i> Past Sessions Summary</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                            <th class="py-4">Session</th>
+                            <th>Test Name</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alumni-table-body" class="divide-y divide-white/5">
+                        <tr><td colspan="3" class="py-8 text-center text-slate-500 italic">Loading past records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchTab('home')" id="nav-home">
@@ -200,6 +244,10 @@
         <div class="nav-item" onclick="switchTab('analytics')" id="nav-analytics">
             <i data-lucide="pie-chart"></i>
             <span>Analytics</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('alumni')" id="nav-alumni">
+            <i data-lucide="award"></i>
+            <span>Alumni</span>
         </div>
     </nav>
 

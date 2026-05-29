@@ -6,3 +6,6 @@ node_modules/
 # Lockdown Browser Ignores
 lockdown-browser/dist/
 lockdown-browser/node_modules/
+
+# Security
+config/*.json

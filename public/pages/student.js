@@ -9,6 +9,9 @@ if (!student) {
     if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
     
     document.getElementById('student-name-input').value = student.name;
+    
+    // Initialize Dashboard Features
+    initStudentDashboard();
 }
     
 const lastResults = localStorage.getItem('lastQuizResults');
@@ -184,4 +187,117 @@ function launchTopicPractice(topic) {
     localStorage.setItem('practiceMode', 'topic');
     localStorage.setItem('practiceTopic', topic);
     window.location.href = 'quiz.html';
+}
+
+// Gamification and Extra Features
+async function initStudentDashboard() {
+    if(!student) return;
+    
+    // 1. Fetch Streak
+    try {
+        const { data: sData } = await supabaseClient.from('students').select('current_streak, session').eq('email', student.email).single();
+        if(sData && document.getElementById('header-streak')) {
+            document.getElementById('header-streak').textContent = `${sData.current_streak || 0} Day Streak`;
+            student.session = sData.session; // Update local session
+        }
+    } catch(e) {}
+    
+    // 2. Fetch Wall of Fame
+    try {
+        const { data: wof } = await supabaseClient.from('toppers_wall').select('*').order('created_at', { ascending: false });
+        const container = document.getElementById('wof-container');
+        if(wof && wof.length > 0 && container) {
+            container.innerHTML = wof.map(w => `
+                <div class="min-w-[280px] bg-slate-800/50 border border-white/10 rounded-2xl p-5 flex flex-col items-center snap-center hover:bg-slate-800 transition-all">
+                    <img src="${w.photo_url}" class="w-16 h-16 rounded-full border-2 border-yellow-500 mb-3 object-cover shadow-[0_0_15px_rgba(234,179,8,0.3)]">
+                    <h4 class="font-bold text-white text-lg">${w.student_name}</h4>
+                    <p class="text-xs text-slate-400 mb-2">${w.session}</p>
+                    <div class="bg-yellow-500/10 text-yellow-500 font-bold px-3 py-1 rounded-full text-xs mb-2 border border-yellow-500/20">${w.achievement_tag}</div>
+                    <p class="text-xl font-black text-white">${w.ncvt_percentage}% <span class="text-[10px] text-slate-500 font-normal uppercase">NCVT</span></p>
+                </div>
+            `).join('');
+        } else if (container) {
+            container.innerHTML = '<div class="py-10 text-center text-slate-400 w-full italic">No superstars yet!</div>';
+        }
+    } catch(e) {}
+    
+    // 3. Listen for Announcements
+    supabaseClient.channel('announcements').on('broadcast', { event: 'new_notice' }, (payload) => {
+        const data = payload.payload;
+        const currentSession = typeof getCurrentSession === 'function' ? getCurrentSession() : 'All';
+        if(data.target_session === 'All' || data.target_session === currentSession || data.target_session === student.session) {
+            const bar = document.getElementById('announcement-bar');
+            const txt = document.getElementById('announcement-text');
+            if(bar && txt) {
+                txt.textContent = data.message;
+                bar.classList.remove('-translate-y-full');
+            }
+        }
+    }).subscribe();
+    
+    // 4. Fetch Alumni Records
+    fetchAlumniRecords();
+    
+    // 5. Initialize Native Push Notifications (Capacitor)
+    initPushNotifications();
+}
+
+// --- Native Push Notifications (Capacitor) ---
+function initPushNotifications() {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+        const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+        
+        // Request Permission
+        PushNotifications.requestPermissions().then(result => {
+            if (result.receive === 'granted') {
+                PushNotifications.register();
+            }
+        });
+
+        // Capture Token and Update Supabase
+        PushNotifications.addListener('registration', async (token) => {
+            if (student && student.email) {
+                try {
+                    await supabaseClient.from('students').update({ fcm_token: token.value }).eq('email', student.email);
+                } catch (error) {
+                    console.error("Failed to update FCM token", error);
+                }
+            }
+        });
+
+        // Listen for foreground notifications
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+            const bar = document.getElementById('announcement-bar');
+            const txt = document.getElementById('announcement-text');
+            if (bar && txt) {
+                txt.textContent = `${notification.title}: ${notification.body}`;
+                bar.classList.remove('-translate-y-full');
+                setTimeout(() => bar.classList.add('-translate-y-full'), 10000);
+            }
+        });
+    }
+}
+
+async function fetchAlumniRecords() {
+    const table = document.getElementById('alumni-table-body');
+    if(!table) return;
+    try {
+        let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+        if(history.length === 0) {
+            table.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500 italic">No past records found.</td></tr>`;
+            return;
+        }
+        table.innerHTML = history.reverse().map(h => {
+            const d = new Date(h.date);
+            return \`
+            <tr class="group hover:bg-white/[0.02] transition-all">
+                <td class="py-4 text-slate-400 text-sm">\${d.toLocaleDateString()}</td>
+                <td class="font-bold text-white">Mock Test</td>
+                <td class="font-black \${h.percent >= 80 ? 'text-green-400' : (h.percent >= 50 ? 'text-blue-400' : 'text-red-400')}">\${h.percent}%</td>
+            </tr>
+            \`;
+        }).join('');
+    } catch(e) {
+        table.innerHTML = \`<tr><td colspan="3" class="py-8 text-center text-red-500">Failed to load records.</td></tr>\`;
+    }
 }

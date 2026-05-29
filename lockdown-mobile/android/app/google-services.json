@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "969287296947",
+    "project_id": "qna-copa",
+    "storage_bucket": "qna-copa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:969287296947:android:f0d83fe23c9cb3c24a0dc6",
+        "android_client_info": {
+          "package_name": "com.qna.safebrowser"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAovt-hwdUFJyuIfU9jbihpgGzd2stzmiI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

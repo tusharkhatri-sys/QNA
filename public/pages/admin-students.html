@@ -55,6 +55,11 @@
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
                     <input type="text" id="student-search" placeholder="Search by name, roll no or trade..." class="w-full bg-slate-800/50 border border-white/5 rounded-xl py-3 pl-12 text-white outline-none">
                 </div>
+                <select id="session-filter" onchange="initStudentsList()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
+                    <option value="2025-2026">2025-2026</option>
+                    <option value="2024-2025">2024-2025</option>
+                    <option value="All">All Sessions</option>
+                </select>
                 <select class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
                     <option>All Trades</option>
                     <option>COPA</option>
@@ -85,6 +90,7 @@
     <script src="admin-core.js"></script>
     <script>
         lucide.createIcons();
+        document.getElementById('session-filter').value = getCurrentSession();
         initStudentsList();
     </script>
 </body>

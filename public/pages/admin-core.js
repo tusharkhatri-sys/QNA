@@ -82,6 +82,12 @@ async function initDashboard() {
                 }
             }
         }
+        
+        const wofSession = document.getElementById('wof-session');
+        if (wofSession && typeof getCurrentSession === 'function') {
+            wofSession.value = getCurrentSession();
+        }
+        
     } catch (err) {
         console.error('Dashboard init error:', err);
     }
@@ -191,7 +197,12 @@ async function initTestManager() {
     if (!list) return;
 
     try {
-        let { data: tests, error } = await supabaseClient.from('tests').select('*');
+        let query = supabaseClient.from('tests').select('*');
+        const sessionFilter = document.getElementById('session-filter')?.value;
+        if (sessionFilter && sessionFilter !== 'All') {
+            query = query.eq('session', sessionFilter);
+        }
+        let { data: tests, error } = await query;
         if (error) throw error;
 
         // Status Filter Logic
@@ -580,7 +591,12 @@ async function initStudentsList() {
     if (!table) return;
 
     try {
-        const { data: students, error } = await supabaseClient.from('students').select('*').order('created_at', { ascending: false });
+        let query = supabaseClient.from('students').select('*').order('created_at', { ascending: false });
+        const sessionFilter = document.getElementById('session-filter')?.value;
+        if (sessionFilter && sessionFilter !== 'All') {
+            query = query.eq('session', sessionFilter);
+        }
+        const { data: students, error } = await query;
         if (error) throw error;
 
         if (!students || students.length === 0) {
@@ -770,4 +786,110 @@ function saveManualSelection() {
     }
     
     closeModal('manual-select-modal');
+}
+
+// --- Gamification & Notifications ---
+async function broadcastNotice() {
+    const msgEl = document.getElementById('notice-msg');
+    const sessionEl = document.getElementById('notice-session');
+    const btn = document.getElementById('btn-broadcast');
+    
+    const message = msgEl.value.trim();
+    const session = sessionEl.value;
+    
+    if (!message) return alert("Please type a message first.");
+    
+    btn.textContent = "Sending...";
+    btn.disabled = true;
+    
+    try {
+        // 1. Save to database
+        const { error: dbErr } = await supabaseClient.from('announcements').insert({
+            title: 'Important Notice',
+            message: message,
+            target_session: session,
+            created_by: 'Admin_ITI'
+        });
+        if (dbErr) throw dbErr;
+        
+        // 2. Broadcast Realtime
+        await supabaseClient.channel('announcements').send({
+            type: 'broadcast',
+            event: 'new_notice',
+            payload: { message, target_session: session }
+        });
+        
+        // 3. Trigger Firebase Push Notifications (Native Delivery)
+        try {
+            let query = supabaseClient.from('students').select('fcm_token').not('fcm_token', 'is', null);
+            if (session !== 'All') {
+                query = query.eq('session', session);
+            }
+            const { data: tokensData } = await query;
+            
+            if (tokensData && tokensData.length > 0) {
+                const tokens = tokensData.map(t => t.fcm_token).filter(t => t);
+                if (tokens.length > 0) {
+                    await fetch('/api/send-notification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: 'New Notice from Admin',
+                            message: message,
+                            fcm_tokens: tokens
+                        })
+                    });
+                }
+            }
+        } catch (pushErr) {
+            console.error("Push Notification dispatch failed:", pushErr);
+        }
+        
+        msgEl.value = "";
+        alert("Broadcast sent successfully!");
+    } catch (e) {
+        console.error("Notice broadcast failed:", e);
+        alert("Failed to broadcast notice.");
+    } finally {
+        btn.textContent = "Broadcast";
+        btn.disabled = false;
+    }
+}
+
+async function addToWallOfFame() {
+    const name = document.getElementById('wof-name').value.trim();
+    const session = document.getElementById('wof-session').value.trim();
+    const percent = document.getElementById('wof-percent').value;
+    const badge = document.getElementById('wof-badge').value.trim();
+    const photo = document.getElementById('wof-photo').value.trim() || 'https://ui-avatars.com/api/?background=random&color=fff&name=' + encodeURIComponent(name);
+    
+    if (!name || !session || !percent || !badge) return alert("Please fill all required fields.");
+    
+    const btn = document.getElementById('btn-wof');
+    btn.textContent = "Publishing...";
+    btn.disabled = true;
+    
+    try {
+        const { error } = await supabaseClient.from('toppers_wall').insert({
+            student_name: name,
+            session: session,
+            ncvt_percentage: parseFloat(percent),
+            achievement_tag: badge,
+            photo_url: photo
+        });
+        
+        if (error) throw error;
+        
+        alert(`Successfully added ${name} to Wall of Fame!`);
+        document.getElementById('wof-name').value = '';
+        document.getElementById('wof-percent').value = '';
+        document.getElementById('wof-badge').value = '';
+        document.getElementById('wof-photo').value = '';
+    } catch (e) {
+        console.error("Wall of fame error:", e);
+        alert("Failed to add to Wall of Fame.");
+    } finally {
+        btn.textContent = "Publish to Dashboard";
+        btn.disabled = false;
+    }
 }
