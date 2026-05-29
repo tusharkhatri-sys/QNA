@@ -41,27 +41,26 @@ async function initDashboard() {
         if (testsError) throw testsError;
 
         if (tests) {
-            let liveCount = 0;
             activeProctoring = {};
             tests.forEach(t => {
                 if (t.data && t.data.liveStudents) {
-                    const keys = Object.keys(t.data.liveStudents);
-                    liveCount += keys.length;
-                    keys.forEach(emailKey => {
+                    Object.keys(t.data.liveStudents).forEach(emailKey => {
                         const s = t.data.liveStudents[emailKey];
+                        if (s === null || s === 'null') return; // Clean Null Key Handling
+                        
                         activeProctoring[emailKey] = {
-                            name: s.name || 'Unknown',
+                            name: s.studentName || s.name || 'Unknown',
                             email: emailKey,
                             testCode: t.code,
-                            answered: s.answered,
-                            total: s.total,
-                            progress: `${s.answered}/${s.total}`,
+                            answered: s.answered || 0,
+                            total: s.total || 0,
+                            progress: `${s.answered || 0}/${s.total || 0}`,
                             isMinimized: false
                         };
                     });
                 }
             });
-            document.getElementById('stat-live').textContent = liveCount;
+            document.getElementById('stat-live').textContent = Object.keys(activeProctoring).length;
             renderLiveGrid();
 
             // Populate Recent Feed
@@ -122,21 +121,29 @@ async function initDashboard() {
             if (data && data.liveStudents) {
                 Object.keys(data.liveStudents).forEach(emailKey => {
                     const s = data.liveStudents[emailKey];
+                    if (s === null || s === 'null') return; // Clean Null Key Handling
+                    
                     activeProctoring[emailKey] = {
-                        name: s.name || 'Unknown',
+                        name: s.studentName || s.name || 'Unknown',
                         email: emailKey,
                         testCode: tCode,
-                        answered: s.answered,
-                        total: s.total,
-                        progress: `${s.answered}/${s.total}`,
+                        answered: s.answered || 0,
+                        total: s.total || 0,
+                        progress: `${s.answered || 0}/${s.total || 0}`,
                         isMinimized: false
                     };
                 });
             }
             
-            document.getElementById('stat-live').textContent = Object.keys(activeProctoring).length;
+            const statLive = document.getElementById('stat-live');
+            if (statLive) statLive.textContent = Object.keys(activeProctoring).length;
             renderLiveGrid();
         }).subscribe();
+
+    // Memory Leak Prevention: Cleanup when leaving page/closing dashboard
+    window.addEventListener('beforeunload', () => {
+        if (window.adminDashboardSub) supabaseClient.removeChannel(window.adminDashboardSub);
+    });
 }
 
 function renderLiveGrid() {
@@ -304,15 +311,18 @@ async function viewResults(code) {
         const { data: dbData } = await supabaseClient.from('tests').select('data').eq('code', code).single();
         if (dbData) {
             // Render Live Students
-            const liveStudents = dbData.data.liveStudents ? Object.values(dbData.data.liveStudents) : [];
+            const liveStudents = dbData.data.liveStudents 
+                ? Object.values(dbData.data.liveStudents).filter(s => s !== null && s !== 'null') 
+                : [];
+                
             if (liveStudents.length > 0) {
                 document.getElementById('live-results-section').classList.remove('hidden');
                 document.getElementById('live-results-table-body').innerHTML = liveStudents.map(s => `
                     <tr class="group hover:bg-white/[0.02] transition-all">
-                        <td class="py-4 border-b border-white/5 font-bold text-white">${escapeHTML(s.studentName || 'Unknown')}</td>
+                        <td class="py-4 border-b border-white/5 font-bold text-white">${escapeHTML(s.studentName || s.name || 'Unknown')}</td>
                         <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
-                        <td class="py-4 border-b border-white/5 font-bold text-green-400">${s.answered} / ${s.total} <span class="text-[10px] text-slate-500 font-normal ml-2">Attempted</span></td>
-                        <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${new Date(s.joinedAt).toLocaleTimeString()}</td>
+                        <td class="py-4 border-b border-white/5 font-bold text-green-400">${s.answered || 0} / ${s.total || 0} <span class="text-[10px] text-slate-500 font-normal ml-2">Attempted</span></td>
+                        <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${s.joinedAt ? new Date(s.joinedAt).toLocaleTimeString() : 'N/A'}</td>
                     </tr>
                 `).join('');
             }
@@ -320,15 +330,20 @@ async function viewResults(code) {
             // Render Submitted Students
             if (dbData.data.students) {
                 const students = dbData.data.students;
-                document.getElementById('results-subtitle').textContent = `${students.length} submissions found.`;
+                window.currentTestStudents = students;
+                window.currentTestCode = code;
+                window.currentTestPassScore = dbData.data.passScore || 40;
                 
                 if (students.length === 0) {
+                    document.getElementById('results-subtitle').textContent = `0 submissions found.`;
                     document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
                     return;
                 }
 
-                students.sort((a, b) => b.score - a.score);
-                window.currentTestStudents = students;
+                document.getElementById('results-subtitle').innerHTML = `${students.length} submissions found. <button onclick="exportTestResultsCSV()" class="ml-4 text-[10px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-400 rounded hover:bg-green-500/20 transition-all border border-green-500/20 inline-flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Export</button>`;
+                setTimeout(() => lucide.createIcons(), 50);
+
+                students.sort((a, b) => (b.score || 0) - (a.score || 0));
 
                 document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
                     <tr class="group hover:bg-white/[0.02] transition-all">
@@ -661,6 +676,28 @@ async function exportStudentsCSV() {
         alert("Failed to export CSV.");
     }
     if (btn) btn.textContent = "Export CSV";
+}
+
+async function exportTestResultsCSV() {
+    if (!window.currentTestStudents || !window.currentTestCode) return;
+    try {
+        let csv = "Student Name,Roll No/Email,Score,Total,Pass Status,Submitted At\n";
+        window.currentTestStudents.forEach(s => {
+            const isPass = (s.score || 0) >= (window.currentTestPassScore || 40) ? "PASS" : "FAIL";
+            csv += `"${s.studentName || 'Unknown'}","${s.studentEmail || ''}",${s.score || 0},${s.total || 0},"${isPass}","${s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'N/A'}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qna_results_${window.currentTestCode}_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error("Export test results failed", e);
+        alert("Failed to export test results CSV.");
+    }
 }
 
 // --- Manual Selection Logic ---
