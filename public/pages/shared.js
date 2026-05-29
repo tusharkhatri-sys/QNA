@@ -4,6 +4,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
         persistSession: true,
+        storage: window.localStorage,
         autoRefreshToken: true,
         detectSessionInUrl: false
     }
@@ -24,13 +25,17 @@ function escapeHTML(str) {
 }
 
 function getLoggedInStudent() {
-    const saved = localStorage.getItem('loggedInStudent');
-    if (!saved) return null;
     try {
-        return JSON.parse(saved);
+        const saved = window.localStorage.getItem('loggedInStudent');
+        if (!saved) return null;
+        const parsed = JSON.parse(saved);
+        if (!parsed || typeof parsed !== 'object' || !parsed.email) {
+            throw new Error('Invalid student data structure');
+        }
+        return parsed;
     } catch (e) {
-        console.error('Error parsing loggedInStudent from localStorage. Data corrupted.', e);
-        localStorage.setItem('loggedInStudent', null); // Fallback overwrite
+        console.warn('[Defensive Recovery] Corrupted student session data cleared.', e);
+        window.localStorage.removeItem('loggedInStudent');
         return null;
     }
 }

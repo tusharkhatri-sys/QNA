@@ -3,6 +3,25 @@
 // User-Agent Detection → Download Page vs Login Form
 // ============================================================
 
+// Deliverable 2: Auto-Redirect (Top of auth.js)
+(async function enforceAutoLogin() {
+    try {
+        const student = getLoggedInStudent();
+        if (student && student.email) {
+            // Check with Supabase to ensure token is valid
+            const { data, error } = await supabaseClient.auth.getSession();
+            if (data?.session && !error) {
+                console.log("Valid session found. Bypassing login.");
+                window.location.replace('student.html');
+            }
+        }
+    } catch (error) {
+        console.warn("Auto-redirect check failed, showing login screen.", error);
+    }
+})();
+// User-Agent Detection → Download Page vs Login Form
+// ============================================================
+
 var SAFE_BROWSER_UA = 'QnaCopa-Safe-Browser-v1';
 
 // ============================================================

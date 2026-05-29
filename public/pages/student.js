@@ -354,38 +354,69 @@ async function initStudentDashboard() {
 }
 
 // --- Native Push Notifications (Capacitor) ---
-function initPushNotifications() {
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+async function initPushNotifications() {
+    try {
+        if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.PushNotifications) {
+            console.log("Push notifications not supported in this environment (likely web).");
+            return;
+        }
+
         const PushNotifications = window.Capacitor.Plugins.PushNotifications;
         
-        // Request Permission
-        PushNotifications.requestPermissions().then(result => {
-            if (result.receive === 'granted') {
-                PushNotifications.register();
-            }
-        });
+        let permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive !== 'granted') {
+            permStatus = await PushNotifications.requestPermissions();
+        }
+        
+        if (permStatus.receive === 'granted') {
+            await PushNotifications.register();
+            console.log("Push registration triggered.");
+        }
 
-        // Capture Token and Update Supabase
+        // Defensively capture the token
         PushNotifications.addListener('registration', async (token) => {
-            if (student && student.email) {
-                try {
-                    await supabaseClient.from('students').update({ fcm_token: token.value }).eq('email', student.email);
-                } catch (error) {
-                    console.error("Failed to update FCM token", error);
-                }
+            try {
+                if (!token || !token.value) throw new Error("Invalid token received from OS");
+                const currentStudent = getLoggedInStudent();
+                if (!currentStudent || !currentStudent.email) return;
+
+                console.log("Updating FCM token for:", currentStudent.email);
+                
+                // Strictly targeting 'students' table
+                const { error } = await supabaseClient.from('students')
+                    .update({ fcm_token: token.value })
+                    .eq('email', currentStudent.email);
+                    
+                if (error) throw error;
+                console.log("FCM Token successfully registered in DB.");
+            } catch (dbErr) {
+                console.error("Silent failure intercepted: DB Token Update Failed.", dbErr);
             }
         });
 
-        // Listen for foreground notifications
+        PushNotifications.addListener('registrationError', (error) => {
+            console.warn("OS Registration Error:", error);
+        });
+
+        // Defensive foreground notification listener
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
-            const bar = document.getElementById('announcement-bar');
-            const txt = document.getElementById('announcement-text');
-            if (bar && txt) {
-                txt.textContent = `${notification.title}: ${notification.body}`;
-                bar.classList.remove('-translate-y-full');
-                setTimeout(() => bar.classList.add('-translate-y-full'), 10000);
+            try {
+                const bar = document.getElementById('announcement-bar');
+                const txt = document.getElementById('announcement-text');
+                if (bar && txt && notification) {
+                    txt.textContent = `${notification.title || 'Notice'}: ${notification.body || ''}`;
+                    bar.classList.remove('-translate-y-full');
+                    setTimeout(() => {
+                        try { bar.classList.add('-translate-y-full'); } catch(e){}
+                    }, 10000);
+                }
+            } catch (uiErr) {
+                console.error("Foreground UI update failed", uiErr);
             }
         });
+
+    } catch (fatalErr) {
+        console.error("Push Notification initialization fatally blocked to prevent crash.", fatalErr);
     }
 }
 

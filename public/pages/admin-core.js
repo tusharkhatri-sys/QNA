@@ -828,28 +828,43 @@ async function broadcastNotice() {
         
         // 3. Trigger Firebase Push Notifications (Native Delivery)
         try {
-            let query = supabaseClient.from('students').select('fcm_token').not('fcm_token', 'is', null);
+            // Defensive fetching of valid FCM tokens from 'students' table
+            let query = supabaseClient.from('students')
+                .select('fcm_token')
+                .not('fcm_token', 'is', null)
+                .neq('fcm_token', ''); // Prevent empty strings
+
             if (session !== 'All') {
                 query = query.eq('session', session);
             }
-            const { data: tokensData } = await query;
             
-            if (tokensData && tokensData.length > 0) {
-                const tokens = tokensData.map(t => t.fcm_token).filter(t => t);
-                if (tokens.length > 0) {
-                    await fetch('/api/send-notification', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            title: 'New Notice from Admin',
-                            message: message,
-                            fcm_tokens: tokens
-                        })
-                    });
+            const { data: tokensData, error: tokenError } = await query;
+            if (tokenError) throw new Error(`Token fetch failed: ${tokenError.message}`);
+
+            const validTokens = (tokensData || [])
+                .map(t => t.fcm_token)
+                .filter(t => typeof t === 'string' && t.length > 5); // Basic validation
+
+            if (validTokens.length > 0) {
+                console.log(`Dispatching push to ${validTokens.length} devices.`);
+                const pushRes = await fetch('/api/send-notification', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: 'New Notice from Admin',
+                        message: message,
+                        fcm_tokens: validTokens
+                    })
+                });
+
+                if (!pushRes.ok) {
+                    console.warn("Push API returned non-200 status:", pushRes.status);
                 }
+            } else {
+                console.log("No registered devices found for broadcast.");
             }
         } catch (pushErr) {
-            console.error("Push Notification dispatch failed:", pushErr);
+            console.error("Push Notification dispatch handled defensively:", pushErr);
         }
         
         msgEl.value = "";
