@@ -8,9 +8,28 @@ let userAnswers = {};
 let score = 0;
 let timeRemaining = 0;
 let liveTestTimer = null;
+let isSubmitting = false;
 
 if (!testData && !localStorage.getItem('practiceMode')) {
     window.location.href = 'student.html';
+}
+
+// Utility: Fisher-Yates Shuffle
+function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+// Utility: Debounce for API calls
+function debounce(func, timeout = 1000) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
 }
 
 function initQuiz() {
@@ -25,55 +44,39 @@ function initLiveTest() {
     document.getElementById('quiz-topic-name').textContent = testData.name || 'Untitled Test';
     
     if (testData.isRandomMix) {
-        let allPool = [];
-        QUESTIONS_DATA.forEach(tObj => {
-            allPool = allPool.concat(tObj.questions);
-        });
-        for (let i = allPool.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [allPool[i], allPool[j]] = [allPool[j], allPool[i]];
-        }
-        currentQuiz = allPool.slice(0, testData.randomTotal || 50);
+        let allPool = QUESTIONS_DATA.flatMap(tObj => tObj.questions);
+        currentQuiz = shuffleArray(allPool).slice(0, testData.randomTotal || 50);
     } else {
         const config = testData.topicConfig || {};
         for (const [topicName, val] of Object.entries(config)) {
             const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
             if (tObj) {
                 if (typeof val === 'object' && val.mode === 'manual') {
-                    let selectedQuestions = val.indices.map(i => tObj.questions[i]).filter(q => q);
+                    let selectedQuestions = val.indices.map(i => tObj.questions[i]).filter(Boolean);
                     currentQuiz = currentQuiz.concat(selectedQuestions);
                 } else {
                     const count = typeof val === 'number' ? val : 0;
-                    let pool = [...tObj.questions];
-                    for (let i = pool.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [pool[i], pool[j]] = [pool[j], pool[i]];
-                    }
+                    let pool = shuffleArray([...tObj.questions]);
                     currentQuiz = currentQuiz.concat(pool.slice(0, count));
                 }
             }
         }
-        for (let i = currentQuiz.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [currentQuiz[i], currentQuiz[j]] = [currentQuiz[j], currentQuiz[i]];
-        }
+        shuffleArray(currentQuiz);
     }
     
     // ANTI-CHEAT: Randomize Option Order for each student
     currentQuiz = currentQuiz.map(orig => {
         const q = JSON.parse(JSON.stringify(orig));
         let opts = q.o.map((text, idx) => ({ text, idx, hiText: q.o_hi ? q.o_hi[idx] : null }));
-        for (let i = opts.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [opts[i], opts[j]] = [opts[j], opts[i]];
-        }
+        shuffleArray(opts);
+        
         q.o = opts.map(o => o.text);
         if (q.o_hi) q.o_hi = opts.map(o => o.hiText);
         q.a = opts.findIndex(o => o.idx === orig.a);
         return q;
     });
     
-    timeRemaining = testData.duration * 60;
+    timeRemaining = (testData.duration || 60) * 60;
     updateTimerDisplay();
     liveTestTimer = setInterval(() => {
         timeRemaining--;
@@ -117,7 +120,7 @@ function initLiveTest() {
         }).subscribe();
         
     renderQuestion();
-    reportLiveProgress();
+    debouncedReportLiveProgress();
 }
 
 function initPracticeMode() {
@@ -132,38 +135,28 @@ function initPracticeMode() {
         const selectedTopic = localStorage.getItem('practiceTopic');
         const tObj = QUESTIONS_DATA.find(t => t.topic === selectedTopic);
         if (tObj) {
-            let pool = [...tObj.questions];
-            // Shuffle
-            for (let i = pool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [pool[i], pool[j]] = [pool[j], pool[i]];
-            }
-            // Limit to 50 questions for topic practice
+            let pool = shuffleArray([...tObj.questions]);
             currentQuiz = pool.slice(0, 50);
         }
     } else {
-        // Full Mock
         QUESTIONS_DATA.forEach(t => currentQuiz = currentQuiz.concat(t.questions));
-        for (let i = currentQuiz.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [currentQuiz[i], currentQuiz[j]] = [currentQuiz[j], currentQuiz[i]];
-        }
-        currentQuiz = currentQuiz.slice(0, 50);
+        currentQuiz = shuffleArray(currentQuiz).slice(0, 50);
     }
     renderQuestion();
-    if (testData) reportLiveProgress();
+    if (testData) debouncedReportLiveProgress();
 }
 
 function updateTimerDisplay() {
-    const mins = Math.floor(timeRemaining / 60);
-    const secs = timeRemaining % 60;
-    document.getElementById('quiz-timer').textContent = `⏱️ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    if (timeRemaining < 60) document.getElementById('quiz-timer').style.color = 'var(--red)';
+    const mins = Math.floor(Math.max(0, timeRemaining) / 60);
+    const secs = Math.max(0, timeRemaining) % 60;
+    const timerEl = document.getElementById('quiz-timer');
+    timerEl.textContent = `⏱️ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    if (timeRemaining < 60) timerEl.style.color = 'var(--red)';
 }
 
 function renderQuestion() {
     if (!currentQuiz || currentQuiz.length === 0) {
-        document.getElementById('question-text').textContent = 'Error: No questions found! Admin might not have selected any questions for this test.';
+        document.getElementById('question-text').textContent = 'Error: No questions found!';
         document.getElementById('question-text-hi').textContent = '';
         document.getElementById('options-grid').innerHTML = '';
         return;
@@ -210,9 +203,10 @@ function renderQuestion() {
 }
 
 function selectOption(idx) {
+    if (isSubmitting) return;
     userAnswers[currentIndex] = idx;
     renderQuestion();
-    if(testData) reportLiveProgress();
+    if(testData) debouncedReportLiveProgress();
 }
 
 function nextQuestion() {
@@ -229,8 +223,8 @@ function prevQuestion() {
     }
 }
 
-async function reportLiveProgress() {
-    if (!testData) return;
+const debouncedReportLiveProgress = debounce(async () => {
+    if (!testData || isSubmitting) return;
     const answered = Object.keys(userAnswers).length;
     const emailKey = student ? student.email : studentName;
     try {
@@ -244,8 +238,8 @@ async function reportLiveProgress() {
             };
             await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', testData.code);
         }
-    } catch(e) {}
-}
+    } catch(e) { console.error('Live progress sync failed:', e); }
+}, 1500);
 
 function confirmEarlySubmit() {
     const answered = Object.keys(userAnswers).length;
@@ -255,6 +249,8 @@ function confirmEarlySubmit() {
 }
 
 async function submitQuiz(force = false) {
+    if (isSubmitting) return;
+    
     if (testData && !force) {
         const answered = Object.keys(userAnswers).length;
         if (answered < currentQuiz.length) {
@@ -264,8 +260,11 @@ async function submitQuiz(force = false) {
         }
     }
 
+    isSubmitting = true;
     if (liveTestTimer) clearInterval(liveTestTimer);
     if (window.studentRealtimeSub) supabaseClient.removeChannel(window.studentRealtimeSub);
+    document.getElementById('submit-btn').textContent = 'Submitting...';
+    document.getElementById('submit-btn').disabled = true;
     
     score = 0;
     const attempted = Object.keys(userAnswers).length;
@@ -292,17 +291,12 @@ async function submitQuiz(force = false) {
                 dbTest.data.students.push(payload);
                 await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', testData.code);
             }
-        } catch(e) {}
+        } catch(e) { console.error('Test submission failed:', e); }
     }
     
-    // Save results to local storage to show in results screen
     const incorrect = attempted - score;
     localStorage.setItem('lastQuizResults', JSON.stringify({ 
-        score, 
-        attempted,
-        incorrect,
-        total: currentQuiz.length,
-        isPractice: !testData
+        score, attempted, incorrect, total: currentQuiz.length, isPractice: !testData
     }));
     
     localStorage.removeItem('activeTest');
@@ -315,7 +309,7 @@ initQuiz();
 // --- ANTI-CHEAT SECURITY MODULE ---
 let cheatWarnings = 0;
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && testData) {
+    if (document.visibilityState === 'hidden' && testData && !isSubmitting) {
         cheatWarnings++;
         if (cheatWarnings >= 3) {
             alert('SECURITY VIOLATION: You switched apps/tabs 3 times. Your test has been auto-submitted.');
@@ -326,7 +320,6 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// Prevent copy, paste, and right-click during live test
 document.addEventListener('contextmenu', e => { if (testData) e.preventDefault(); });
 document.addEventListener('copy', e => { if (testData) e.preventDefault(); });
 document.addEventListener('paste', e => { if (testData) e.preventDefault(); });
