@@ -37,7 +37,7 @@ async function initDashboard() {
             QUESTIONS_DATA.reduce((acc, t) => acc + t.questions.length, 0) : '0';
 
         // Live Sessions & Recent Activity
-        const { data: tests, error: testsError } = await supabaseClient.from('tests').select('*').order('created_at', { ascending: false });
+        const { data: tests, error: testsError } = await supabaseClient.from('tests').select('*');
         if (testsError) throw testsError;
 
         if (tests) {
