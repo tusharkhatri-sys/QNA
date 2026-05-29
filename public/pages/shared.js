@@ -25,7 +25,14 @@ function escapeHTML(str) {
 
 function getLoggedInStudent() {
     const saved = localStorage.getItem('loggedInStudent');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    try {
+        return JSON.parse(saved);
+    } catch (e) {
+        console.error('Error parsing loggedInStudent from localStorage. Data corrupted.', e);
+        localStorage.setItem('loggedInStudent', null); // Fallback overwrite
+        return null;
+    }
 }
 
 // Global Dynamic Session Calculator
@@ -45,17 +52,29 @@ function getCurrentSession() {
 // Ensure session is fresh before critical operations
 async function ensureSupabaseSession() {
     try {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
-        if (!session || error) {
-            console.log('Session expired or missing. Attempting refresh...');
+        // Safe deep check
+        if (!supabaseClient || !supabaseClient.auth) {
+            console.error('Supabase client or auth module is missing.');
+            return null;
+        }
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (!data || !data.session || error) {
+            console.warn('Session expired or missing. Attempting refresh...');
             const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
-            if (refreshError) throw refreshError;
+            if (refreshError) {
+                console.error('Session refresh failed due to error:', refreshError);
+                return null;
+            }
+            if (!refreshData || !refreshData.session) {
+                console.error('Session refresh failed: no session returned.');
+                return null;
+            }
             return refreshData.session;
         }
-        return session;
+        return data.session;
     } catch (e) {
-        console.error('Session refresh failed:', e);
-        return null;
+        console.error('Session refresh threw a fatal error:', e);
+        return null; // Do not throw, return safe fallback
     }
 }
 

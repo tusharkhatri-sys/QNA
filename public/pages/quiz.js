@@ -1,7 +1,15 @@
-const testData = JSON.parse(localStorage.getItem('activeTest'));
+let testData = null;
+try {
+    const rawData = localStorage.getItem('activeTest');
+    if (rawData) testData = JSON.parse(rawData);
+} catch (e) {
+    console.error("Corrupted activeTest in localStorage", e);
+    localStorage.removeItem('activeTest');
+    window.location.href = 'student.html';
+}
+
 const studentName = localStorage.getItem('activeTestStudentName');
 const student = getLoggedInStudent();
-
 let currentQuiz = [];
 let currentIndex = 0;
 let userAnswers = {};
@@ -210,20 +218,31 @@ function updateTimerDisplay() {
 }
 
 function renderQuestion() {
+    const qNumEl = document.getElementById('current-q-num');
+    const totQEl = document.getElementById('total-q-num');
+    const qTextEl = document.getElementById('question-text');
+    const qTextHiEl = document.getElementById('question-text-hi');
+    const grid = document.getElementById('options-grid');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('submit-btn');
+
+    if (!qTextEl || !grid) return; // Defensive check
+
     if (!currentQuiz || currentQuiz.length === 0) {
-        document.getElementById('question-text').textContent = 'Error: No questions found!';
-        document.getElementById('question-text-hi').textContent = '';
-        document.getElementById('options-grid').innerHTML = '';
+        qTextEl.textContent = 'Error: No questions found!';
+        if (qTextHiEl) qTextHiEl.textContent = '';
+        grid.innerHTML = '';
         return;
     }
+    
     const q = currentQuiz[currentIndex];
     
-    document.getElementById('current-q-num').textContent = currentIndex + 1;
-    document.getElementById('total-q-num').textContent = currentQuiz.length;
-    document.getElementById('question-text').textContent = q.q;
-    document.getElementById('question-text-hi').textContent = q.q_hi || '';
+    if (qNumEl) qNumEl.textContent = currentIndex + 1;
+    if (totQEl) totQEl.textContent = currentQuiz.length;
+    qTextEl.textContent = q.q;
+    if (qTextHiEl) qTextHiEl.textContent = q.q_hi || '';
     
-    const grid = document.getElementById('options-grid');
     grid.innerHTML = '';
     
     const letters = ['A', 'B', 'C', 'D'];
@@ -246,14 +265,14 @@ function renderQuestion() {
         grid.appendChild(div);
     });
     
-    document.getElementById('prev-btn').disabled = currentIndex === 0;
+    if (prevBtn) prevBtn.disabled = currentIndex === 0;
     
     if (currentIndex === currentQuiz.length - 1) {
-        document.getElementById('next-btn').style.display = 'none';
-        document.getElementById('submit-btn').style.display = 'block';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (submitBtn) submitBtn.style.display = 'block';
     } else {
-        document.getElementById('next-btn').style.display = 'block';
-        document.getElementById('submit-btn').style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'block';
+        if (submitBtn) submitBtn.style.display = 'none';
     }
 }
 
@@ -389,10 +408,18 @@ async function submitQuiz(force = false) {
                 console.error('Test submission failed:', e);
                 retries--;
                 if (retries === 0) {
-                    showCustomModal("Critical Error", "Failed to submit to server. Please check your internet connection and try again.", false);
                     isSubmitting = false;
-                    document.getElementById('submit-btn').textContent = 'Submit Test';
-                    document.getElementById('submit-btn').disabled = false;
+                    const submitBtnEl = document.getElementById('submit-btn');
+                    if (submitBtnEl) {
+                        submitBtnEl.textContent = 'Submit Test';
+                        submitBtnEl.disabled = false;
+                    }
+                    
+                    showCustomModal(
+                        "Critical Error", 
+                        "Failed to submit to server. Please check your internet connection and try again. Your progress is saved locally.", 
+                        false
+                    );
                     return; // Halt submission so user doesn't lose work
                 }
                 await new Promise(r => setTimeout(r, 2000)); // wait before retry
@@ -447,7 +474,11 @@ async function submitQuiz(force = false) {
     window.location.href = 'student.html';
 }
 
-initQuiz();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initQuiz);
+} else {
+    initQuiz();
+}
 
 // --- ANTI-CHEAT SECURITY MODULE ---
 let cheatWarnings = 0;

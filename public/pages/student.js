@@ -2,54 +2,89 @@ const student = getLoggedInStudent();
 if (!student) {
     window.location.href = 'auth.html';
 } else {
-    const headerName = document.getElementById('header-student-name');
-    if (headerName) headerName.textContent = student.name;
-    
-    const initialSpan = document.getElementById('badge-initial');
-    if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
-    
-    document.getElementById('student-name-input').value = student.name;
-    
-    // Initialize Dashboard Features
-    initStudentDashboard();
+    const initLogic = () => {
+        const headerName = document.getElementById('header-student-name');
+        if (headerName) headerName.textContent = student.name;
+        
+        const initialSpan = document.getElementById('badge-initial');
+        if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
+        
+        const studentNameInput = document.getElementById('student-name-input');
+        if (studentNameInput) studentNameInput.value = student.name;
+        
+        // Initialize Dashboard Features
+        initStudentDashboard();
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLogic);
+    } else {
+        initLogic();
+    }
 }
     
-const lastResults = localStorage.getItem('lastQuizResults');
-if (lastResults) {
-    try {
-        const res = JSON.parse(lastResults);
-        
-        // Save to history only if it's an admin live test
-        if (!res.isPractice) {
-            let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
-            history.push({
-                date: new Date().toISOString(),
-                score: res.score,
-                total: res.total,
-                percent: Math.round((res.score / res.total) * 100)
-            });
-            localStorage.setItem('studentTestHistory', JSON.stringify(history));
-        }
-
-        const scoreText = document.getElementById('result-score-text');
-        if (scoreText) {
-            scoreText.textContent = `${res.score} / ${res.total}`;
-            document.getElementById('result-attempted').textContent = res.attempted;
-            document.getElementById('result-total').textContent = res.total;
-            document.getElementById('result-correct').textContent = res.score;
-            document.getElementById('result-incorrect').textContent = res.incorrect;
+const processResultsLogic = () => {
+    const lastResults = localStorage.getItem('lastQuizResults');
+    if (lastResults) {
+        try {
+            const res = JSON.parse(lastResults);
             
-            document.getElementById('results-modal').style.display = 'flex';
-            
-            // Confetti if score > 80%
-            if ((res.score / res.total) >= 0.8 && window.confetti) {
-                setTimeout(() => {
-                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                }, 300);
+            // Save to history only if it's an admin live test
+            if (!res.isPractice) {
+                let history = [];
+                try {
+                    history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+                } catch(e) {
+                    console.error("Corrupted student test history. Resetting.", e);
+                }
+                history.push({
+                    date: new Date().toISOString(),
+                    score: res.score,
+                    total: res.total,
+                    percent: Math.round((res.score / res.total) * 100)
+                });
+                localStorage.setItem('studentTestHistory', JSON.stringify(history));
             }
+
+            const scoreText = document.getElementById('result-score-text');
+            if (scoreText) {
+                scoreText.textContent = `${res.score} / ${res.total}`;
+                
+                const attemptedEl = document.getElementById('result-attempted');
+                if (attemptedEl) attemptedEl.textContent = res.attempted;
+                
+                const totalEl = document.getElementById('result-total');
+                if (totalEl) totalEl.textContent = res.total;
+                
+                const correctEl = document.getElementById('result-correct');
+                if (correctEl) correctEl.textContent = res.score;
+                
+                const incorrectEl = document.getElementById('result-incorrect');
+                if (incorrectEl) incorrectEl.textContent = res.incorrect;
+                
+                const modal = document.getElementById('results-modal');
+                if (modal) modal.style.display = 'flex';
+                
+                // Confetti if score > 80%
+                if ((res.score / res.total) >= 0.8 && window.confetti) {
+                    setTimeout(() => {
+                        try {
+                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                        } catch (e) { console.warn("Confetti failed", e); }
+                    }, 300);
+                }
+            }
+        } catch(e) {
+            console.error("Failed to parse lastQuizResults", e);
         }
-    } catch(e) {}
-    localStorage.removeItem('lastQuizResults');
+        localStorage.removeItem('lastQuizResults');
+    }
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', processResultsLogic);
+} else {
+    processResultsLogic();
 }
 
 // Tab Switching & Analytics
@@ -66,13 +101,21 @@ function switchTab(tabName) {
 }
 
 function renderAnalytics() {
-    let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
-    document.getElementById('analytics-total-tests').textContent = history.length;
+    let history = [];
+    try {
+        history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+    } catch(e) {
+        console.error("Corrupted student history", e);
+    }
+    
+    const totalTestsEl = document.getElementById('analytics-total-tests');
+    if (totalTestsEl) totalTestsEl.textContent = history.length;
     
     if (history.length === 0) return;
     
     let totalPercent = history.reduce((sum, h) => sum + h.percent, 0);
-    document.getElementById('analytics-avg-score').textContent = Math.round(totalPercent / history.length) + '%';
+    const avgScoreEl = document.getElementById('analytics-avg-score');
+    if (avgScoreEl) avgScoreEl.textContent = Math.round(totalPercent / history.length) + '%';
     
     // Render Chart
     const ctx = document.getElementById('performanceChart');
@@ -85,30 +128,34 @@ function renderAnalytics() {
     
     if (window.perfChart) window.perfChart.destroy();
     
-    window.perfChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Score %',
-                data: data,
-                borderColor: '#60a5fa',
-                backgroundColor: 'rgba(96, 165, 250, 0.1)',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
-                x: { grid: { display: false } }
+    try {
+        window.perfChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Score %',
+                    data: data,
+                    borderColor: '#60a5fa',
+                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
             }
-        }
-    });
+        });
+    } catch (e) {
+        console.error("Failed to render performance chart", e);
+    }
 }
 
 function logout() {
@@ -127,9 +174,14 @@ function exitSafeBrowser() {
 }
 
 async function joinLiveTest() {
-    const name = document.getElementById('student-name-input').value.trim();
-    const code = document.getElementById('test-code-input').value.trim().toUpperCase();
+    const nameInput = document.getElementById('student-name-input');
+    const codeInput = document.getElementById('test-code-input');
     const err = document.getElementById('join-error-msg');
+    
+    if (!nameInput || !codeInput || !err) return;
+    
+    const name = nameInput.value.trim();
+    const code = codeInput.value.trim().toUpperCase();
     
     if (!name || !code) { err.textContent = "Please fill all fields."; err.style.display = "block"; return; }
 
@@ -154,7 +206,8 @@ async function joinLiveTest() {
         window.location.href = 'quiz.html';
     } catch (e) {
         console.error(e);
-        err.textContent = "Could not connect to database."; err.style.display = "block";
+        err.innerHTML = `Could not connect to database. <br><button onclick="window.location.reload()" class="mt-2 px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30">Refresh Page</button>`; 
+        err.style.display = "block";
     }
 }
 
@@ -195,16 +248,20 @@ async function initStudentDashboard() {
     
     // 1. Fetch Streak
     try {
-        const { data: sData } = await supabaseClient.from('students').select('current_streak, session').eq('email', student.email).single();
+        const { data: sData, error } = await supabaseClient.from('students').select('current_streak, session').eq('email', student.email).single();
+        if (error) throw error;
         if(sData && document.getElementById('header-streak')) {
             document.getElementById('header-streak').textContent = `${sData.current_streak || 0} Day Streak`;
             student.session = sData.session; // Update local session
         }
-    } catch(e) {}
+    } catch(e) {
+        console.error("Failed to load streak data", e);
+    }
     
     // 2. Fetch Wall of Fame
     try {
-        const { data: wof } = await supabaseClient.from('toppers_wall').select('*').order('created_at', { ascending: false });
+        const { data: wof, error } = await supabaseClient.from('toppers_wall').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
         const container = document.getElementById('wof-container');
         if(wof && wof.length > 0 && container) {
             container.innerHTML = wof.map(w => `
@@ -219,7 +276,18 @@ async function initStudentDashboard() {
         } else if (container) {
             container.innerHTML = '<div class="py-10 text-center text-slate-400 w-full italic">No superstars yet!</div>';
         }
-    } catch(e) {}
+    } catch(e) {
+        console.error("Failed to fetch Wall of Fame", e);
+        const container = document.getElementById('wof-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="w-full py-8 flex flex-col items-center justify-center text-red-400 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                    <p class="mb-3 font-bold text-sm">Failed to load Wall of Fame data.</p>
+                    <button onclick="window.location.reload()" class="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-bold rounded-lg transition-all">Refresh Page</button>
+                </div>
+            `;
+        }
+    }
     
     // 3. Listen for Announcements
     supabaseClient.channel('announcements').on('broadcast', { event: 'new_notice' }, (payload) => {
@@ -282,22 +350,36 @@ async function fetchAlumniRecords() {
     const table = document.getElementById('alumni-table-body');
     if(!table) return;
     try {
-        let history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+        let history = [];
+        try {
+            history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
+        } catch (e) {
+            console.error("Corrupted studentTestHistory in localStorage", e);
+        }
+        
         if(history.length === 0) {
             table.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500 italic">No past records found.</td></tr>`;
             return;
         }
         table.innerHTML = history.reverse().map(h => {
             const d = new Date(h.date);
-            return \`
+            return `
             <tr class="group hover:bg-white/[0.02] transition-all">
-                <td class="py-4 text-slate-400 text-sm">\${d.toLocaleDateString()}</td>
+                <td class="py-4 text-slate-400 text-sm">${d.toLocaleDateString()}</td>
                 <td class="font-bold text-white">Mock Test</td>
-                <td class="font-black \${h.percent >= 80 ? 'text-green-400' : (h.percent >= 50 ? 'text-blue-400' : 'text-red-400')}">\${h.percent}%</td>
+                <td class="font-black ${h.percent >= 80 ? 'text-green-400' : (h.percent >= 50 ? 'text-blue-400' : 'text-red-400')}">${h.percent}%</td>
             </tr>
-            \`;
+            `;
         }).join('');
     } catch(e) {
-        table.innerHTML = \`<tr><td colspan="3" class="py-8 text-center text-red-500">Failed to load records.</td></tr>\`;
+        console.error("Failed to render alumni records", e);
+        table.innerHTML = `
+            <tr>
+                <td colspan="3" class="py-8 text-center">
+                    <p class="text-red-400 text-sm font-bold mb-3">Error loading records.</p>
+                    <button onclick="window.location.reload()" class="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-bold rounded-lg transition-all">Refresh Page</button>
+                </td>
+            </tr>
+        `;
     }
 }

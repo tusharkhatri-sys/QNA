@@ -10,6 +10,7 @@ let activeProctoring = {};
 // --- SHARED UTILS ---
 function togglePassword(id) {
     const el = document.getElementById(id);
+    if (!el) return;
     if (el.dataset.revealed === 'true') {
         el.textContent = '••••••••';
         el.dataset.revealed = 'false';
@@ -19,8 +20,14 @@ function togglePassword(id) {
     }
 }
 
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id) { 
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden'); 
+}
+function closeModal(id) { 
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden'); 
+}
 
 // --- DASHBOARD LOGIC ---
 async function initDashboard() {
