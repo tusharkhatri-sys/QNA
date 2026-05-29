@@ -152,16 +152,18 @@
     <div id="section-home" class="section-view active dashboard-container">
         <!-- Live Test Panel -->
         <!-- Live Test Panel -->
-        <div class="panel-card relative overflow-hidden group border border-slate-700/50">
-            <div class="absolute -top-32 -right-32 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl group-hover:bg-orange-500/20 transition-all duration-700"></div>
+        <div class="panel-card relative overflow-hidden group border border-slate-700/50 shadow-2xl backdrop-blur-xl bg-slate-900/60" style="grid-column: 1 / -1;">
+            <!-- Premium Glassmorphism Background Elements -->
+            <div class="absolute -top-32 -right-32 w-64 h-64 bg-orange-500/20 rounded-full blur-[80px] group-hover:bg-orange-500/30 transition-all duration-700"></div>
+            <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-coral-500/10 rounded-full blur-[80px]"></div>
             
             <div class="flex items-center gap-4 mb-8 relative z-10">
                 <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/10 flex items-center justify-center border border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
-                    <i data-lucide="zap" class="w-7 h-7 text-orange-400 fill-orange-400"></i>
+                    <i data-lucide="zap" class="w-7 h-7 text-orange-400 fill-orange-400 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]"></i>
                 </div>
                 <div>
-                    <h2 class="text-2xl font-black tracking-tight text-white">Join Live Test</h2>
-                    <p class="text-sm text-slate-400 font-medium mt-1">Connect to active assessment</p>
+                    <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">Join Live Assessment</h2>
+                    <p class="text-sm text-slate-400 font-medium mt-1">Enter your 6-digit access code</p>
                 </div>
             </div>
             
@@ -170,33 +172,35 @@
                 <span id="join-error-text"></span>
             </div>
             
-            <div class="space-y-6 relative z-10">
+            <div class="space-y-6 relative z-10 w-full max-w-lg mx-auto md:mx-0">
                 <input type="hidden" id="student-name-input">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Student Identity</label>
-                    <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 shadow-inner">
-                        <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
-                            <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
+                
+                <div class="bg-slate-800/40 p-5 rounded-2xl border border-white/5 backdrop-blur-md">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Student Identity</label>
+                    <div class="flex items-center gap-4 bg-black/20 p-4 rounded-xl border border-white/5 shadow-inner">
+                        <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                            <i data-lucide="user" class="w-5 h-5 text-indigo-400"></i>
                         </div>
-                        <div class="font-bold text-slate-200 capitalize truncate text-lg tracking-tight" id="student-name-display">Loading...</div>
+                        <div class="font-black text-white capitalize truncate text-xl tracking-tight drop-shadow-sm" id="student-name-display">Loading...</div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Access Code</label>
-                    <div class="flex gap-2 justify-between max-w-[340px]" id="otp-container">
-                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 1)" onkeydown="handleOtpBackspace(event, this, 1)">
-                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 2)" onkeydown="handleOtpBackspace(event, this, 2)">
-                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 3)" onkeydown="handleOtpBackspace(event, this, 3)">
-                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 4)" onkeydown="handleOtpBackspace(event, this, 4)">
-                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 5)" onkeydown="handleOtpBackspace(event, this, 5)">
-                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 6)" onkeydown="handleOtpBackspace(event, this, 6)">
+                <div class="bg-slate-800/40 p-5 rounded-2xl border border-white/5 backdrop-blur-md">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Access Code</label>
+                    <!-- Auto-scaling Grid to prevent mobile cutoff -->
+                    <div class="grid grid-cols-6 gap-2 sm:gap-3 w-full" id="otp-container">
+                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-black/30 border border-slate-700/80 rounded-xl text-white focus:border-orange-500 focus:bg-slate-900 focus:ring-4 focus:ring-orange-500/20 uppercase transition-all shadow-inner placeholder-slate-700" oninput="handleOtpInput(this, 1)" onkeydown="handleOtpBackspace(event, this, 1)" placeholder="•">
+                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-black/30 border border-slate-700/80 rounded-xl text-white focus:border-orange-500 focus:bg-slate-900 focus:ring-4 focus:ring-orange-500/20 uppercase transition-all shadow-inner placeholder-slate-700" oninput="handleOtpInput(this, 2)" onkeydown="handleOtpBackspace(event, this, 2)" placeholder="•">
+                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-black/30 border border-slate-700/80 rounded-xl text-white focus:border-orange-500 focus:bg-slate-900 focus:ring-4 focus:ring-orange-500/20 uppercase transition-all shadow-inner placeholder-slate-700" oninput="handleOtpInput(this, 3)" onkeydown="handleOtpBackspace(event, this, 3)" placeholder="•">
+                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-black/30 border border-slate-700/80 rounded-xl text-white focus:border-orange-500 focus:bg-slate-900 focus:ring-4 focus:ring-orange-500/20 uppercase transition-all shadow-inner placeholder-slate-700" oninput="handleOtpInput(this, 4)" onkeydown="handleOtpBackspace(event, this, 4)" placeholder="•">
+                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-black/30 border border-slate-700/80 rounded-xl text-white focus:border-orange-500 focus:bg-slate-900 focus:ring-4 focus:ring-orange-500/20 uppercase transition-all shadow-inner placeholder-slate-700" oninput="handleOtpInput(this, 5)" onkeydown="handleOtpBackspace(event, this, 5)" placeholder="•">
+                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-black/30 border border-slate-700/80 rounded-xl text-white focus:border-orange-500 focus:bg-slate-900 focus:ring-4 focus:ring-orange-500/20 uppercase transition-all shadow-inner placeholder-slate-700" oninput="handleOtpInput(this, 6)" onkeydown="handleOtpBackspace(event, this, 6)" placeholder="•">
                     </div>
                 </div>
 
-                <button onclick="joinLiveTest()" class="w-full py-4 mt-4 rounded-xl bg-gradient-to-r from-orange-500 to-coral-500 hover:from-orange-400 hover:to-coral-400 text-white font-black text-lg shadow-[0_0_25px_rgba(249,115,22,0.35)] hover:shadow-[0_0_35px_rgba(249,115,22,0.5)] transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2" style="background-image: linear-gradient(to right, #f97316, #f43f5e);">
-                    <span>Join Live Assessment</span>
-                    <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                <button onclick="joinLiveTest()" class="w-full py-5 mt-4 rounded-2xl bg-gradient-to-r from-orange-500 via-red-500 to-coral-500 hover:from-orange-400 hover:to-coral-400 text-white font-black text-xl shadow-[0_0_30px_rgba(249,115,22,0.4)] hover:shadow-[0_0_45px_rgba(249,115,22,0.6)] transition-all duration-300 transform hover:-translate-y-1 active:scale-[0.98] flex items-center justify-center gap-3 group border border-orange-400/30" style="background-image: linear-gradient(to right, #f97316, #f43f5e, #f97316);">
+                    <span>Initiate Session</span>
+                    <i data-lucide="arrow-right" class="w-6 h-6 group-hover:translate-x-1 transition-transform"></i>
                 </button>
             </div>
         </div>
