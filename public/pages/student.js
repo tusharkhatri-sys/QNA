@@ -1,3 +1,19 @@
+window.handleOtpInput = function(current, index) {
+    current.value = current.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    if (current.value.length === 1 && index < 6) {
+        current.nextElementSibling.focus();
+    }
+};
+
+window.handleOtpBackspace = function(e, current, index) {
+    if (e.key === 'Backspace' && current.value === '' && index > 1) {
+        current.previousElementSibling.focus();
+    }
+    if (e.key === 'Enter') {
+        joinLiveTest();
+    }
+};
+
 const student = getLoggedInStudent();
 if (!student) {
     window.location.href = 'auth.html';
