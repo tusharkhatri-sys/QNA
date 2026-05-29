@@ -53,20 +53,20 @@
         }
 
         .panel-card {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             padding: 40px;
             border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-glow);
+            box-shadow: 0 0 30px rgba(79, 70, 229, 0.05);
         }
         .bottom-nav {
             display: none;
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
             z-index: 100;
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -77,7 +77,7 @@
             display: flex; flex-direction: column; align-items: center; gap: 4px;
             color: var(--text-muted); cursor: pointer; transition: all 0.3s ease;
         }
-        .nav-item.active { color: var(--accent); }
+        .nav-item.active { color: #818cf8; } /* Indigo 400 for better dark mode visibility */
         .nav-item span { font-size: 0.75rem; font-weight: 600; }
         .section-view { display: none; animation: fadeIn 0.3s ease; }
         .section-view.active { display: block; }
@@ -111,9 +111,8 @@
     <header class="bg-[#0f172a]/90 backdrop-blur-xl fixed top-0 w-full z-50 border-b border-white/10" style="padding-top: env(safe-area-inset-top);">
         <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-black text-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] border border-white/20 relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                    <span id="badge-initial" class="relative z-10 tracking-tighter">Q</span>
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-black text-lg shadow-[0_0_15px_rgba(99,102,241,0.4)] border-2 border-indigo-500/30 relative overflow-hidden group">
+                    <span id="badge-initial" class="relative z-10 tracking-tighter text-white">Q</span>
                 </div>
                 <div>
                     <h1 class="text-xl font-bold tracking-tight">QNA Portal</h1>
@@ -131,9 +130,9 @@
                     <i data-lucide="flame" class="w-4 h-4 fill-orange-500"></i>
                     <span id="header-streak">0 Day Streak</span>
                 </div>
-                <button onclick="exitSafeBrowser()" class="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 gap-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm font-bold border border-red-500/20 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                <button onclick="exitSafeBrowser()" class="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 gap-2 rounded-xl bg-slate-800/50 text-slate-300 hover:bg-red-500 hover:text-white transition-all duration-300 text-sm font-bold border border-slate-700/50 hover:border-red-500 shadow-sm hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
                     <i data-lucide="log-out" class="w-5 h-5 sm:w-4 sm:h-4"></i>
-                    <span class="hidden sm:inline">Exit App</span>
+                    <span class="hidden sm:inline">Log Out</span>
                 </button>
             </div>
         </div>
@@ -152,23 +151,54 @@
 
     <div id="section-home" class="section-view active dashboard-container">
         <!-- Live Test Panel -->
-        <div class="panel-card">
-            <div style="font-size: 3rem; margin-bottom: 20px;">⚡</div>
-            <h2 style="font-size: 2rem; margin-bottom: 10px;">Join Live Test</h2>
-            <p style="color: var(--text-muted); margin-bottom: 30px; line-height: 1.6;">Enter the secure 6-character access code provided by your instructor to begin your live assessment.</p>
+        <!-- Live Test Panel -->
+        <div class="panel-card relative overflow-hidden group border border-slate-700/50">
+            <div class="absolute -top-32 -right-32 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl group-hover:bg-orange-500/20 transition-all duration-700"></div>
             
-            <div id="join-error-msg" style="color: var(--red); background: var(--red-bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 20px; display: none;"></div>
-            
-            <div class="form-group">
-                <label>Confirm Name</label>
-                <input type="text" id="student-name-input" class="modern-input" readonly style="opacity: 0.7; cursor: not-allowed;">
-            </div>
-            <div class="form-group">
-                <label>Access Code</label>
-                <input type="text" id="test-code-input" class="modern-input" placeholder="e.g. A1B2C3" style="text-transform: uppercase; letter-spacing: 4px; font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; font-weight: 700;">
+            <div class="flex items-center gap-4 mb-8 relative z-10">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500/20 to-red-500/10 flex items-center justify-center border border-orange-500/30 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
+                    <i data-lucide="zap" class="w-7 h-7 text-orange-400 fill-orange-400"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight text-white">Join Live Test</h2>
+                    <p class="text-sm text-slate-400 font-medium mt-1">Connect to active assessment</p>
+                </div>
             </div>
             
-            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="joinLiveTest()">Connect to Test</button>
+            <div id="join-error-msg" class="hidden mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center gap-2 relative z-10">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+                <span id="join-error-text"></span>
+            </div>
+            
+            <div class="space-y-6 relative z-10">
+                <input type="hidden" id="student-name-input">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Student Identity</label>
+                    <div class="flex items-center gap-3 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 shadow-inner">
+                        <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0 border border-indigo-500/30">
+                            <i data-lucide="user" class="w-4 h-4 text-indigo-400"></i>
+                        </div>
+                        <div class="font-bold text-slate-200 capitalize truncate text-lg tracking-tight" id="student-name-display">Loading...</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Access Code</label>
+                    <div class="flex gap-2 justify-between max-w-[340px]" id="otp-container">
+                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 1)" onkeydown="handleOtpBackspace(event, this, 1)">
+                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 2)" onkeydown="handleOtpBackspace(event, this, 2)">
+                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 3)" onkeydown="handleOtpBackspace(event, this, 3)">
+                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 4)" onkeydown="handleOtpBackspace(event, this, 4)">
+                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 5)" onkeydown="handleOtpBackspace(event, this, 5)">
+                        <input type="text" maxlength="1" class="w-[3rem] h-14 sm:w-14 sm:h-16 text-center text-2xl font-black bg-slate-900 border border-slate-700 rounded-xl text-white focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 uppercase transition-all shadow-inner" oninput="handleOtpInput(this, 6)" onkeydown="handleOtpBackspace(event, this, 6)">
+                    </div>
+                </div>
+
+                <button onclick="joinLiveTest()" class="w-full py-4 mt-4 rounded-xl bg-gradient-to-r from-orange-500 to-coral-500 hover:from-orange-400 hover:to-coral-400 text-white font-black text-lg shadow-[0_0_25px_rgba(249,115,22,0.35)] hover:shadow-[0_0_35px_rgba(249,115,22,0.5)] transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2" style="background-image: linear-gradient(to right, #f97316, #f43f5e);">
+                    <span>Join Live Assessment</span>
+                    <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Practice Panel -->
@@ -237,18 +267,18 @@
     </div>
 
     <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('home')" id="nav-home">
-            <i data-lucide="home"></i>
-            <span>Home</span>
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-2xl border-t border-white/5 z-[100] px-8 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex justify-between items-center shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+        <div class="nav-item active flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-300" onclick="switchTab('home')" id="nav-home">
+            <i data-lucide="home" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold tracking-wider uppercase">Home</span>
         </div>
-        <div class="nav-item" onclick="switchTab('analytics')" id="nav-analytics">
-            <i data-lucide="pie-chart"></i>
-            <span>Analytics</span>
+        <div class="nav-item flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-300" onclick="switchTab('analytics')" id="nav-analytics">
+            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold tracking-wider uppercase">Stats</span>
         </div>
-        <div class="nav-item" onclick="switchTab('alumni')" id="nav-alumni">
-            <i data-lucide="award"></i>
-            <span>Alumni</span>
+        <div class="nav-item flex flex-col items-center gap-1.5 cursor-pointer transition-all duration-300" onclick="switchTab('alumni')" id="nav-alumni">
+            <i data-lucide="history" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold tracking-wider uppercase">Records</span>
         </div>
     </nav>
 

@@ -12,6 +12,12 @@ if (!student) {
         const studentNameInput = document.getElementById('student-name-input');
         if (studentNameInput) studentNameInput.value = student.name;
         
+        const studentNameDisplay = document.getElementById('student-name-display');
+        if (studentNameDisplay) studentNameDisplay.textContent = student.name;
+        
+        const studentEmail = document.getElementById('student-email');
+        if (studentEmail) studentEmail.textContent = student.email;
+        
         // Initialize Dashboard Features
         initStudentDashboard();
     };
@@ -174,30 +180,51 @@ function exitSafeBrowser() {
 }
 
 async function joinLiveTest() {
-    const nameInput = document.getElementById('student-name-input');
-    const codeInput = document.getElementById('test-code-input');
     const err = document.getElementById('join-error-msg');
+    const errText = document.getElementById('join-error-text');
+    if (!err) return;
     
-    if (!nameInput || !codeInput || !err) return;
+    const showError = (msg) => {
+        if(errText) errText.textContent = msg;
+        else err.textContent = msg;
+        err.classList.remove('hidden');
+        err.style.display = "flex";
+    };
     
-    const name = nameInput.value.trim();
-    const code = codeInput.value.trim().toUpperCase();
+    const hideError = () => {
+        err.classList.add('hidden');
+        err.style.display = "none";
+    };
+
+    let code = "";
+    const otpInputs = document.querySelectorAll('#otp-container input');
+    if (otpInputs.length === 6) {
+        otpInputs.forEach(input => code += input.value);
+    } else {
+        const codeInput = document.getElementById('test-code-input');
+        code = codeInput ? codeInput.value.trim().toUpperCase() : "";
+    }
     
-    if (!name || !code) { err.textContent = "Please fill all fields."; err.style.display = "block"; return; }
+    code = code.trim().toUpperCase();
+    
+    if (code.length !== 6) { 
+        showError("Please enter the complete 6-character code."); 
+        return; 
+    }
 
     try {
-        err.style.display = "none";
-        const { data: dbTest, error } = await supabaseClient.from('tests').select('data').eq('code', code).single();
+        hideError();
+        const { data: dbTest, error } = await window.supabaseClient.from('tests').select('data').eq('code', code).single();
         if (error || !dbTest) {
-            err.textContent = "Invalid Code."; err.style.display = "block"; return;
+            showError("Invalid Code. Please check and try again."); return;
         }
 
         const testData = { code, ...dbTest.data };
         if (testData.isActive === false || testData.isActive === 'stopped') {
-            err.textContent = "This test is no longer active."; err.style.display = "block"; return;
+            showError("This test is no longer active."); return;
         }
         if (testData.isActive === 'hold') {
-            err.textContent = "This test is currently on hold by the admin."; err.style.display = "block"; return;
+            showError("This test is currently on hold by the admin."); return;
         }
 
         // Save session
