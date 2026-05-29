@@ -9,9 +9,54 @@ let score = 0;
 let timeRemaining = 0;
 let liveTestTimer = null;
 let isSubmitting = false;
+let offlineBuffer = false;
+
+window.addEventListener('online', async () => {
+    if (offlineBuffer && testData && !isSubmitting) {
+        console.log('Network restored. Syncing offline buffer...');
+        debouncedReportLiveProgress();
+        offlineBuffer = false;
+    }
+});
 
 if (!testData && !localStorage.getItem('practiceMode')) {
     window.location.href = 'student.html';
+}
+
+// --- Custom Non-Blocking Modal ---
+function showCustomModal(title, message, isConfirm = false, onConfirm = null, onCancel = null) {
+    const overlay = document.getElementById('custom-modal-overlay');
+    const titleEl = document.getElementById('custom-modal-title');
+    const msgEl = document.getElementById('custom-modal-message');
+    const btnConfirm = document.getElementById('custom-modal-confirm');
+    const btnCancel = document.getElementById('custom-modal-cancel');
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    
+    if (isConfirm) {
+        btnCancel.style.display = 'block';
+    } else {
+        btnCancel.style.display = 'none';
+    }
+
+    // Cleanup old listeners
+    const newConfirm = btnConfirm.cloneNode(true);
+    const newCancel = btnCancel.cloneNode(true);
+    btnConfirm.parentNode.replaceChild(newConfirm, btnConfirm);
+    btnCancel.parentNode.replaceChild(newCancel, btnCancel);
+
+    newConfirm.onclick = () => {
+        overlay.style.display = 'none';
+        if (onConfirm) onConfirm();
+    };
+
+    newCancel.onclick = () => {
+        overlay.style.display = 'none';
+        if (onCancel) onCancel();
+    };
+
+    overlay.style.display = 'flex';
 }
 
 // Utility: Fisher-Yates Shuffle
@@ -77,14 +122,24 @@ function initLiveTest() {
     });
     
     timeRemaining = (testData.duration || 60) * 60;
+    const durationMs = timeRemaining * 1000;
+    const testEndTime = Date.now() + durationMs;
+    
     updateTimerDisplay();
     liveTestTimer = setInterval(() => {
-        timeRemaining--;
-        updateTimerDisplay();
+        timeRemaining = Math.round((testEndTime - Date.now()) / 1000);
+        
         if (timeRemaining <= 0) {
+            timeRemaining = 0;
             clearInterval(liveTestTimer);
-            alert("Time's up! Your test will be auto-submitted.");
-            submitQuiz(true);
+            updateTimerDisplay();
+            showCustomModal("Time's Up!", "Your test will be auto-submitted.", false, () => {
+                submitQuiz(true);
+            });
+            // Force submit in background in case they don't click OK
+            setTimeout(() => submitQuiz(true), 2000);
+        } else {
+            updateTimerDisplay();
         }
     }, 1000);
 
@@ -108,14 +163,14 @@ function initLiveTest() {
                 const msg = document.getElementById('hold-alert-msg');
                 if (msg) msg.remove();
             } else if (data.isActive === 'stopped' || data.isActive === false) {
-                alert('Test was closed by admin. Submitting your current progress...');
-                submitQuiz(true); 
+                showCustomModal("Test Closed", "Test was closed by admin. Submitting your current progress...", false, () => submitQuiz(true));
+                setTimeout(() => submitQuiz(true), 2000);
             }
             
             const emailKey = student ? student.email : studentName;
             if (data.forceClosedStudents && data.forceClosedStudents.includes(emailKey)) {
-                alert('Admin has force closed your session.');
-                submitQuiz(true);
+                showCustomModal("Force Closed", "Admin has force closed your session.", false, () => submitQuiz(true));
+                setTimeout(() => submitQuiz(true), 2000);
             }
         }).subscribe();
         
@@ -225,46 +280,79 @@ function prevQuestion() {
 
 const debouncedReportLiveProgress = debounce(async () => {
     if (!testData || isSubmitting) return;
+    if (!navigator.onLine) {
+        offlineBuffer = true;
+        return;
+    }
+    
     const answered = Object.keys(userAnswers).length;
     const emailKey = student ? student.email : studentName;
     try {
-        const { data: dbTest } = await supabaseClient.from('tests').select('data').eq('code', testData.code).single();
-        if (dbTest) {
-            if (!dbTest.data.liveStudents) dbTest.data.liveStudents = {};
-            dbTest.data.liveStudents[emailKey] = {
-                studentName, studentEmail: student ? student.email : '',
-                answered, total: currentQuiz.length,
-                joinedAt: dbTest.data.liveStudents[emailKey]?.joinedAt || new Date().toISOString()
-            };
-            await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', testData.code);
-        }
-    } catch(e) { console.error('Live progress sync failed:', e); }
+        // FIXED: Using atomic RPC to avoid JSON race conditions
+        const { error } = await supabaseClient.rpc('upsert_live_progress', {
+            p_test_code: testData.code,
+            p_email_key: emailKey,
+            p_student_name: studentName,
+            p_student_email: student ? student.email : '',
+            p_answered: answered,
+            p_total: currentQuiz.length
+        });
+        
+        if (error) throw error;
+        offlineBuffer = false;
+    } catch(e) { 
+        console.error('Live progress sync failed:', e); 
+        offlineBuffer = true;
+    }
 }, 1500);
 
 function confirmEarlySubmit() {
     const answered = Object.keys(userAnswers).length;
-    if (confirm(`You have attempted ${answered} out of ${currentQuiz.length} questions. Are you sure you want to end practice early?`)) {
-        submitQuiz(true);
+    showCustomModal(
+        "End Practice", 
+        `You have attempted ${answered} out of ${currentQuiz.length} questions. Are you sure you want to end practice early?`,
+        true, 
+        () => submitQuiz(true)
+    );
+}
+
+// Triggered by the new submit button in quiz.html
+function triggerSubmitConfirmation() {
+    if (isSubmitting) return;
+    if (testData) {
+        const answered = Object.keys(userAnswers).length;
+        if (answered < currentQuiz.length) {
+            showCustomModal(
+                "Incomplete Test",
+                `You have only answered ${answered} out of ${currentQuiz.length} questions. Are you sure you want to submit? Unanswered questions will be marked as incorrect.`,
+                true,
+                () => submitQuiz(true)
+            );
+            return;
+        }
     }
+    // If all answered or not testData, just confirm normally
+    showCustomModal(
+        "Confirm Submission",
+        "Are you sure you want to submit your assessment?",
+        true,
+        () => submitQuiz(true)
+    );
 }
 
 async function submitQuiz(force = false) {
     if (isSubmitting) return;
-    
-    if (testData && !force) {
-        const answered = Object.keys(userAnswers).length;
-        if (answered < currentQuiz.length) {
-            if (!confirm(`You have only answered ${answered} out of ${currentQuiz.length} questions. Are you sure you want to submit? Unanswered questions will be marked as incorrect.`)) {
-                return;
-            }
-        }
-    }
-
     isSubmitting = true;
+    
     if (liveTestTimer) clearInterval(liveTestTimer);
     if (window.studentRealtimeSub) supabaseClient.removeChannel(window.studentRealtimeSub);
     document.getElementById('submit-btn').textContent = 'Submitting...';
     document.getElementById('submit-btn').disabled = true;
+    
+    // PRE-FLIGHT AUTH CHECK (Session Refresh)
+    if (typeof ensureSupabaseSession === 'function') {
+        await ensureSupabaseSession();
+    }
     
     score = 0;
     const attempted = Object.keys(userAnswers).length;
@@ -282,16 +370,34 @@ async function submitQuiz(force = false) {
             score, total: currentQuiz.length, submittedAt: new Date().toISOString(), detailedResults: detailed
         };
         
-        try {
-            const emailKey = student ? student.email : studentName;
-            const { data: dbTest } = await supabaseClient.from('tests').select('data').eq('code', testData.code).single();
-            if (dbTest) {
-                if (dbTest.data.liveStudents && dbTest.data.liveStudents[emailKey]) delete dbTest.data.liveStudents[emailKey];
-                if (!dbTest.data.students) dbTest.data.students = [];
-                dbTest.data.students.push(payload);
-                await supabaseClient.from('tests').update({ data: dbTest.data }).eq('code', testData.code);
+        let retries = 3;
+        let success = false;
+        while (retries > 0 && !success) {
+            try {
+                if (!navigator.onLine) throw new Error('Offline');
+                
+                // FIXED: Using atomic RPC to append submission without JSON race conditions
+                const { error: updateErr } = await supabaseClient.rpc('submit_test_result', {
+                    p_test_code: testData.code,
+                    p_payload: payload,
+                    p_email_key: student ? student.email : studentName
+                });
+                
+                if (updateErr) throw updateErr;
+                success = true;
+            } catch(e) { 
+                console.error('Test submission failed:', e);
+                retries--;
+                if (retries === 0) {
+                    showCustomModal("Critical Error", "Failed to submit to server. Please check your internet connection and try again.", false);
+                    isSubmitting = false;
+                    document.getElementById('submit-btn').textContent = 'Submit Test';
+                    document.getElementById('submit-btn').disabled = false;
+                    return; // Halt submission so user doesn't lose work
+                }
+                await new Promise(r => setTimeout(r, 2000)); // wait before retry
             }
-        } catch(e) { console.error('Test submission failed:', e); }
+        }
     }
     
     const incorrect = attempted - score;
@@ -308,17 +414,24 @@ initQuiz();
 
 // --- ANTI-CHEAT SECURITY MODULE ---
 let cheatWarnings = 0;
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && testData && !isSubmitting) {
+
+function handleFocusLoss() {
+    if (testData && !isSubmitting) {
         cheatWarnings++;
         if (cheatWarnings >= 3) {
-            alert('SECURITY VIOLATION: You switched apps/tabs 3 times. Your test has been auto-submitted.');
-            submitQuiz(true);
+            showCustomModal("Security Violation", "You clicked outside the exam window or switched apps 3 times. Your test has been auto-submitted.", false, () => submitQuiz(true));
+            setTimeout(() => submitQuiz(true), 2000);
         } else {
-            alert(`WARNING (${cheatWarnings}/3): Do not switch apps or tabs during a live test. Your test will auto-submit after 3 warnings!`);
+            showCustomModal("Warning", `(${cheatWarnings}/3): Do not switch apps, click outside the window, or lose focus during a live test. Your test will auto-submit after 3 warnings!`, false);
         }
     }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') handleFocusLoss();
 });
+
+window.addEventListener('blur', handleFocusLoss);
 
 document.addEventListener('contextmenu', e => { if (testData) e.preventDefault(); });
 document.addEventListener('copy', e => { if (testData) e.preventDefault(); });

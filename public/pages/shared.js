@@ -21,3 +21,27 @@ function getLoggedInStudent() {
     const saved = localStorage.getItem('loggedInStudent');
     return saved ? JSON.parse(saved) : null;
 }
+
+// Ensure session is fresh before critical operations
+async function ensureSupabaseSession() {
+    try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        if (!session || error) {
+            console.log('Session expired or missing. Attempting refresh...');
+            const { data: refreshData, error: refreshError } = await supabaseClient.auth.refreshSession();
+            if (refreshError) throw refreshError;
+            return refreshData.session;
+        }
+        return session;
+    } catch (e) {
+        console.error('Session refresh failed:', e);
+        return null;
+    }
+}
+
+// Background session maintainer
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'TOKEN_REFRESHED') {
+        console.log('Background session token secured.');
+    }
+});
