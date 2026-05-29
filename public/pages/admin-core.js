@@ -330,22 +330,23 @@ async function viewResults(code) {
                 students.sort((a, b) => b.score - a.score);
                 window.currentTestStudents = students;
 
-            document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
-                <tr class="group hover:bg-white/[0.02] transition-all">
-                    <td class="py-4 border-b border-white/5">
-                        <p class="font-bold text-white">${escapeHTML(s.studentName || 'Unknown')}</p>
-                    </td>
-                    <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
-                    <td class="py-4 border-b border-white/5 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-green-500' : 'text-red-500'}">${s.score} / ${s.total}</td>
-                    <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${new Date(s.submittedAt).toLocaleString()}</td>
-                    <td class="py-4 border-b border-white/5 text-right">
-                        ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-3 py-1 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/40 border border-blue-500/20 transition-all">Details</button>` : `<span class="text-xs text-slate-500">N/A</span>`}
-                    </td>
-                </tr>
-            `).join('');
-            lucide.createIcons();
-        } else {
-            document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
+                document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
+                    <tr class="group hover:bg-white/[0.02] transition-all">
+                        <td class="py-4 border-b border-white/5">
+                            <p class="font-bold text-white">${escapeHTML(s.studentName || 'Unknown')}</p>
+                        </td>
+                        <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
+                        <td class="py-4 border-b border-white/5 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-green-500' : 'text-red-500'}">${s.score} / ${s.total}</td>
+                        <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${new Date(s.submittedAt).toLocaleString()}</td>
+                        <td class="py-4 border-b border-white/5 text-right">
+                            ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-3 py-1 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/40 border border-blue-500/20 transition-all">Details</button>` : `<span class="text-xs text-slate-500">N/A</span>`}
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } else {
+                document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
+            }
         }
     } catch (err) {
         console.error('Results fetch error:', err);
