@@ -135,18 +135,23 @@
                     <i data-lucide="flame" class="w-4 h-4 fill-orange-500"></i>
                     <span id="header-streak">0 Day Streak</span>
                 </div>
-                <button onclick="exitSafeBrowser()" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm font-bold border border-red-500/20 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
-                    Exit App
+                <button onclick="exitSafeBrowser()" class="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm font-bold border border-red-500/20 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">Exit App</span>
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Announcement Bar -->
-    <div id="announcement-bar" class="fixed top-20 left-0 w-full z-40 bg-blue-600 text-white py-2 px-4 shadow-[0_5px_15px_rgba(37,99,235,0.4)] transform -translate-y-full transition-transform duration-500 ease-out flex items-center justify-center gap-3">
-        <i data-lucide="bell-ring" class="w-4 h-4 animate-bounce"></i>
-        <marquee scrollamount="5" class="font-bold text-sm max-w-4xl" id="announcement-text"></marquee>
-        <button onclick="document.getElementById('announcement-bar').classList.add('-translate-y-full')" class="text-white/80 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div id="announcement-bar" class="fixed top-20 left-0 w-full z-40 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2.5 px-4 shadow-[0_5px_15px_rgba(37,99,235,0.4)] transform -translate-y-full transition-transform duration-500 ease-out flex items-center justify-between gap-3 border-b border-blue-400/20">
+        <div class="flex items-center gap-3 w-full overflow-hidden">
+            <i data-lucide="bell-ring" class="w-4 h-4 animate-bounce shrink-0 text-yellow-300"></i>
+            <marquee scrollamount="5" class="font-bold text-sm w-full pr-4" id="announcement-text"></marquee>
+        </div>
+        <button onclick="document.getElementById('announcement-bar').classList.add('-translate-y-full')" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white/90 hover:text-white transition-all">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
     </div>
 
     <div id="section-home" class="section-view active dashboard-container">
