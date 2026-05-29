@@ -230,7 +230,7 @@ async function joinLiveTest() {
 
     try {
         hideError();
-        const { data: dbTest, error } = await window.supabaseClient.from('tests').select('data').eq('code', code).single();
+        const { data: dbTest, error } = await supabaseClient.from('tests').select('data').eq('code', code).single();
         if (error || !dbTest) {
             showError("Invalid Code. Please check and try again."); return;
         }
