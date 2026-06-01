@@ -395,14 +395,36 @@ async function submitQuiz(force = false) {
             try {
                 if (!navigator.onLine) throw new Error('Offline');
                 
-                // FIXED: Using atomic RPC to append submission without JSON race conditions
+                // FIXED: Try atomic RPC to prevent JSON race conditions
                 const { error: updateErr } = await supabaseClient.rpc('submit_test_result', {
                     p_test_code: testData.code,
                     p_payload: payload,
                     p_email_key: student ? student.email : studentName
                 });
                 
-                if (updateErr) throw updateErr;
+                if (updateErr) {
+                    console.warn("RPC failed (likely missing on Supabase). Falling back to standard update.", updateErr.message);
+                    
+                    // Fallback to standard fetch & update if RPC does not exist
+                    const { data: currentTest, error: fetchErr } = await supabaseClient
+                        .from('tests')
+                        .select('submissions')
+                        .eq('code', testData.code)
+                        .single();
+                        
+                    if (fetchErr) throw fetchErr;
+                    
+                    let submissions = currentTest.submissions || {};
+                    submissions[student ? student.email : studentName] = payload;
+                    
+                    const { error: fallbackUpdateErr } = await supabaseClient
+                        .from('tests')
+                        .update({ submissions })
+                        .eq('code', testData.code);
+                        
+                    if (fallbackUpdateErr) throw fallbackUpdateErr;
+                }
+                
                 success = true;
             } catch(e) { 
                 console.error('Test submission failed:', e);
