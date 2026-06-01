@@ -16,7 +16,36 @@ window.handleOtpBackspace = function(e, current, index) {
 
 let student = getLoggedInStudent();
 
+const renderUI = () => {
+    if (!student) return;
+    const headerName = document.getElementById('header-student-name');
+    if (headerName) headerName.textContent = student.name;
+    
+    const initialSpan = document.getElementById('badge-initial');
+    if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
+    
+    const studentNameInput = document.getElementById('student-name-input');
+    if (studentNameInput) studentNameInput.value = student.name;
+    
+    const studentNameDisplay = document.getElementById('student-name-display');
+    if (studentNameDisplay) studentNameDisplay.textContent = student.name;
+    
+    const studentEmail = document.getElementById('student-email');
+    if (studentEmail) studentEmail.textContent = student.email;
+    
+    // Initialize Dashboard Features
+    initStudentDashboard();
+    
+    // Attempt offline sync if network is available
+    syncPendingSubmissions();
+};
+
 const initLogic = async () => {
+    // Optimistic UI Render
+    if (student) {
+        renderUI();
+    }
+
     // 1. Direct Session Validation (Decoupled from localStorage)
     const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
     
@@ -41,34 +70,13 @@ const initLogic = async () => {
         if (studentDb && !fetchErr) {
             student = { email: studentDb.email, name: studentDb.name };
             localStorage.setItem('loggedInStudent', JSON.stringify(student));
+            renderUI();
         } else {
             console.warn("Failed to fetch student details. Redirecting.");
             window.location.replace('auth.html');
             return;
         }
     }
-
-    // 3. Render Dashboard
-    const headerName = document.getElementById('header-student-name');
-    if (headerName) headerName.textContent = student.name;
-    
-    const initialSpan = document.getElementById('badge-initial');
-    if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
-    
-    const studentNameInput = document.getElementById('student-name-input');
-    if (studentNameInput) studentNameInput.value = student.name;
-    
-    const studentNameDisplay = document.getElementById('student-name-display');
-    if (studentNameDisplay) studentNameDisplay.textContent = student.name;
-    
-    const studentEmail = document.getElementById('student-email');
-    if (studentEmail) studentEmail.textContent = student.email;
-    
-    // Initialize Dashboard Features
-    initStudentDashboard();
-    
-    // Attempt offline sync if network is available
-    syncPendingSubmissions();
 };
 
 if (document.readyState === 'loading') {
