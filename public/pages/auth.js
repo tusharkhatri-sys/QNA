@@ -1,45 +1,56 @@
-// ============================================================
-// QNA Copa — auth.js
-// User-Agent Detection → Download Page vs Login Form
-// ============================================================
+// ─── STEP 2: UI SHIELD + BOOT LOCK ────────────────────────
+// Inject a full-screen splash that BLOCKS the login UI from ever
+// flashing while Supabase is still hydrating from localStorage.
+(function injectSplash() {
+    const splash = document.createElement('div');
+    splash.id = 'boot-splash';
+    splash.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:9999',
+        'background:#0f172a',
+        'display:flex', 'flex-direction:column',
+        'align-items:center', 'justify-content:center',
+        'transition:opacity 0.4s ease'
+    ].join(';');
+    splash.innerHTML = `
+        <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 0 40px rgba(99,102,241,0.4);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <div style="color:#94a3b8;font-size:0.85rem;letter-spacing:0.1em;font-family:sans-serif;">LOADING SESSION...</div>`;
+    document.documentElement.appendChild(splash);
+})();
 
-// Deliverable 2: Auto-Redirect (Top of auth.js)
+// ─── BOOT LOCK: Wait for Supabase to fully hydrate, THEN decide ──
 (async function enforceAutoLogin() {
     try {
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (data?.session && !error) {
-            console.log("Valid session found via Supabase. Bypassing login.");
+        // This waits for INITIAL_SESSION event — the real hydration signal
+        const session = await ensureSupabaseAuthReady();
+
+        const splash = document.getElementById('boot-splash');
+
+        if (session) {
+            // Valid session found — go directly to dashboard, splash stays until redirect
+            console.log('[Auth] Valid session hydrated. Redirecting to dashboard.');
             window.location.replace('student.html');
+            return; // Stop all further execution on this page
         }
-    } catch (error) {
-        console.warn("Auto-redirect check failed, showing login screen.", error);
+
+        // No session — fade out splash and show login form
+        if (splash) {
+            splash.style.opacity = '0';
+            setTimeout(() => splash.remove(), 400);
+        }
+        showLoginUI();
+
+    } catch (err) {
+        console.warn('[Auth] Boot lock error, falling back to login.', err);
+        const splash = document.getElementById('boot-splash');
+        if (splash) splash.remove();
+        showLoginUI();
     }
 })();
-// User-Agent Detection → Download Page vs Login Form
-// ============================================================
 
-var SAFE_BROWSER_UA = 'QnaCopa-Safe-Browser-v1';
-
-// ============================================================
-// GITHUB RELEASE DOWNLOAD URL — UPDATE THIS!
-// ============================================================
-// Option A: Direct .exe download from GitHub Releases
-//   Format: https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/FILENAME.exe
-//   Example: https://github.com/tusharkhatri/qna-safe-browser/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe
-//
-// Option B: Google Drive direct link
-//   Format: https://drive.google.com/uc?export=download&id=YOUR_FILE_ID
-//
-// Option C: Any direct file hosting URL
-//
-// Replace the URL below with your actual download link:
-var DOWNLOAD_URL = 'https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe';
-
-
-// ─── PAGE INIT: DETECT USER-AGENT ──────────────────────────
-document.addEventListener('DOMContentLoaded', function () {
+function showLoginUI() {
     var ua = navigator.userAgent || '';
-    // For testing: Temporarily making it true so you can see the login form and exit button in normal browser
     var isSafeBrowser = true; // ua.indexOf(SAFE_BROWSER_UA) !== -1;
 
     var downloadSection = document.getElementById('download-section');
@@ -47,23 +58,23 @@ document.addEventListener('DOMContentLoaded', function () {
     var exitBtn = document.getElementById('exit-app-btn');
     var downloadBtn = document.getElementById('download-exe-btn');
 
+    if (!loginSection || !downloadSection) return;
+
     if (isSafeBrowser) {
-        // ✅ Inside QNA Copa Safe Browser — show login/register forms
         loginSection.classList.add('active');
         downloadSection.classList.remove('active');
         if (exitBtn) exitBtn.style.display = 'block';
     } else {
-        // ❌ Normal browser — show download prompt
         downloadSection.classList.add('active');
         loginSection.classList.remove('active');
         if (exitBtn) exitBtn.style.display = 'none';
     }
 
-    // Set the download button href
     if (downloadBtn) {
         downloadBtn.href = DOWNLOAD_URL;
     }
-});
+}
+
 
 
 // ─── DOWNLOAD HANDLER ──────────────────────────────────────
