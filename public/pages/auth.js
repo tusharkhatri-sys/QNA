@@ -1,3 +1,7 @@
+// ─── CONFIG ────────────────────────────────────────────────
+var SAFE_BROWSER_UA = 'QnaCopa-Safe-Browser-v1';
+var DOWNLOAD_URL = 'https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe';
+
 // ─── STEP 2: UI SHIELD + BOOT LOCK ────────────────────────
 // Inject a full-screen splash that BLOCKS the login UI from ever
 // flashing while Supabase is still hydrating from localStorage.
