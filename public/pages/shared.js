@@ -24,21 +24,23 @@ function escapeHTML(str) {
         .replace(/'/g, '&#039;');
 }
 
+
 function getLoggedInStudent() {
     try {
         const saved = window.localStorage.getItem('loggedInStudent');
         if (!saved) return null;
         const parsed = JSON.parse(saved);
-        if (!parsed || typeof parsed !== 'object' || !parsed.email) {
-            throw new Error('Invalid student data structure');
-        }
-        return parsed;
+        // Forgiving: only reject if completely not an object (genuine corruption)
+        if (!parsed || typeof parsed !== 'object') return null;
+        return parsed; // Return whatever is there, even if email/name is missing
     } catch (e) {
-        console.warn('[Defensive Recovery] Corrupted student session data cleared.', e);
+        // Only clear on actual JSON parse failure, not structural mismatch
+        console.warn('[getLoggedInStudent] JSON parse failed, clearing.', e);
         window.localStorage.removeItem('loggedInStudent');
         return null;
     }
 }
+
 
 // Global Dynamic Session Calculator
 function getCurrentSession() {

@@ -41,39 +41,52 @@ const renderUI = () => {
 };
 
 const initLogic = async () => {
-    // Step 3: Use Boot Lock — wait for Supabase storage hydration
+    // SINGLE SOURCE OF TRUTH: Supabase session via boot lock
     const session = await ensureSupabaseAuthReady();
 
     if (!session) {
-        console.warn('[Student] No active session after hydration. Redirecting to login.');
+        console.warn('[Student] No active session. Redirecting to login.');
         window.location.replace('auth.html');
         return;
     }
 
-    // Repopulate UI local storage if wiped by Android hard kill
-    if (!student) {
-        console.log('[Student] Session valid but localStorage empty. Repopulating from DB...');
-        const email = session.user.email;
+    const sessionEmail = session.user.email;
 
+    // Check if localStorage student data exists AND has required fields
+    const cachedStudent = getLoggedInStudent();
+    const isValidCache = cachedStudent && cachedStudent.email && cachedStudent.name;
+
+    if (isValidCache) {
+        // Cache is good — use it directly
+        student = cachedStudent;
+    } else {
+        // Cache missing or incomplete — fetch from DB using verified session email
+        console.log('[Student] Repopulating student data from DB for:', sessionEmail);
         const { data: studentDb, error: fetchErr } = await supabaseClient
             .from('students')
             .select('name, email')
-            .eq('email', email)
+            .eq('email', sessionEmail)
             .single();
 
         if (studentDb && !fetchErr) {
             student = { email: studentDb.email, name: studentDb.name };
+            // Write back to localStorage with correct structure
             localStorage.setItem('loggedInStudent', JSON.stringify(student));
         } else {
-            console.warn('[Student] Failed to fetch student from DB. Redirecting.');
-            window.location.replace('auth.html');
-            return;
+            // DB fetch failed — build minimal object from session so UI doesn't break
+            console.warn('[Student] DB fetch failed. Using session email as fallback.');
+            student = {
+                email: sessionEmail,
+                name: session.user.user_metadata?.name || sessionEmail.split('@')[0]
+            };
+            localStorage.setItem('loggedInStudent', JSON.stringify(student));
         }
     }
 
-    // Render UI only once, after session is confirmed
+    // Render UI — student is guaranteed to have email + name here
     renderUI();
 };
+
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initLogic);
