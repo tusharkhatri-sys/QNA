@@ -244,6 +244,8 @@ async function joinLiveTest() {
         }
 
         // Save session
+        localStorage.removeItem('practiceMode');
+        localStorage.removeItem('practiceTopic');
         localStorage.setItem('activeTest', JSON.stringify(testData));
         localStorage.setItem('activeTestStudentName', name);
         window.location.href = 'quiz.html';
@@ -275,11 +277,19 @@ function startLocalPractice(mode) {
         document.body.appendChild(modal);
         return;
     }
+    // EXPLICITLY CLEAR LIVE TEST STATE
+    localStorage.removeItem('activeTest');
+    localStorage.removeItem('activeTestStudentName');
+    
     localStorage.setItem('practiceMode', mode);
     window.location.href = 'quiz.html';
 }
 
 function launchTopicPractice(topic) {
+    // EXPLICITLY CLEAR LIVE TEST STATE
+    localStorage.removeItem('activeTest');
+    localStorage.removeItem('activeTestStudentName');
+    
     localStorage.setItem('practiceMode', 'topic');
     localStorage.setItem('practiceTopic', topic);
     window.location.href = 'quiz.html';
