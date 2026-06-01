@@ -437,14 +437,31 @@ async function submitQuiz(force = false) {
                         submitBtnEl.disabled = false;
                     }
                     
+                    // Offline caching logic
+                    const cacheKey = 'pendingSubmission_' + Date.now();
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify({
+                            testCode: testData.code,
+                            payload: payload,
+                            emailKey: student ? student.email : studentName
+                        }));
+                        offlineBuffer = true;
+                    } catch(cacheErr) {
+                        console.error('Failed to cache pending submission:', cacheErr);
+                    }
+                    
                     showCustomModal(
-                        "Critical Error", 
-                        "Failed to submit to server. Please check your internet connection and try again. Your progress is saved locally.", 
-                        false
+                        "Network Slow", 
+                        "Network slow. Retrying in background... Your test is saved safely on your device.", 
+                        false,
+                        () => {
+                            // Let the user exit safely. Background sync will handle it.
+                            window.location.href = 'student.html';
+                        }
                     );
-                    return; // Halt submission so user doesn't lose work
+                    return; // Halt regular logic, modal handles redirect
                 }
-                await new Promise(r => setTimeout(r, 2000)); // wait before retry
+                await new Promise(r => setTimeout(r, 2000 + Math.random() * 500)); // wait before retry with jitter
             }
         }
     }

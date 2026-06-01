@@ -36,6 +36,9 @@ if (!student) {
         
         // Initialize Dashboard Features
         initStudentDashboard();
+        
+        // Attempt offline sync if network is available
+        syncPendingSubmissions();
     };
 
     if (document.readyState === 'loading') {
@@ -250,6 +253,47 @@ async function joinLiveTest() {
         localStorage.setItem('activeTestStudentName', name);
         window.location.href = 'quiz.html';
     } catch (e) {
+        console.error("Join live test failed", e);
+        showError("Network error. Please try again.");
+    } finally {
+        const btn = document.querySelector('button[onclick="joinLiveTest()"]');
+        if(btn) btn.textContent = 'Join Test';
+    }
+}
+
+// Background Sync for pending offline submissions
+async function syncPendingSubmissions() {
+    if (!navigator.onLine) return;
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('pendingSubmission_')) {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                console.log(`Syncing offline submission for ${data.testCode}...`);
+                
+                const { error: updateErr } = await supabaseClient.rpc('submit_test_result', {
+                    p_test_code: data.testCode,
+                    p_payload: data.payload,
+                    p_email_key: data.emailKey
+                });
+                
+                if (updateErr) {
+                    const { data: currentTest } = await supabaseClient.from('tests').select('submissions').eq('code', data.testCode).single();
+                    let submissions = currentTest?.submissions || {};
+                    submissions[data.emailKey] = data.payload;
+                    await supabaseClient.from('tests').update({ submissions }).eq('code', data.testCode);
+                }
+                
+                localStorage.removeItem(key);
+                console.log(`Successfully synced ${key}`);
+            } catch (e) {
+                console.error(`Failed to sync pending submission ${key}:`, e);
+            }
+        }
+    }
+}
+window.addEventListener('online', syncPendingSubmissions);
         console.error(e);
         err.innerHTML = `Could not connect to database. <br><button onclick="window.location.reload()" class="mt-2 px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30">Refresh Page</button>`; 
         err.style.display = "block";

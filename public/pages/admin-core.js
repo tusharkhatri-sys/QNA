@@ -498,98 +498,108 @@ function renderStep() {
     document.getElementById('next-btn').textContent = currentStep === 3 ? 'Deploy' : 'Continue';
 }
 
-document.getElementById('next-btn')?.addEventListener('click', async () => {
-    if (currentStep === 1) {
-        testConfig.name = document.getElementById('t-name').value;
-        testConfig.duration = document.getElementById('t-time').value;
-        testConfig.passScore = document.getElementById('t-pass').value;
-        currentStep++;
-        renderStep();
-    } else if (currentStep === 2) {
-        const randomInput = document.getElementById('random-total-count');
-        const randomCount = randomInput ? parseInt(randomInput.value) : 0;
-        testConfig.topicConfig = {};
-        
-        if (randomCount > 0) {
-            testConfig.isRandomMix = true;
-            testConfig.randomTotal = randomCount;
-        } else {
-            testConfig.isRandomMix = false;
-            testConfig.randomTotal = 0;
-            let totalQ = 0;
-            const rows = document.querySelectorAll('#stepper-content .topic-row');
-            rows.forEach(row => {
-                const topicEl = row.querySelector('.topic-name');
-                const numEl = row.querySelector('.topic-count');
-                const manualDataEl = row.querySelector('.topic-manual-data');
-                
-                const topic = topicEl ? topicEl.textContent.trim() : null;
-                const count = numEl ? parseInt(numEl.value || 0) : 0;
-                const manualData = manualDataEl && manualDataEl.value ? JSON.parse(manualDataEl.value) : null;
-                
-                if (topic) {
-                    if (manualData && manualData.length > 0) {
-                        testConfig.topicConfig[topic] = { mode: 'manual', indices: manualData };
-                        totalQ += manualData.length;
-                    } else if (count > 0) {
-                        testConfig.topicConfig[topic] = count;
-                        totalQ += count;
-                    }
-                }
-            });
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('next-btn')?.addEventListener('click', async () => {
+        if (currentStep === 1) {
+            testConfig.name = document.getElementById('t-name').value;
+            testConfig.duration = document.getElementById('t-time').value;
+            testConfig.passScore = document.getElementById('t-pass').value;
+            currentStep++;
+            renderStep();
+        } else if (currentStep === 2) {
+            const randomInput = document.getElementById('random-total-count');
+            const randomCount = randomInput ? parseInt(randomInput.value) : 0;
+            testConfig.topicConfig = {};
             
-            if (totalQ === 0) {
-                alert('Please select at least 1 question from topics OR enter a Random Mix Total.');
-                return;
+            if (randomCount > 0) {
+                testConfig.isRandomMix = true;
+                testConfig.randomTotal = randomCount;
+            } else {
+                testConfig.isRandomMix = false;
+                testConfig.randomTotal = 0;
+                let totalQ = 0;
+                const rows = document.querySelectorAll('#stepper-content .topic-row');
+                rows.forEach(row => {
+                    const topicEl = row.querySelector('.topic-name');
+                    const numEl = row.querySelector('.topic-count');
+                    const manualDataEl = row.querySelector('.topic-manual-data');
+                    
+                    const topic = topicEl ? topicEl.textContent.trim() : null;
+                    const count = numEl ? parseInt(numEl.value || 0) : 0;
+                    
+                    let manualData = null;
+                    if (manualDataEl && manualDataEl.value) {
+                        try {
+                            manualData = JSON.parse(manualDataEl.value);
+                        } catch(e) {
+                            console.error("Failed to parse manual data", e);
+                        }
+                    }
+                    
+                    if (topic) {
+                        if (manualData && manualData.length > 0) {
+                            testConfig.topicConfig[topic] = { mode: 'manual', indices: manualData };
+                            totalQ += manualData.length;
+                        } else if (count > 0) {
+                            testConfig.topicConfig[topic] = count;
+                            totalQ += count;
+                        }
+                    }
+                });
+                
+                if (totalQ === 0) {
+                    alert('Please select at least 1 question from topics OR enter a Random Mix Total.');
+                    return;
+                }
+            }
+            currentStep++;
+            renderStep();
+        } else {
+            // Deploy to Supabase
+            const btn = document.getElementById('next-btn');
+            btn.textContent = 'Deploying...';
+            btn.disabled = true;
+
+            try {
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const payload = {
+                    code: code,
+                    data: {
+                        name: testConfig.name || 'Untitled Test',
+                        duration: parseInt(testConfig.duration) || 60,
+                        passScore: parseInt(testConfig.passScore) || 40,
+                        topicConfig: testConfig.topicConfig,
+                        isRandomMix: testConfig.isRandomMix,
+                        randomTotal: testConfig.randomTotal,
+                        createdAt: new Date().toISOString(),
+                        isActive: 'active',
+                        students: [],
+                        liveStudents: {}
+                    }
+                };
+
+                const { error } = await supabaseClient.from('tests').insert(payload);
+                if (error) throw error;
+
+                alert('Assessment Deployed Successfully! Code: ' + code);
+                closeModal('create-modal');
+                initTestManager(); // Refresh list
+            } catch (err) {
+                console.error('Deployment error:', err);
+                alert('Failed to deploy test: ' + err.message);
+            } finally {
+                btn.textContent = 'Deploy';
+                btn.disabled = false;
             }
         }
-        currentStep++;
-        renderStep();
-    } else {
-        // Deploy to Supabase
-        const btn = document.getElementById('next-btn');
-        btn.textContent = 'Deploying...';
-        btn.disabled = true;
+    });
 
-        try {
-            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-            const payload = {
-                code: code,
-                data: {
-                    name: testConfig.name || 'Untitled Test',
-                    duration: parseInt(testConfig.duration) || 60,
-                    passScore: parseInt(testConfig.passScore) || 40,
-                    topicConfig: testConfig.topicConfig,
-                    isRandomMix: testConfig.isRandomMix,
-                    randomTotal: testConfig.randomTotal,
-                    createdAt: new Date().toISOString(),
-                    isActive: 'active',
-                    students: [],
-                    liveStudents: {}
-                }
-            };
-
-            const { error } = await supabaseClient.from('tests').insert(payload);
-            if (error) throw error;
-
-            alert('Assessment Deployed Successfully! Code: ' + code);
-            closeModal('create-modal');
-            initTestManager(); // Refresh list
-        } catch (err) {
-            console.error('Deployment error:', err);
-            alert('Failed to deploy test: ' + err.message);
-        } finally {
-            btn.textContent = 'Deploy';
-            btn.disabled = false;
+    document.getElementById('prev-btn')?.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            renderStep();
         }
-    }
-});
-
-document.getElementById('prev-btn')?.addEventListener('click', () => {
-    if (currentStep > 1) {
-        currentStep--;
-        renderStep();
-    }
+    });
 });
 
 // --- STUDENTS LIST LOGIC ---
@@ -735,7 +745,11 @@ function openManualSelect(topicIdx) {
     const manualInput = row.querySelector('.topic-manual-data');
     let selectedIndices = [];
     if (manualInput && manualInput.value) {
-        selectedIndices = JSON.parse(manualInput.value);
+        try {
+            selectedIndices = JSON.parse(manualInput.value);
+        } catch(e) {
+            console.error("Failed to parse manual indices", e);
+        }
     }
     
     let html = '';
