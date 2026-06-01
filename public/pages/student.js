@@ -41,42 +41,38 @@ const renderUI = () => {
 };
 
 const initLogic = async () => {
-    // Optimistic UI Render
-    if (student) {
-        renderUI();
-    }
+    // Step 3: Use Boot Lock — wait for Supabase storage hydration
+    const session = await ensureSupabaseAuthReady();
 
-    // 1. Direct Session Validation (Decoupled from localStorage)
-    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-    
-    if (sessionError || !sessionData?.session) {
-        console.warn("No active Supabase session found. Redirecting to login.");
+    if (!session) {
+        console.warn('[Student] No active session after hydration. Redirecting to login.');
         window.location.replace('auth.html');
         return;
     }
 
-    // 2. Repopulate UI local storage if missing (due to hard kill)
+    // Repopulate UI local storage if wiped by Android hard kill
     if (!student) {
-        console.log("Session exists but local storage is empty. Repopulating...");
-        const email = sessionData.session.user.email;
-        
-        // Fetch student name from DB
+        console.log('[Student] Session valid but localStorage empty. Repopulating from DB...');
+        const email = session.user.email;
+
         const { data: studentDb, error: fetchErr } = await supabaseClient
             .from('students')
             .select('name, email')
             .eq('email', email)
             .single();
-        
+
         if (studentDb && !fetchErr) {
             student = { email: studentDb.email, name: studentDb.name };
             localStorage.setItem('loggedInStudent', JSON.stringify(student));
-            renderUI();
         } else {
-            console.warn("Failed to fetch student details. Redirecting.");
+            console.warn('[Student] Failed to fetch student from DB. Redirecting.');
             window.location.replace('auth.html');
             return;
         }
     }
+
+    // Render UI only once, after session is confirmed
+    renderUI();
 };
 
 if (document.readyState === 'loading') {
@@ -220,9 +216,15 @@ function renderAnalytics() {
     }
 }
 
-function logout() {
+async function logout() {
+    try {
+        // CRITICAL: Sign out from Supabase so boot lock doesn't auto-redirect back in
+        await supabaseClient.auth.signOut();
+    } catch (e) {
+        console.warn('[Logout] Supabase signOut failed silently:', e);
+    }
     localStorage.removeItem('loggedInStudent');
-    window.location.href = 'landing.html';
+    window.location.replace('auth.html');
 }
 
 function exitSafeBrowser() {
