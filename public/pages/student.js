@@ -331,11 +331,7 @@ async function syncPendingSubmissions() {
     }
 }
 window.addEventListener('online', syncPendingSubmissions);
-        console.error(e);
-        err.innerHTML = `Could not connect to database. <br><button onclick="window.location.reload()" class="mt-2 px-3 py-1 bg-red-500/20 text-red-400 rounded-lg text-xs hover:bg-red-500/30">Refresh Page</button>`; 
-        err.style.display = "block";
-    }
-}
+
 
 function startLocalPractice(mode) {
     if (mode === 'topic') {
