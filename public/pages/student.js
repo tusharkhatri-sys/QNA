@@ -14,38 +14,67 @@ window.handleOtpBackspace = function(e, current, index) {
     }
 };
 
-const student = getLoggedInStudent();
-if (!student) {
-    window.location.href = 'auth.html';
-} else {
-    const initLogic = () => {
-        const headerName = document.getElementById('header-student-name');
-        if (headerName) headerName.textContent = student.name;
-        
-        const initialSpan = document.getElementById('badge-initial');
-        if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
-        
-        const studentNameInput = document.getElementById('student-name-input');
-        if (studentNameInput) studentNameInput.value = student.name;
-        
-        const studentNameDisplay = document.getElementById('student-name-display');
-        if (studentNameDisplay) studentNameDisplay.textContent = student.name;
-        
-        const studentEmail = document.getElementById('student-email');
-        if (studentEmail) studentEmail.textContent = student.email;
-        
-        // Initialize Dashboard Features
-        initStudentDashboard();
-        
-        // Attempt offline sync if network is available
-        syncPendingSubmissions();
-    };
+let student = getLoggedInStudent();
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initLogic);
-    } else {
-        initLogic();
+const initLogic = async () => {
+    // 1. Direct Session Validation (Decoupled from localStorage)
+    const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+    
+    if (sessionError || !sessionData?.session) {
+        console.warn("No active Supabase session found. Redirecting to login.");
+        window.location.replace('auth.html');
+        return;
     }
+
+    // 2. Repopulate UI local storage if missing (due to hard kill)
+    if (!student) {
+        console.log("Session exists but local storage is empty. Repopulating...");
+        const email = sessionData.session.user.email;
+        
+        // Fetch student name from DB
+        const { data: studentDb, error: fetchErr } = await supabaseClient
+            .from('students')
+            .select('name, email')
+            .eq('email', email)
+            .single();
+        
+        if (studentDb && !fetchErr) {
+            student = { email: studentDb.email, name: studentDb.name };
+            localStorage.setItem('loggedInStudent', JSON.stringify(student));
+        } else {
+            console.warn("Failed to fetch student details. Redirecting.");
+            window.location.replace('auth.html');
+            return;
+        }
+    }
+
+    // 3. Render Dashboard
+    const headerName = document.getElementById('header-student-name');
+    if (headerName) headerName.textContent = student.name;
+    
+    const initialSpan = document.getElementById('badge-initial');
+    if (initialSpan) initialSpan.textContent = student.name.charAt(0).toUpperCase();
+    
+    const studentNameInput = document.getElementById('student-name-input');
+    if (studentNameInput) studentNameInput.value = student.name;
+    
+    const studentNameDisplay = document.getElementById('student-name-display');
+    if (studentNameDisplay) studentNameDisplay.textContent = student.name;
+    
+    const studentEmail = document.getElementById('student-email');
+    if (studentEmail) studentEmail.textContent = student.email;
+    
+    // Initialize Dashboard Features
+    initStudentDashboard();
+    
+    // Attempt offline sync if network is available
+    syncPendingSubmissions();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLogic);
+} else {
+    initLogic();
 }
     
 const processResultsLogic = () => {
