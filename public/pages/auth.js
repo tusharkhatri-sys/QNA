@@ -133,34 +133,84 @@ async function submitAuth() {
     btn.disabled = true;
 
     try {
-        var endpoint = authMode === 'login' ? '/students/login' : '/students/register';
-        var payload = { email: email, password: password, name: name };
-        var res = await fetch(API_URL + endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        var data = await res.json();
+        if (authMode === 'login') {
+            // ─── LOGIN: Use Supabase Auth directly (creates a real session) ───
+            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
 
-        if (data.success) {
+            if (authError || !authData?.session) {
+                errObj.textContent = authError?.message || 'Invalid email or password.';
+                errObj.style.display = 'block';
+                btn.textContent = 'Login';
+                btn.disabled = false;
+                return;
+            }
+
+            // Fetch student name from DB to populate localStorage cache
+            const { data: studentDb } = await supabaseClient
+                .from('students')
+                .select('name, email')
+                .eq('email', email)
+                .single();
+
             localStorage.setItem('loggedInStudent', JSON.stringify({
-                email: data.student.email,
-                name: data.student.name
+                email: studentDb?.email || email,
+                name: studentDb?.name || email.split('@')[0]
             }));
-            window.location.href = 'student.html';
+
+            // Session is now real — redirect will succeed
+            window.location.replace('student.html');
+
         } else {
-            errObj.textContent = data.message;
-            errObj.style.display = 'block';
-            btn.textContent = authMode === 'login' ? 'Login' : 'Register';
-            btn.disabled = false;
+            // ─── REGISTER: Use custom API (handles DB row creation) ───
+            var res = await fetch(API_URL + '/students/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password, name: name })
+            });
+            var data = await res.json();
+
+            if (data.success) {
+                // After register, sign in to create a real Supabase session
+                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (authError || !authData?.session) {
+                    errObj.textContent = 'Registered! Please login now.';
+                    errObj.style.display = 'block';
+                    btn.textContent = 'Register';
+                    btn.disabled = false;
+                    // Switch to login mode
+                    authMode = 'login';
+                    toggleAuthMode();
+                    return;
+                }
+
+                localStorage.setItem('loggedInStudent', JSON.stringify({
+                    email: email,
+                    name: name
+                }));
+                window.location.replace('student.html');
+            } else {
+                errObj.textContent = data.message || 'Registration failed.';
+                errObj.style.display = 'block';
+                btn.textContent = 'Register';
+                btn.disabled = false;
+            }
         }
     } catch (e) {
-        errObj.textContent = 'Server error. Please try again.';
+        console.error('submitAuth error:', e);
+        errObj.textContent = 'Network error. Please try again.';
         errObj.style.display = 'block';
         btn.textContent = authMode === 'login' ? 'Login' : 'Register';
         btn.disabled = false;
     }
 }
+
 
 
 // ─── EXIT SAFE BROWSER ─────────────────────────────────────
