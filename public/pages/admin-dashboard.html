@@ -93,25 +93,25 @@
                         <div class="metric-title">Total Registered Trainees</div>
                         <i data-lucide="users" class="w-5 h-5 text-gray-400"></i>
                     </div>
-                    <div class="metric-value" id="stat-total-students">--</div>
+                    <div class="metric-value" id="stat-students">--</div>
                 </div>
                 
                 <!-- Metric 2 -->
                 <div class="metric-card" style="border-left-color: #059669;">
                     <div class="flex justify-between items-start">
-                        <div class="metric-title">Active Online Sessions</div>
-                        <i data-lucide="wifi" class="w-5 h-5 text-green-600"></i>
+                        <div class="metric-title">Total Questions</div>
+                        <i data-lucide="book-open" class="w-5 h-5 text-green-600"></i>
                     </div>
-                    <div class="metric-value" id="stat-active-sessions">--</div>
+                    <div class="metric-value" id="stat-questions">--</div>
                 </div>
 
                 <!-- Metric 3 -->
                 <div class="metric-card" style="border-left-color: #D97706;">
                     <div class="flex justify-between items-start">
-                        <div class="metric-title">Live Tests in Progress</div>
+                        <div class="metric-title">Live Active Tests</div>
                         <i data-lucide="activity" class="w-5 h-5 text-yellow-600"></i>
                     </div>
-                    <div class="metric-value" id="stat-live-tests">--</div>
+                    <div class="metric-value" id="stat-live">--</div>
                 </div>
 
                 <!-- Metric 4 -->
@@ -124,6 +124,12 @@
                 </div>
             </div>
 
+            <!-- Analytics Chart -->
+            <div class="bg-white border border-gray-200 shadow-sm rounded-sm p-6 mb-8">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Assessment Trends</h3>
+                <canvas id="trendsChart" height="80"></canvas>
+            </div>
+            
             <!-- Placeholder for Phase 2: Real-Time Live Monitoring Table -->
             <div id="phase-2-container"></div>
             
