@@ -206,7 +206,8 @@ function initPracticeMode() {
         currentQuiz = shuffleArray(currentQuiz).slice(0, 50);
     }
     renderQuestion();
-    if (testData) debouncedReportLiveProgress();
+    // Practice mode: no live progress reporting needed
+
 }
 
 function updateTimerDisplay() {

@@ -1,7 +1,8 @@
 window.handleOtpInput = function(current, index) {
     current.value = current.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    if (current.value.length === 1 && index < 6) {
-        current.nextElementSibling.focus();
+    if (current.value.length === 1 && index < 5) {
+        // Only focus next if not on last box (index 5 = 6th box)
+        if (current.nextElementSibling) current.nextElementSibling.focus();
     }
 };
 
