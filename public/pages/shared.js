@@ -42,6 +42,7 @@ function getLoggedInStudent() {
 }
 
 
+
 // Global Dynamic Session Calculator
 function getCurrentSession() {
     const now = new Date();
@@ -104,11 +105,16 @@ async function ensureSupabaseAuthReady() {
         }, 1500);
 
         // Listen for the exact moment Supabase finishes resolving local storage
+        // NOTE: SIGNED_OUT must NOT resolve the boot lock — it would cause a redirect loop
         const { data: authListener } = supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
                 console.log(`[Boot Lock] Supabase Auth State Hydrated: ${event}`);
                 clearTimeout(timeout);
                 complete(session);
+            } else if (event === 'SIGNED_OUT') {
+                console.log('[Boot Lock] SIGNED_OUT detected. Releasing with null.');
+                clearTimeout(timeout);
+                complete(null);
             }
         });
 

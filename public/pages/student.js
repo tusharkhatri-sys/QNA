@@ -267,6 +267,14 @@ async function joinLiveTest() {
         err.style.display = "none";
     };
 
+    // Read name from input OR fall back to global student object
+    const nameInput = document.getElementById('student-name-input');
+    const name = (nameInput && nameInput.value.trim()) || (student && student.name) || '';
+    if (!name) {
+        showError('Student name is missing. Please refresh.');
+        return;
+    }
+
     let code = "";
     const otpInputs = document.querySelectorAll('#otp-container input');
     if (otpInputs.length === 6) {
@@ -282,6 +290,9 @@ async function joinLiveTest() {
         showError("Please enter the complete 6-character code."); 
         return; 
     }
+
+    const btn = document.querySelector('button[onclick="joinLiveTest()"]');
+    if (btn) btn.textContent = 'Joining...';
 
     try {
         hideError();
@@ -308,8 +319,7 @@ async function joinLiveTest() {
         console.error("Join live test failed", e);
         showError("Network error. Please try again.");
     } finally {
-        const btn = document.querySelector('button[onclick="joinLiveTest()"]');
-        if(btn) btn.textContent = 'Join Test';
+        if (btn) btn.textContent = 'Join Test';
     }
 }
 
@@ -317,34 +327,41 @@ async function joinLiveTest() {
 async function syncPendingSubmissions() {
     if (!navigator.onLine) return;
     
+    // Snapshot keys first — avoid mutation-during-iteration bug
+    const keysToSync = [];
     for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('pendingSubmission_')) {
-            try {
-                const data = JSON.parse(localStorage.getItem(key));
-                console.log(`Syncing offline submission for ${data.testCode}...`);
-                
-                const { error: updateErr } = await supabaseClient.rpc('submit_test_result', {
-                    p_test_code: data.testCode,
-                    p_payload: data.payload,
-                    p_email_key: data.emailKey
-                });
-                
-                if (updateErr) {
-                    const { data: currentTest } = await supabaseClient.from('tests').select('submissions').eq('code', data.testCode).single();
-                    let submissions = currentTest?.submissions || {};
-                    submissions[data.emailKey] = data.payload;
-                    await supabaseClient.from('tests').update({ submissions }).eq('code', data.testCode);
-                }
-                
-                localStorage.removeItem(key);
-                console.log(`Successfully synced ${key}`);
-            } catch (e) {
-                console.error(`Failed to sync pending submission ${key}:`, e);
+        if (key && key.startsWith('pendingSubmission_')) keysToSync.push(key);
+    }
+
+    for (const key of keysToSync) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const data = JSON.parse(raw);
+            console.log(`Syncing offline submission for ${data.testCode}...`);
+            
+            const { error: updateErr } = await supabaseClient.rpc('submit_test_result', {
+                p_test_code: data.testCode,
+                p_payload: data.payload,
+                p_email_key: data.emailKey
+            });
+            
+            if (updateErr) {
+                const { data: currentTest } = await supabaseClient.from('tests').select('submissions').eq('code', data.testCode).single();
+                let submissions = currentTest?.submissions || {};
+                submissions[data.emailKey] = data.payload;
+                await supabaseClient.from('tests').update({ submissions }).eq('code', data.testCode);
             }
+            
+            localStorage.removeItem(key);
+            console.log(`Successfully synced ${key}`);
+        } catch (e) {
+            console.error(`Failed to sync pending submission ${key}:`, e);
         }
     }
 }
+
 window.addEventListener('online', syncPendingSubmissions);
 
 

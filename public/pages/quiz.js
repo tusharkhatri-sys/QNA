@@ -403,23 +403,28 @@ async function submitQuiz(force = false) {
                 });
                 
                 if (updateErr) {
-                    console.warn("RPC failed (likely missing on Supabase). Falling back to standard update.", updateErr.message);
+                    console.warn("RPC failed. Falling back to JSONB data update.", updateErr.message);
                     
-                    // Fallback to standard fetch & update if RPC does not exist
+                    // Fallback: tests.data is a JSONB column with a 'students' array inside
                     const { data: currentTest, error: fetchErr } = await supabaseClient
                         .from('tests')
-                        .select('submissions')
+                        .select('data')
                         .eq('code', testData.code)
                         .single();
                         
                     if (fetchErr) throw fetchErr;
                     
-                    let submissions = currentTest.submissions || {};
-                    submissions[student ? student.email : studentName] = payload;
+                    const existingData = currentTest.data || {};
+                    let students = Array.isArray(existingData.students) ? existingData.students : [];
+                    
+                    // Remove duplicate entry for this student if any
+                    const emailKey = student ? student.email : studentName;
+                    students = students.filter(s => s.studentEmail !== emailKey && s.studentName !== emailKey);
+                    students.push(payload);
                     
                     const { error: fallbackUpdateErr } = await supabaseClient
                         .from('tests')
-                        .update({ submissions })
+                        .update({ data: { ...existingData, students } })
                         .eq('code', testData.code);
                         
                     if (fallbackUpdateErr) throw fallbackUpdateErr;
