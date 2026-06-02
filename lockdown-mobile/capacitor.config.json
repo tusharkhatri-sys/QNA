@@ -11,6 +11,10 @@
     "PrivacyScreen": {
       "enable": true,
       "imageName": "Splashscreen"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }
+
