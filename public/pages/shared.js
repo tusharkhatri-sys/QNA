@@ -2,15 +2,74 @@
 const SUPABASE_URL = 'https://gxfojevrtvexfootbzjw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4Zm9qZXZydHZleGZvb3Riemp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NDg5MTMsImV4cCI6MjA5MzAyNDkxM30.0MP9rW4UdOYT3irbPqCjY352g8vr1b92zymXeqsnD8w';
 
-// 1. Fix Supabase Initialization (Removed duplicate, enforced strict persist properties for Capacitor)
+// ─── Capacitor-Aware Persistent Storage for Supabase Auth ───
+// window.localStorage is wiped by Android when process is killed.
+// @capacitor/preferences uses Android SharedPreferences — survives kills.
+// This adapter tries Capacitor first, falls back to localStorage on web.
+const CapacitorStorage = {
+    _cap: null,
+
+    _getPlugin() {
+        if (this._cap !== null) return this._cap;
+        try {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences) {
+                this._cap = window.Capacitor.Plugins.Preferences;
+            } else {
+                this._cap = false; // not available
+            }
+        } catch (e) {
+            this._cap = false;
+        }
+        return this._cap;
+    },
+
+    async getItem(key) {
+        const cap = this._getPlugin();
+        if (cap) {
+            try {
+                const { value } = await cap.get({ key });
+                return value; // null if not found
+            } catch (e) { /* fall through */ }
+        }
+        return window.localStorage.getItem(key);
+    },
+
+    async setItem(key, value) {
+        const cap = this._getPlugin();
+        if (cap) {
+            try {
+                await cap.set({ key, value });
+                // Mirror to localStorage for same-session reads
+                window.localStorage.setItem(key, value);
+                return;
+            } catch (e) { /* fall through */ }
+        }
+        window.localStorage.setItem(key, value);
+    },
+
+    async removeItem(key) {
+        const cap = this._getPlugin();
+        if (cap) {
+            try {
+                await cap.remove({ key });
+                window.localStorage.removeItem(key);
+                return;
+            } catch (e) { /* fall through */ }
+        }
+        window.localStorage.removeItem(key);
+    }
+};
+
+// 1. Supabase init with Capacitor-aware persistent storage
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
         persistSession: true,
-        storage: window.localStorage,
+        storage: CapacitorStorage,   // ← uses SharedPreferences on Android
         autoRefreshToken: true,
         detectSessionInUrl: false
     }
 });
+
 
 const API_URL = '/api';
 
@@ -98,11 +157,11 @@ async function ensureSupabaseAuthReady() {
             resolve(session);
         };
 
-        // Fallback timeout: If storage is completely empty, it might not fire INITIAL_SESSION immediately
+        // Fallback timeout: 3s for Capacitor Preferences hydration on slow Android devices
         const timeout = setTimeout(() => {
-            console.warn('[Boot Lock] Supabase hydration check timed out (1500ms). Releasing lock.');
+            console.warn('[Boot Lock] Supabase hydration check timed out (3000ms). Releasing lock.');
             complete(null);
-        }, 1500);
+        }, 3000);
 
         // Listen for the exact moment Supabase finishes resolving local storage
         // NOTE: SIGNED_OUT must NOT resolve the boot lock — it would cause a redirect loop
