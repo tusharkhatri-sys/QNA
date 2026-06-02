@@ -55,8 +55,6 @@
                 <input type="text" placeholder="Search assessments..." class="w-full bg-slate-800/50 border border-white/5 rounded-xl py-3 pl-12 text-white outline-none">
             </div>
             <select id="session-filter" onchange="initTestManager()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
-                <option value="2025-2026">2025-2026</option>
-                <option value="2024-2025">2024-2025</option>
                 <option value="All">All Sessions</option>
             </select>
             <select id="status-filter" onchange="initTestManager()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
@@ -178,8 +176,9 @@
     <script src="admin-core.js"></script>
     <script>
         lucide.createIcons();
-        document.getElementById('session-filter').value = getCurrentSession();
-        initTestManager();
+        populateSessionDropdown('session-filter').then(() => {
+            initTestManager();
+        });
     </script>
 </body>
 </html>

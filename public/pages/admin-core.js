@@ -91,8 +91,8 @@ async function initDashboard() {
         }
         
         const wofSession = document.getElementById('wof-session');
-        if (wofSession && typeof getCurrentSession === 'function') {
-            wofSession.value = getCurrentSession();
+        if (wofSession && typeof fetchActiveSession === 'function') {
+            wofSession.value = await fetchActiveSession();
         }
         
     } catch (err) {
@@ -927,5 +927,135 @@ async function addToWallOfFame() {
     } finally {
         btn.textContent = "Publish to Dashboard";
         btn.disabled = false;
+    }
+}
+
+// --- SESSION MANAGEMENT LOGIC ---
+
+async function populateSessionDropdown(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+
+    const sessions = await fetchAllSessions();
+    const activeSession = await fetchActiveSession();
+
+    let optionsHtml = `<option value="All">All Sessions</option>`;
+    sessions.forEach(s => {
+        const isSelected = s.name === activeSession ? 'selected' : '';
+        optionsHtml += `<option value="${s.name}" ${isSelected}>${s.name} ${s.is_active ? '(Active)' : ''}</option>`;
+    });
+
+    dropdown.innerHTML = optionsHtml;
+}
+
+async function initSessionManager() {
+    const tbody = document.getElementById('session-table-body');
+    if (!tbody) return;
+
+    const sessions = await fetchAllSessions();
+    if (sessions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No sessions found.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = sessions.map(s => {
+        const isActive = s.is_active;
+        const statusBadge = isActive 
+            ? `<span class="bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1 rounded-md text-xs font-bold uppercase">Active</span>` 
+            : `<span class="bg-slate-500/10 text-slate-500 border border-slate-500/20 px-2 py-1 rounded-md text-xs font-bold uppercase">Inactive</span>`;
+            
+        const actionBtn = isActive 
+            ? `<button disabled class="text-slate-500 cursor-not-allowed text-xs font-bold"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Current</button>`
+            : `<button onclick="setActiveSession('${s.id}')" class="text-indigo-400 hover:text-indigo-300 text-xs font-bold transition-colors"><i data-lucide="power" class="w-4 h-4 inline"></i> Set Active</button>
+               <button onclick="deleteSession('${s.id}')" class="text-red-400 hover:text-red-300 text-xs font-bold transition-colors ml-3"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>`;
+
+        return `
+            <tr class="hover:bg-white/5 transition-colors">
+                <td class="p-4 font-bold text-white">${s.name}</td>
+                <td class="p-4 text-slate-400 text-xs">${s.start_date} to ${s.end_date}</td>
+                <td class="p-4 text-center">${statusBadge}</td>
+                <td class="p-4 text-right">${actionBtn}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function createNewSession() {
+    const name = document.getElementById('new-session-name').value.trim();
+    const start = document.getElementById('new-session-start').value;
+    const end = document.getElementById('new-session-end').value;
+
+    if (!name || !start || !end) {
+        return alert("Please fill in all fields (Name, Start Date, End Date).");
+    }
+
+    try {
+        const { error } = await supabaseClient.from('sessions').insert({
+            name: name,
+            start_date: start,
+            end_date: end,
+            is_active: false // newly created sessions are not active by default
+        });
+
+        if (error) throw error;
+
+        // Clear form
+        document.getElementById('new-session-name').value = '';
+        document.getElementById('new-session-start').value = '';
+        document.getElementById('new-session-end').value = '';
+        
+        // Refresh table
+        await initSessionManager();
+        alert(`Session '${name}' created successfully.`);
+    } catch (err) {
+        console.error('Error creating session:', err);
+        alert(err.message || 'Failed to create session. Name might already exist.');
+    }
+}
+
+async function setActiveSession(sessionId) {
+    if (!confirm("Are you sure you want to set this as the active session? New student registrations will be assigned to this session.")) return;
+
+    try {
+        // Step 1: Deactivate all sessions
+        const { error: err1 } = await supabaseClient
+            .from('sessions')
+            .update({ is_active: false })
+            .neq('id', '00000000-0000-0000-0000-000000000000'); // Dummy condition to update all rows
+
+        if (err1) throw err1;
+
+        // Step 2: Activate the selected session
+        const { error: err2 } = await supabaseClient
+            .from('sessions')
+            .update({ is_active: true })
+            .eq('id', sessionId);
+
+        if (err2) throw err2;
+
+        await fetchActiveSession(); // Update global cache
+        await initSessionManager();
+    } catch (err) {
+        console.error('Error setting active session:', err);
+        alert('Failed to set active session.');
+    }
+}
+
+async function deleteSession(sessionId) {
+    if (!confirm("Are you sure you want to delete this session? This action cannot be undone.")) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('sessions')
+            .delete()
+            .eq('id', sessionId);
+
+        if (error) throw error;
+        await initSessionManager();
+    } catch (err) {
+        console.error('Error deleting session:', err);
+        alert('Failed to delete session. It might be in use.');
     }
 }

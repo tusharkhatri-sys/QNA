@@ -227,11 +227,24 @@ app.post('/api/students/register', async (req, res) => {
 
         if (authError) return res.status(400).json({ success: false, message: authError.message });
 
-        // Step 3: Insert into custom students table (password stored for admin visibility as requested)
-        const newStudent = { name, email, password };
+        // Step 3: Find active session to auto-assign
+        const { data: activeSession } = await supabase
+            .from('sessions')
+            .select('name')
+            .eq('is_active', true)
+            .single();
+
+        // Step 4: Insert into custom students table
+        const newStudent = { 
+            name, 
+            email, 
+            password,
+            session: activeSession ? activeSession.name : '2025-2026' // Fallback
+        };
         const { data, error } = await supabase.from('students').insert([newStudent]).select().single();
 
         if (error) return res.status(500).json({ success: false, message: error.message });
+
 
         res.json({ success: true, message: 'Registration successful! Please check your email inbox to confirm your account before logging in.' });
     } catch (e) {

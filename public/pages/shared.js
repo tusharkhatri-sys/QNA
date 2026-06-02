@@ -102,18 +102,45 @@ function getLoggedInStudent() {
 
 
 
-// Global Dynamic Session Calculator
+// Global Dynamic Session State
+let GLOBAL_ACTIVE_SESSION = '2025-2026';
+
+// Get the current cached active session (synchronous fallback)
 function getCurrentSession() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    
-    if (month >= 5) {
-        return `${year}-${year + 1}`;
-    } else {
-        return `${year - 1}-${year}`;
+    return GLOBAL_ACTIVE_SESSION;
+}
+
+// Fetch active session from DB (Async)
+async function fetchActiveSession() {
+    try {
+        const { data } = await supabaseClient
+            .from('sessions')
+            .select('name')
+            .eq('is_active', true)
+            .single();
+        if (data && data.name) {
+            GLOBAL_ACTIVE_SESSION = data.name;
+        }
+    } catch (e) {
+        console.warn('Failed to fetch active session, using fallback', e);
+    }
+    return GLOBAL_ACTIVE_SESSION;
+}
+
+// Fetch all sessions from DB (Async)
+async function fetchAllSessions() {
+    try {
+        const { data } = await supabaseClient
+            .from('sessions')
+            .select('*')
+            .order('created_at', { ascending: false });
+        return data || [];
+    } catch (e) {
+        console.error('Failed to fetch sessions', e);
+        return [];
     }
 }
+
 
 // Ensure session is fresh before critical operations
 async function ensureSupabaseSession() {
