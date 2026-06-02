@@ -38,6 +38,9 @@ const renderUI = () => {
     
     // Attempt offline sync if network is available
     syncPendingSubmissions();
+
+    // Show results modal AFTER DOM is fully ready (must run after renderUI)
+    processResultsLogic();
 };
 
 const initLogic = async () => {
@@ -96,67 +99,78 @@ if (document.readyState === 'loading') {
     
 const processResultsLogic = () => {
     const lastResults = localStorage.getItem('lastQuizResults');
-    if (lastResults) {
-        try {
-            const res = JSON.parse(lastResults);
-            
-            // Save to history only if it's an admin live test
-            if (!res.isPractice) {
-                let history = [];
-                try {
-                    history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
-                } catch(e) {
-                    console.error("Corrupted student test history. Resetting.", e);
-                }
-                history.push({
-                    date: new Date().toISOString(),
-                    score: res.score,
-                    total: res.total,
-                    percent: Math.round((res.score / res.total) * 100)
-                });
-                localStorage.setItem('studentTestHistory', JSON.stringify(history));
-            }
+    if (!lastResults) return;
 
-            const scoreText = document.getElementById('result-score-text');
-            if (scoreText) {
-                scoreText.textContent = `${res.score} / ${res.total}`;
-                
-                const attemptedEl = document.getElementById('result-attempted');
-                if (attemptedEl) attemptedEl.textContent = res.attempted;
-                
-                const totalEl = document.getElementById('result-total');
-                if (totalEl) totalEl.textContent = res.total;
-                
-                const correctEl = document.getElementById('result-correct');
-                if (correctEl) correctEl.textContent = res.score;
-                
-                const incorrectEl = document.getElementById('result-incorrect');
-                if (incorrectEl) incorrectEl.textContent = res.incorrect;
-                
-                const modal = document.getElementById('results-modal');
-                if (modal) modal.style.display = 'flex';
-                
-                // Confetti if score > 80%
-                if ((res.score / res.total) >= 0.8 && window.confetti) {
-                    setTimeout(() => {
-                        try {
-                            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                        } catch (e) { console.warn("Confetti failed", e); }
-                    }, 300);
-                }
-            }
+    try {
+        const res = JSON.parse(lastResults);
+        
+        // Save to history for every test (practice or live)
+        let history = [];
+        try {
+            history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
         } catch(e) {
-            console.error("Failed to parse lastQuizResults", e);
+            history = [];
         }
-        localStorage.removeItem('lastQuizResults');
+        history.push({
+            date: new Date().toISOString(),
+            score: res.score,
+            total: res.total,
+            percent: Math.round((res.score / res.total) * 100),
+            isPractice: res.isPractice
+        });
+        localStorage.setItem('studentTestHistory', JSON.stringify(history));
+
+        // Populate result elements safely
+        const percent = Math.round((res.score / res.total) * 100);
+
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+
+        set('result-score-text',  `${res.score} / ${res.total}`);
+        set('result-attempted',   res.attempted);
+        set('result-total',       res.total);
+        set('result-correct',     res.score);
+        set('result-incorrect',   res.incorrect);
+        set('result-unanswered',  res.unanswered ?? (res.total - res.attempted));
+        set('result-percent',     `${percent}%`);
+
+        // Color-code the percent
+        const percentEl = document.getElementById('result-percent');
+        if (percentEl) {
+            percentEl.style.color = percent >= 80 ? '#22c55e'
+                                  : percent >= 50 ? '#60a5fa'
+                                  : '#ef4444';
+        }
+
+        // Always show the modal
+        const modal = document.getElementById('results-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+        } else {
+            // Fallback: create a simple inline alert if modal element missing in HTML
+            console.warn('[Results] results-modal element not found. Check student.html');
+        }
+
+        // Confetti if score >= 80%
+        if (percent >= 80 && window.confetti) {
+            setTimeout(() => {
+                try { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); }
+                catch (e) { console.warn("Confetti failed", e); }
+            }, 400);
+        }
+
+    } catch(e) {
+        console.error("Failed to parse lastQuizResults", e);
     }
+    
+    localStorage.removeItem('lastQuizResults');
+
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', processResultsLogic);
-} else {
-    processResultsLogic();
-}
+// NOTE: processResultsLogic() is now called from inside renderUI()
+// to ensure it runs AFTER the DOM is fully populated and session is confirmed.
 
 // Tab Switching & Analytics
 function switchTab(tabName) {

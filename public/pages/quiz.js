@@ -471,9 +471,10 @@ async function submitQuiz(force = false) {
         }
     }
     
-    const incorrect = attempted - score;
+    const incorrect = currentQuiz.length - score;   // includes skipped/unanswered
+    const unanswered = currentQuiz.length - attempted;
     localStorage.setItem('lastQuizResults', JSON.stringify({ 
-        score, attempted, incorrect, total: currentQuiz.length, isPractice: !testData
+        score, attempted, incorrect, unanswered, total: currentQuiz.length, isPractice: !testData
     }));
     
     // --- Gamification: Update Streak ---
