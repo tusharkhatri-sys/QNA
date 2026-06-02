@@ -23,7 +23,7 @@ ALTER TABLE public.sessions DISABLE ROW LEVEL SECURITY;
 
 -- 2. Insert a default active session so the system continues to work immediately
 INSERT INTO public.sessions (name, start_date, end_date, is_active)
-VALUES ('2025-2026', '2025-06-01', '2026-05-31', true)
+VALUES ('2025-2026', '2025-06-01', '2026-06-16', true)
 ON CONFLICT (name) DO NOTHING;
 
 -- 3. Add 'session' column to students table if it doesn't exist

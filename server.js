@@ -230,16 +230,26 @@ app.post('/api/students/register', async (req, res) => {
         // Step 3: Find active session to auto-assign
         const { data: activeSession } = await supabase
             .from('sessions')
-            .select('name')
+            .select('name, end_date')
             .eq('is_active', true)
             .single();
+
+        if (!activeSession) {
+            return res.status(400).json({ success: false, message: 'Registration is currently closed (No active session).' });
+        }
+
+        // Check if session has ended based on date
+        const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        if (activeSession.end_date && currentDate > activeSession.end_date) {
+            return res.status(400).json({ success: false, message: `Registration is closed. The session ${activeSession.name} has ended.` });
+        }
 
         // Step 4: Insert into custom students table
         const newStudent = { 
             name, 
             email, 
             password,
-            session: activeSession ? activeSession.name : '2025-2026' // Fallback
+            session: activeSession.name
         };
         const { data, error } = await supabase.from('students').insert([newStudent]).select().single();
 
