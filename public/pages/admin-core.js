@@ -964,9 +964,14 @@ async function initSessionManager() {
             ? `<span class="bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1 rounded-md text-xs font-bold uppercase">Active</span>` 
             : `<span class="bg-slate-500/10 text-slate-500 border border-slate-500/20 px-2 py-1 rounded-md text-xs font-bold uppercase">Inactive</span>`;
             
+        const editDisabled = (s.update_count >= 2) ? 'disabled title="Update limit reached"' : '';
+        const editClass = (s.update_count >= 2) ? 'text-slate-600 cursor-not-allowed' : 'text-blue-400 hover:text-blue-300';
+            
         const actionBtn = isActive 
-            ? `<button disabled class="text-slate-500 cursor-not-allowed text-xs font-bold"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Current</button>`
+            ? `<button disabled class="text-slate-500 cursor-not-allowed text-xs font-bold"><i data-lucide="check-circle" class="w-4 h-4 inline"></i> Current</button>
+               <button ${editDisabled} onclick="editSession('${s.id}', '${s.name}', '${s.start_date}', '${s.end_date}')" class="${editClass} text-xs font-bold transition-colors ml-3"><i data-lucide="edit-3" class="w-4 h-4 inline"></i></button>`
             : `<button onclick="setActiveSession('${s.id}')" class="text-indigo-400 hover:text-indigo-300 text-xs font-bold transition-colors"><i data-lucide="power" class="w-4 h-4 inline"></i> Set Active</button>
+               <button ${editDisabled} onclick="editSession('${s.id}', '${s.name}', '${s.start_date}', '${s.end_date}')" class="${editClass} text-xs font-bold transition-colors ml-3"><i data-lucide="edit-3" class="w-4 h-4 inline"></i></button>
                <button onclick="deleteSession('${s.id}')" class="text-red-400 hover:text-red-300 text-xs font-bold transition-colors ml-3"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>`;
 
         return `
@@ -982,7 +987,8 @@ async function initSessionManager() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
-async function createNewSession() {
+async function submitSessionForm() {
+    const editId = document.getElementById('edit-session-id').value;
     const name = document.getElementById('new-session-name').value.trim();
     const start = document.getElementById('new-session-start').value;
     const end = document.getElementById('new-session-end').value;
@@ -992,27 +998,81 @@ async function createNewSession() {
     }
 
     try {
-        const { error } = await supabaseClient.from('sessions').insert({
-            name: name,
-            start_date: start,
-            end_date: end,
-            is_active: false // newly created sessions are not active by default
-        });
+        if (editId) {
+            // Check update count first
+            const { data: session } = await supabaseClient.from('sessions').select('update_count').eq('id', editId).single();
+            if (session.update_count >= 2) {
+                alert("Update limit reached (max 2 times).");
+                return;
+            }
+            
+            const { error } = await supabaseClient.from('sessions').update({
+                name: name,
+                start_date: start,
+                end_date: end,
+                update_count: (session.update_count || 0) + 1
+            }).eq('id', editId);
+            
+            if (error) throw error;
+        } else {
+            const { error } = await supabaseClient.from('sessions').insert({
+                name: name,
+                start_date: start,
+                end_date: end,
+                is_active: false
+            });
+            if (error) throw error;
+        }
 
-        if (error) throw error;
-
-        // Clear form
         document.getElementById('new-session-name').value = '';
         document.getElementById('new-session-start').value = '';
         document.getElementById('new-session-end').value = '';
+        resetSessionForm();
         
-        // Refresh table
         await initSessionManager();
-        alert(`Session '${name}' created successfully.`);
+        if (document.getElementById('session-filter')) {
+            populateSessionDropdown('session-filter');
+        }
     } catch (err) {
-        console.error('Error creating session:', err);
-        alert(err.message || 'Failed to create session. Name might already exist.');
+        console.error('Error submitting session:', err);
+        alert('Failed to save session. ' + err.message);
     }
+}
+
+function editSession(id, name, start, end) {
+    document.getElementById('edit-session-id').value = id;
+    document.getElementById('new-session-name').value = name;
+    document.getElementById('new-session-start').value = start;
+    document.getElementById('new-session-end').value = end;
+    
+    document.getElementById('session-form-title').innerText = "Edit Session";
+    const submitBtn = document.getElementById('session-submit-btn');
+    if (submitBtn) {
+        submitBtn.innerText = "Save Updates";
+        submitBtn.classList.replace('bg-indigo-600', 'bg-blue-600');
+        submitBtn.classList.replace('hover:bg-indigo-500', 'hover:bg-blue-500');
+    }
+    const cancelBtn = document.getElementById('session-cancel-btn');
+    if (cancelBtn) cancelBtn.classList.remove('hidden');
+}
+
+function resetSessionForm() {
+    document.getElementById('edit-session-id').value = '';
+    document.getElementById('new-session-name').value = '';
+    document.getElementById('new-session-start').value = '';
+    document.getElementById('new-session-end').value = '';
+    
+    const title = document.getElementById('session-form-title');
+    if (title) title.innerText = "Create New Session";
+    
+    const submitBtn = document.getElementById('session-submit-btn');
+    if (submitBtn) {
+        submitBtn.innerText = "Add Session";
+        submitBtn.classList.replace('bg-blue-600', 'bg-indigo-600');
+        submitBtn.classList.replace('hover:bg-blue-500', 'hover:bg-indigo-500');
+    }
+    const cancelBtn = document.getElementById('session-cancel-btn');
+    if (cancelBtn) cancelBtn.classList.add('hidden');
 }
 
 async function setActiveSession(sessionId) {
