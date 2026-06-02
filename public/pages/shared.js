@@ -130,13 +130,19 @@ async function fetchActiveSession() {
 // Fetch all sessions from DB (Async)
 async function fetchAllSessions() {
     try {
-        const { data } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from('sessions')
             .select('*')
             .order('created_at', { ascending: false });
+        if (error) {
+            alert("Error fetching sessions: " + error.message);
+            console.error(error);
+            return [];
+        }
         return data || [];
     } catch (e) {
         console.error('Failed to fetch sessions', e);
+        alert('Network or JS Error fetching sessions: ' + e.message);
         return [];
     }
 }
