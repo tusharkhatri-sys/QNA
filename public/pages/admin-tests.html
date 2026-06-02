@@ -8,8 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0f172a; color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
-        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        body { background: #FFFFFF; color: #111827; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .bg-white border border-gray-200 shadow-sm { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .sidebar-item.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-right: 3px solid #3b82f6; }
         .stepper-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
         ::-webkit-scrollbar { width: 4px; }
@@ -18,19 +18,19 @@
 </head>
 <body class="h-screen flex">
     <!-- Sidebar -->
-    <nav class="w-64 glass-card border-r border-white/5 flex flex-col h-full z-50">
+    <nav class="w-64 bg-white border border-gray-200 shadow-sm border-r border-gray-200 flex flex-col h-full z-50">
         <div class="p-8 flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="text-white w-5 h-5"></i></div>
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="text-slate-900 w-5 h-5"></i></div>
             <span class="font-black text-xl tracking-tight">QNA <span class="text-blue-500">COPA</span></span>
         </div>
         <div class="flex-1 px-4 space-y-2 mt-4">
-            <a href="admin-dashboard.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+            <a href="admin-dashboard.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-600 hover:text-slate-900">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
             </a>
             <a href="admin-tests.html" class="sidebar-item active flex items-center gap-3 p-4 rounded-xl font-bold transition-all">
                 <i data-lucide="file-text" class="w-5 h-5"></i> Test Manager
             </a>
-            <a href="admin-students.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+            <a href="admin-students.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-600 hover:text-slate-900">
                 <i data-lucide="users" class="w-5 h-5"></i> Student List
             </a>
         </div>
@@ -40,8 +40,8 @@
     <main class="flex-1 overflow-y-auto p-10">
         <header class="flex justify-between items-center mb-10">
             <div>
-                <h1 class="text-3xl font-black tracking-tight text-white">Test Manager</h1>
-                <p class="text-slate-400 font-medium">Create and deploy assessments.</p>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900">Test Manager</h1>
+                <p class="text-slate-600 font-medium">Create and deploy assessments.</p>
             </div>
             <button onclick="openModal('create-modal')" class="bg-blue-600 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20">
                 <i data-lucide="plus" class="w-5 h-5"></i> New Test
@@ -49,15 +49,15 @@
         </header>
 
         <!-- Search & Filter -->
-        <div class="glass-card p-6 rounded-[2rem] mb-10 flex gap-4">
+        <div class="bg-white border border-gray-200 shadow-sm p-6 rounded-[2rem] mb-10 flex gap-4">
             <div class="flex-1 relative">
                 <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
-                <input type="text" placeholder="Search assessments..." class="w-full bg-slate-800/50 border border-white/5 rounded-xl py-3 pl-12 text-white outline-none">
+                <input type="text" placeholder="Search assessments..." class="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-12 text-slate-900 outline-none">
             </div>
-            <select id="session-filter" onchange="initTestManager()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
+            <select id="session-filter" onchange="initTestManager()" class="bg-gray-50/50 border border-gray-200 rounded-xl px-6 py-3 text-slate-900 outline-none">
                 <option value="All">All Sessions</option>
             </select>
-            <select id="status-filter" onchange="initTestManager()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
+            <select id="status-filter" onchange="initTestManager()" class="bg-gray-50/50 border border-gray-200 rounded-xl px-6 py-3 text-slate-900 outline-none">
                 <option value="all">All Status</option>
                 <option value="active" selected>Active</option>
                 <option value="archived">Archived</option>
@@ -71,16 +71,16 @@
 
         <!-- Create Test Modal (The Big Stepper) -->
         <div id="create-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-            <div class="glass-card w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative">
-                <button onclick="closeModal('create-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative">
+                <button onclick="closeModal('create-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
                 <h2 class="text-2xl font-black mb-8">Deploy New Assessment</h2>
                 
                 <!-- Stepper Headers -->
                 <div class="flex gap-4 mb-10">
-                    <div class="stepper-btn active px-6 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-widest transition-all">Step 1: Core Info</div>
-                    <div class="stepper-btn px-6 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-widest transition-all">Step 2: Question Pool</div>
-                    <div class="stepper-btn px-6 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-widest transition-all">Step 3: Protocol</div>
+                    <div class="stepper-btn active px-6 py-2 rounded-full border border-gray-300 text-xs font-black uppercase tracking-widest transition-all">Step 1: Core Info</div>
+                    <div class="stepper-btn px-6 py-2 rounded-full border border-gray-300 text-xs font-black uppercase tracking-widest transition-all">Step 2: Question Pool</div>
+                    <div class="stepper-btn px-6 py-2 rounded-full border border-gray-300 text-xs font-black uppercase tracking-widest transition-all">Step 3: Protocol</div>
                 </div>
 
                 <div id="stepper-content" class="min-h-[400px]">
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="flex justify-between mt-10">
-                    <button id="prev-btn" class="hidden px-8 py-3 rounded-2xl border border-white/10 font-bold">Back</button>
+                    <button id="prev-btn" class="hidden px-8 py-3 rounded-2xl border border-gray-300 font-bold">Back</button>
                     <button id="next-btn" class="ml-auto bg-blue-600 px-10 py-3 rounded-2xl font-bold">Continue</button>
                 </div>
             </div>
@@ -96,17 +96,17 @@
 
         <!-- Results Modal -->
         <div id="results-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-            <div class="glass-card w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
-                <button onclick="closeModal('results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
+                <button onclick="closeModal('results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
                 <h2 class="text-2xl font-black mb-2" id="results-title">Test Results</h2>
-                <p class="text-slate-400 mb-8 text-sm" id="results-subtitle">Loading...</p>
+                <p class="text-slate-600 mb-8 text-sm" id="results-subtitle">Loading...</p>
                 <div class="overflow-x-auto">
                     <div id="live-results-section" class="mb-8 hidden">
                         <h4 class="text-xs font-black text-green-400 uppercase tracking-widest mb-4">Live Students (Currently Testing)</h4>
                         <table class="w-full text-left border-collapse mb-8">
                             <thead>
-                                <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                                <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-gray-200">
                                     <th class="py-4">Student Name</th>
                                     <th>Roll No</th>
                                     <th>Progress</th>
@@ -117,10 +117,10 @@
                         </table>
                     </div>
                     
-                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Submitted Results</h4>
+                    <h4 class="text-xs font-black text-slate-600 uppercase tracking-widest mb-4">Submitted Results</h4>
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                            <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-gray-200">
                                 <th class="py-4">Student Name</th>
                                 <th>Roll No</th>
                                 <th>Score</th>
@@ -136,14 +136,14 @@
 
         <!-- Manual Select Modal -->
         <div id="manual-select-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[120] flex items-center justify-center p-6">
-            <div class="glass-card w-full max-w-5xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
-                <button onclick="closeModal('manual-select-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-5xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
+                <button onclick="closeModal('manual-select-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
                 <h2 class="text-2xl font-black mb-2">Select Questions</h2>
-                <p class="text-slate-400 mb-6 text-sm" id="manual-select-topic">Topic Name</p>
+                <p class="text-slate-600 mb-6 text-sm" id="manual-select-topic">Topic Name</p>
                 
                 <div class="flex justify-between items-center mb-4">
-                    <button onclick="selectAllManual()" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded hover:bg-slate-700">Select All</button>
+                    <button onclick="selectAllManual()" class="text-xs bg-gray-50 text-slate-700 px-3 py-1 rounded hover:bg-slate-700">Select All</button>
                     <span class="text-sm font-bold text-blue-400" id="manual-selected-count">0 Selected</span>
                 </div>
                 
@@ -158,11 +158,11 @@
         </div>
         <!-- Detailed Results Modal -->
         <div id="detailed-results-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[120] flex items-center justify-center p-6">
-            <div class="glass-card w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
-                <button onclick="closeModal('detailed-results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
+                <button onclick="closeModal('detailed-results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
                 <h2 class="text-2xl font-black mb-2" id="detailed-student-name">Student Name</h2>
-                <p class="text-slate-400 mb-6 text-sm" id="detailed-student-score">Score: 0 / 0</p>
+                <p class="text-slate-600 mb-6 text-sm" id="detailed-student-score">Score: 0 / 0</p>
                 
                 <div id="detailed-questions-list" class="overflow-y-auto flex-1 pr-4 space-y-4">
                     <!-- QnAs -->

@@ -23,11 +23,11 @@
             text-align: center;
             margin-bottom: 10px;
             letter-spacing: -1px;
-            background: linear-gradient(135deg, var(--accent), #312e81);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
+            color: #1D4ED8;
+            
+            
+            
+            
         }
         .landing-subtitle {
             font-size: 1.2rem;
@@ -42,9 +42,9 @@
             z-index: 10;
         }
         .portal-card {
-            background: rgba(255, 255, 255, 0.8);
+            background: #FFFFFF;
             backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
+            border: 1px solid #CCCCCC;
             border-radius: var(--radius);
             padding: 50px 40px;
             width: 320px;
@@ -67,7 +67,7 @@
         .portal-card:hover {
             transform: translateY(-10px);
             border-color: var(--accent);
-            box-shadow: var(--shadow-glow);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .portal-card:hover::before {
             opacity: 1;
@@ -118,7 +118,7 @@
             right: 20px;
             padding: 8px 16px;
             background: rgba(255, 255, 255, 0.1);
-            border: 1px solid var(--border);
+            border: 1px solid #CCCCCC;
             border-radius: 6px;
             color: var(--text);
             text-decoration: none;
@@ -129,7 +129,7 @@
             z-index: 100;
         }
         .admin-top-link:hover {
-            background: var(--accent);
+            background: #1D4ED8;
             color: white;
             border-color: var(--accent);
         }
@@ -142,7 +142,7 @@
         .download-btn {
             display: inline-flex;
             align-items: center;
-            background: var(--accent);
+            background: #1D4ED8;
             color: white;
             padding: 16px 32px;
             border-radius: 12px;
@@ -163,9 +163,9 @@
             font-size: 0.9rem;
         }
         .about-section {
-            background: rgba(255, 255, 255, 0.8);
+            background: #FFFFFF;
             backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
+            border: 1px solid #CCCCCC;
             border-radius: var(--radius);
             padding: 30px;
             margin-top: 20px;
@@ -202,7 +202,7 @@
         <p class="landing-subtitle">The next-generation, secure assessment platform for students and institutions.</p>
         
         <div class="download-section" style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe" class="download-btn">
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe" class="download-btn bg-blue-600 text-white">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
@@ -210,7 +210,7 @@
                 </svg>
                 Safe Browser (.exe)
             </a>
-            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/app-debug.apk" class="download-btn" style="background: #10b981;">
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/app-debug.apk" class="download-btn bg-blue-600 text-white" style="background: #10b981;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                     <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
                     <line x1="12" y1="18" x2="12.01" y2="18"></line>

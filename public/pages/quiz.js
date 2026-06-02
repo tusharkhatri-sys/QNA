@@ -13,6 +13,8 @@ const student = getLoggedInStudent();
 let currentQuiz = [];
 let currentIndex = 0;
 let userAnswers = {};
+let visitedQuestions = new Set([0]);
+let markedQuestions = new Set();
 let score = 0;
 let timeRemaining = 0;
 let liveTestTimer = null;
@@ -181,7 +183,6 @@ function initLiveTest() {
                 setTimeout(() => submitQuiz(true), 2000);
             }
         }).subscribe();
-        
     renderQuestion();
     debouncedReportLiveProgress();
 }
@@ -252,19 +253,25 @@ function renderQuestion() {
         div.className = 'option-card';
         if (userAnswers[currentIndex] === idx) div.classList.add('selected');
         
-        div.onclick = () => selectOption(idx);
-        
         const hiText = (q.o_hi && q.o_hi[idx]) ? `<div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">${escapeHTML(q.o_hi[idx])}</div>` : '';
         
         div.innerHTML = `
-            <div class="option-letter">${letters[idx]}</div>
-            <div>
-                <div class="option-text">${escapeHTML(opt)}</div>
-                ${hiText}
-            </div>
+            <label class="option-label" style="width: 100%;">
+                <input type="radio" name="q_option" value="${idx}" ${userAnswers[currentIndex] === idx ? 'checked' : ''} onchange="selectOption(${idx})">
+                <div style="flex: 1;">
+                    <div class="option-text" style="font-size: 15px; font-weight: bold;">${escapeHTML(opt)}</div>
+                    ${hiText}
+                </div>
+            </label>
         `;
         grid.appendChild(div);
     });
+    
+    // Auto-visit tracking
+    visitedQuestions.add(currentIndex);
+    
+    // Always render palette
+    renderPalette();
     
     if (prevBtn) prevBtn.disabled = currentIndex === 0;
     
@@ -280,11 +287,77 @@ function renderQuestion() {
 function selectOption(idx) {
     if (isSubmitting) return;
     userAnswers[currentIndex] = idx;
+    // Do NOT automatically go to next question in strict govt mode.
+    renderQuestion(); 
+    if(testData) debouncedReportLiveProgress();
+}
+
+function clearResponse() {
+    if (isSubmitting) return;
+    delete userAnswers[currentIndex];
+    markedQuestions.delete(currentIndex);
     renderQuestion();
     if(testData) debouncedReportLiveProgress();
 }
 
+function toggleMarkForReview() {
+    if (isSubmitting) return;
+    if (markedQuestions.has(currentIndex)) {
+        markedQuestions.delete(currentIndex);
+    } else {
+        markedQuestions.add(currentIndex);
+    }
+    nextQuestion(); // Govt portals usually auto-next on "Mark for Review & Next"
+}
+
+function jumpToQuestion(idx) {
+    if (isSubmitting) return;
+    currentIndex = idx;
+    renderQuestion();
+}
+
+function renderPalette() {
+    const paletteGrid = document.getElementById('palette-grid');
+    if (!paletteGrid) return;
+    
+    paletteGrid.innerHTML = '';
+    for (let i = 0; i < currentQuiz.length; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'palette-btn';
+        btn.textContent = i + 1;
+        
+        // Determine status
+        const isAnswered = userAnswers[i] !== undefined;
+        const isMarked = markedQuestions.has(i);
+        const isVisited = visitedQuestions.has(i);
+        
+        if (isMarked) {
+            btn.classList.add('status-marked');
+        } else if (isAnswered) {
+            btn.classList.add('status-answered');
+        } else if (isVisited) {
+            btn.classList.add('status-not-answered');
+        } else {
+            // Not visited yet - uses default gray style from CSS
+        }
+        
+        // Highlight current question
+        if (i === currentIndex) {
+            btn.style.boxShadow = '0 0 0 3px var(--primary-blue)';
+            btn.style.transform = 'scale(1.1)';
+        }
+        
+        btn.onclick = () => jumpToQuestion(i);
+        paletteGrid.appendChild(btn);
+    }
+}
+
 function nextQuestion() {
+    // If it's answered, remove mark
+    if (userAnswers[currentIndex] !== undefined && !markedQuestions.has(currentIndex)) {
+        // Normal save & next
+    }
+    
     if (currentIndex < currentQuiz.length - 1) {
         currentIndex++;
         renderQuestion();

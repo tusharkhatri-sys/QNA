@@ -8,8 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #0f172a; color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
-        .glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        body { background: #FFFFFF; color: #111827; font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+        .bg-white border border-gray-200 shadow-sm { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
         .sidebar-item.active { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-right: 3px solid #3b82f6; }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
@@ -17,16 +17,16 @@
 </head>
 <body class="h-screen flex">
     <!-- Sidebar -->
-    <nav class="w-64 glass-card border-r border-white/5 flex flex-col h-full z-50">
+    <nav class="w-64 bg-white border border-gray-200 shadow-sm border-r border-gray-200 flex flex-col h-full z-50">
         <div class="p-8 flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="text-white w-5 h-5"></i></div>
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i data-lucide="zap" class="text-slate-900 w-5 h-5"></i></div>
             <span class="font-black text-xl tracking-tight">QNA <span class="text-blue-500">COPA</span></span>
         </div>
         <div class="flex-1 px-4 space-y-2 mt-4">
-            <a href="admin-dashboard.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+            <a href="admin-dashboard.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-600 hover:text-slate-900">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
             </a>
-            <a href="admin-tests.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-400 hover:text-white">
+            <a href="admin-tests.html" class="sidebar-item flex items-center gap-3 p-4 rounded-xl font-bold transition-all text-slate-600 hover:text-slate-900">
                 <i data-lucide="file-text" class="w-5 h-5"></i> Test Manager
             </a>
             <a href="admin-students.html" class="sidebar-item active flex items-center gap-3 p-4 rounded-xl font-bold transition-all">
@@ -39,8 +39,8 @@
     <main class="flex-1 overflow-y-auto p-10">
         <header class="flex justify-between items-center mb-10">
             <div>
-                <h1 class="text-3xl font-black tracking-tight text-white">Student Directory</h1>
-                <p class="text-slate-400 font-medium">Manage credentials and monitor registration.</p>
+                <h1 class="text-3xl font-black tracking-tight text-slate-900">Student Directory</h1>
+                <p class="text-slate-600 font-medium">Manage credentials and monitor registration.</p>
             </div>
             <div class="flex items-center gap-4">
                 <button onclick="document.getElementById('session-modal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-500 transition-colors px-6 py-3 rounded-2xl font-bold flex items-center gap-2"><i data-lucide="calendar" class="w-5 h-5"></i> Manage Sessions</button>
@@ -48,16 +48,16 @@
         </header>
 
         <!-- Search Table Card -->
-        <div class="glass-card rounded-[2.5rem] overflow-hidden">
-            <div class="p-8 border-b border-white/5 flex gap-4">
+        <div class="bg-white border border-gray-200 shadow-sm rounded-[2.5rem] overflow-hidden">
+            <div class="p-8 border-b border-gray-200 flex gap-4">
                 <div class="flex-1 relative">
                     <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
-                    <input type="text" id="student-search" placeholder="Search by name, roll no or trade..." class="w-full bg-slate-800/50 border border-white/5 rounded-xl py-3 pl-12 text-white outline-none">
+                    <input type="text" id="student-search" placeholder="Search by name, roll no or trade..." class="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-12 text-slate-900 outline-none">
                 </div>
-                <select id="session-filter" onchange="initStudentsList()" class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
+                <select id="session-filter" onchange="initStudentsList()" class="bg-gray-50/50 border border-gray-200 rounded-xl px-6 py-3 text-slate-900 outline-none">
                     <option value="All">All Sessions</option>
                 </select>
-                <select class="bg-slate-800/50 border border-white/5 rounded-xl px-6 py-3 text-white outline-none">
+                <select class="bg-gray-50/50 border border-gray-200 rounded-xl px-6 py-3 text-slate-900 outline-none">
                     <option>All Trades</option>
                     <option>COPA</option>
                     <option>Electrician</option>
@@ -67,7 +67,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
+                        <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-gray-200">
                             <th class="px-8 py-6">Student Info</th>
                             <th class="px-8 py-6">Trade</th>
                             <th class="px-8 py-6">Reg. Year</th>
@@ -85,28 +85,28 @@
 
     <!-- Session Management Modal -->
     <div id="session-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-white/5 flex justify-between items-center bg-slate-800/50">
+        <div class="bg-white border border-gray-300 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
                 <h2 class="text-xl font-black tracking-tight flex items-center gap-2"><i data-lucide="calendar" class="text-indigo-400 w-5 h-5"></i> Session Management</h2>
-                <button onclick="document.getElementById('session-modal').classList.add('hidden')" class="text-slate-400 hover:text-white bg-white/5 p-2 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
+                <button onclick="document.getElementById('session-modal').classList.add('hidden')" class="text-slate-600 hover:text-slate-900 bg-white/5 p-2 rounded-xl"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="p-6 flex-1 overflow-y-auto">
                 <div class="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-xl mb-6">
                     <h3 id="session-form-title" class="font-bold text-indigo-400 mb-2">Create New Session</h3>
                     <input type="hidden" id="edit-session-id" value="">
                     <div class="grid grid-cols-3 gap-3">
-                        <input type="text" id="new-session-name" placeholder="Name (e.g. 2026-27)" class="bg-slate-800/50 border border-white/5 rounded-xl p-3 text-sm outline-none text-white focus:border-indigo-500">
-                        <input type="date" id="new-session-start" class="bg-slate-800/50 border border-white/5 rounded-xl p-3 text-sm outline-none text-white focus:border-indigo-500">
-                        <input type="date" id="new-session-end" class="bg-slate-800/50 border border-white/5 rounded-xl p-3 text-sm outline-none text-white focus:border-indigo-500">
+                        <input type="text" id="new-session-name" placeholder="Name (e.g. 2026-27)" class="bg-gray-50/50 border border-gray-200 rounded-xl p-3 text-sm outline-none text-slate-900 focus:border-indigo-500">
+                        <input type="date" id="new-session-start" class="bg-gray-50/50 border border-gray-200 rounded-xl p-3 text-sm outline-none text-slate-900 focus:border-indigo-500">
+                        <input type="date" id="new-session-end" class="bg-gray-50/50 border border-gray-200 rounded-xl p-3 text-sm outline-none text-slate-900 focus:border-indigo-500">
                     </div>
-                    <button id="session-submit-btn" onclick="submitSessionForm()" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20">Add Session</button>
-                    <button id="session-cancel-btn" onclick="resetSessionForm()" class="hidden mt-2 w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-all">Cancel Edit</button>
+                    <button id="session-submit-btn" onclick="submitSessionForm()" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-500 text-slate-900 font-bold py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/20">Add Session</button>
+                    <button id="session-cancel-btn" onclick="resetSessionForm()" class="hidden mt-2 w-full bg-slate-700 hover:bg-slate-600 text-slate-900 font-bold py-3 rounded-xl transition-all">Cancel Edit</button>
                 </div>
                 
-                <h3 class="font-bold text-slate-300 mb-3">All Sessions</h3>
-                <div class="bg-slate-800/30 rounded-xl border border-white/5 overflow-hidden">
+                <h3 class="font-bold text-slate-700 mb-3">All Sessions</h3>
+                <div class="bg-gray-50/30 rounded-xl border border-gray-200 overflow-hidden">
                     <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-800/50 text-slate-400">
+                        <thead class="bg-gray-50/50 text-slate-600">
                             <tr>
                                 <th class="p-4 font-semibold">Session Name</th>
                                 <th class="p-4 font-semibold">Duration</th>
