@@ -41,6 +41,51 @@ function hideAlert(formType) {
 }
 
 // Login Logic
+let unverifiedLoginAttempts = 0;
+let currentUnverifiedEmail = "";
+
+function showResendModal(email) {
+    currentUnverifiedEmail = email;
+    document.getElementById('resend-email-display').textContent = email;
+    document.getElementById('resend-modal').classList.remove('hidden');
+}
+
+window.closeResendModal = function() {
+    document.getElementById('resend-modal').classList.add('hidden');
+}
+
+document.getElementById('send-new-link-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('send-new-link-btn');
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    
+    try {
+        // Construct redirect URL dynamically based on current host
+        const redirectUrl = window.location.href.replace('student-auth.html', 'verified.html').replace('auth.html', 'verified.html');
+        
+        const { error } = await supabaseClient.auth.resend({
+            type: 'signup',
+            email: currentUnverifiedEmail,
+            options: {
+                emailRedirectTo: redirectUrl
+            }
+        });
+        
+        if (error) throw error;
+        
+        closeResendModal();
+        showAlert('login', 'A new confirmation link has been sent to your email. Please check your inbox.', 'success');
+        unverifiedLoginAttempts = 0; // reset
+    } catch(err) {
+        console.error('Resend error:', err);
+        showAlert('login', err.message || 'Failed to send activation link.', 'error');
+        closeResendModal();
+    } finally {
+        btn.textContent = 'SEND NEW LINK';
+        btn.disabled = false;
+    }
+});
+
 const loginForm = document.getElementById('login-form');
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -75,9 +120,18 @@ if (loginForm) {
         } catch (err) {
             console.error('Login error:', err);
             let msg = err.message;
-            if (msg === 'Invalid login credentials') {
+            
+            // Handle unverified email error
+            if (msg.toLowerCase().includes('confirm') || msg.toLowerCase().includes('verif') || msg.toLowerCase().includes('not confirmed')) {
+                unverifiedLoginAttempts++;
+                msg = 'Your email is not verified yet. Please check your inbox.';
+                if (unverifiedLoginAttempts >= 2) {
+                    showResendModal(email);
+                }
+            } else if (msg === 'Invalid login credentials') {
                 msg = 'Invalid email or password.';
             }
+            
             showAlert('login', msg, 'error');
         } finally {
             btn.textContent = 'Authorize & Open Dashboard';

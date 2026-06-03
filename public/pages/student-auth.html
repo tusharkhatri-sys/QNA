@@ -38,6 +38,25 @@
 
     </div>
 
+    <!-- Resend Activation Modal -->
+    <div id="resend-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-md p-6 max-w-sm w-full text-center shadow-2xl">
+            <div class="flex justify-center mb-4 text-amber-500">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Email Not Verified</h3>
+            <p class="text-sm text-gray-600 mb-6">It looks like you haven't confirmed your email address. Would you like us to send a new activation link to <strong id="resend-email-display" class="text-blue-700 break-all"></strong>?</p>
+            <div class="flex flex-col gap-3">
+                <button id="send-new-link-btn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-md transition-colors shadow-sm uppercase tracking-wider text-sm">Send New Link</button>
+                <button onclick="closeResendModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-md transition-colors uppercase tracking-wider text-sm">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Supabase Core and Logic -->
     <script src="shared.js"></script>
     <script src="student-auth.js"></script>
