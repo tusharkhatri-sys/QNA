@@ -3,12 +3,39 @@ if (typeof lucide !== 'undefined') {
     lucide.createIcons();
 }
 
+// Toggle between Login and Registration
+function toggleAuthMode(e) {
+    if (e) e.preventDefault();
+    
+    const loginSection = document.getElementById('login-section');
+    const registerSection = document.getElementById('register-section');
+    const formTitle = document.getElementById('form-title');
+    const formSubtitle = document.getElementById('form-subtitle');
+    
+    hideAlert('login');
+    hideAlert('register');
+
+    if (loginSection.classList.contains('hidden')) {
+        // Switch to Login
+        registerSection.classList.add('hidden');
+        loginSection.classList.remove('hidden');
+        formTitle.textContent = 'Trainee Verification';
+        formSubtitle.textContent = 'Secure access restricted to authorized candidates';
+    } else {
+        // Switch to Registration
+        loginSection.classList.add('hidden');
+        registerSection.classList.remove('hidden');
+        formTitle.textContent = 'New Registration';
+        formSubtitle.textContent = 'Create your official credentials';
+    }
+}
+
 // Redirect if already logged in and fetch active sessions
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
-            window.location.href = 'student-dashboard.html';
+            window.location.href = 'student.html';
         }
     } catch(err) {
         console.error("Session check error:", err);
@@ -57,11 +84,12 @@ function showAlert(formType, message, type) {
     if (!alertBox) return;
 
     alertBox.classList.remove('hidden', 'bg-red-50', 'border-red-500', 'text-red-800', 'bg-emerald-50', 'border-emerald-500', 'text-emerald-800');
+    alertBox.classList.add('block');
     
     if (type === 'error') {
-        alertBox.classList.add('bg-red-50', 'border-red-500', 'text-red-800');
+        alertBox.classList.add('bg-red-50', 'border-red-500', 'text-red-800', 'border');
     } else if (type === 'success') {
-        alertBox.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-800');
+        alertBox.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-800', 'border');
     }
 
     alertBox.textContent = message;
@@ -71,6 +99,7 @@ function hideAlert(formType) {
     const alertBox = document.getElementById(`${formType}-alert`);
     if (alertBox) {
         alertBox.classList.add('hidden');
+        alertBox.classList.remove('block');
     }
 }
 
@@ -104,7 +133,7 @@ if (loginForm) {
             }
 
             // Redirect on success
-            window.location.href = 'student-dashboard.html';
+            window.location.href = 'student.html';
 
         } catch (err) {
             console.error('Login error:', err);
@@ -114,7 +143,7 @@ if (loginForm) {
             }
             showAlert('login', msg, 'error');
         } finally {
-            btn.textContent = 'Sign In';
+            btn.textContent = 'Secure Login';
             btn.disabled = false;
         }
     });
@@ -170,9 +199,15 @@ if (registerForm) {
                 throw error;
             }
 
-            // On successful registration, prompt to check email
-            showAlert('register', 'Registration successful! Please check your email to verify your account before logging in.', 'success');
+            // On successful registration
+            showAlert('register', 'Registration successful! You can now login.', 'success');
             document.getElementById('register-form').reset();
+            
+            // Auto switch to login after 2 seconds
+            setTimeout(() => {
+                toggleAuthMode();
+                document.getElementById('login-email').value = email;
+            }, 2000);
 
         } catch (err) {
             console.error('Registration error:', err);
@@ -182,7 +217,7 @@ if (registerForm) {
             }
             showAlert('register', msg, 'error');
         } finally {
-            btn.textContent = 'Register';
+            btn.textContent = 'Complete Registration';
             btn.disabled = false;
         }
     });

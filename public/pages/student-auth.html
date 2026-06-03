@@ -8,68 +8,76 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-white text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
     <!-- Main Container -->
-    <div class="bg-white border border-gray-300 w-full max-w-4xl flex flex-col md:flex-row rounded-sm overflow-hidden">
+    <div class="bg-white border border-gray-300 w-full max-w-lg rounded-md shadow-2xl p-8 relative overflow-hidden">
         
-        <!-- Left Side: Login -->
-        <div class="w-full md:w-1/2 p-10 border-b md:border-b-0 md:border-r border-gray-300">
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-1">Trainee Login</h2>
-                <p class="text-sm font-medium text-gray-700">Access the examination portal.</p>
-            </div>
-            
-            <div id="login-alert" class="hidden mb-6 p-4 border-l-4 text-sm font-bold"></div>
+        <!-- Header -->
+        <div class="text-center mb-8 border-b border-gray-200 pb-6">
+            <h2 id="form-title" class="text-2xl font-black tracking-tight text-gray-900 uppercase">Trainee Verification</h2>
+            <p id="form-subtitle" class="text-sm font-medium text-gray-500 mt-2">Secure access restricted to authorized candidates</p>
+        </div>
+        
+        <!-- LOGIN SECTION -->
+        <div id="login-section" class="block">
+            <div id="login-alert" class="hidden mb-6 p-3 rounded-md text-sm font-bold"></div>
 
             <form id="login-form" class="space-y-5">
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Email Address</label>
-                    <input type="email" id="login-email" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Registered Email</label>
+                    <input type="email" id="login-email" required class="w-full bg-gray-50 border border-gray-300 rounded-md p-3 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-all" placeholder="Enter your registered email">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Password</label>
-                    <input type="password" id="login-password" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Password</label>
+                    <input type="password" id="login-password" required class="w-full bg-gray-50 border border-gray-300 rounded-md p-3 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-all" placeholder="Enter your password">
                 </div>
-                <button type="submit" id="login-btn" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-sm mt-4">Sign In</button>
+                <button type="submit" id="login-btn" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3.5 rounded-md mt-8 transition-colors shadow-sm">
+                    Secure Login
+                </button>
             </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-xs font-medium text-gray-600">New Trainee? <a href="#" onclick="toggleAuthMode(event)" class="text-blue-700 font-bold hover:underline">Register Here</a></p>
+            </div>
         </div>
 
-        <!-- Right Side: Registration -->
-        <div class="w-full md:w-1/2 p-10 bg-white">
-            <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-1">New Trainee Registration</h2>
-                <p class="text-sm font-medium text-gray-700">Create your official credentials.</p>
-            </div>
+        <!-- REGISTRATION SECTION -->
+        <div id="register-section" class="hidden">
+            <div id="register-alert" class="hidden mb-6 p-3 rounded-md text-sm font-bold"></div>
 
-            <div id="register-alert" class="hidden mb-6 p-4 border-l-4 text-sm font-bold"></div>
-
-            <form id="register-form" class="space-y-5">
+            <form id="register-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Full Name</label>
-                    <input type="text" id="reg-name" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Full Name</label>
+                    <input type="text" id="reg-name" required class="w-full bg-gray-50 border border-gray-300 rounded-md p-2.5 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-all">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Session</label>
-                    <select id="reg-session-select" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Session</label>
+                    <select id="reg-session-select" required class="w-full bg-gray-50 border border-gray-300 rounded-md p-2.5 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-all">
                         <option value="" disabled selected>Loading sessions...</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Trade</label>
-                    <select id="reg-trade" required class="w-full bg-gray-100 border border-gray-300 rounded-sm py-2.5 px-3 text-gray-700 font-medium outline-none cursor-not-allowed" disabled>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Trade</label>
+                    <select id="reg-trade" required class="w-full bg-gray-200 border border-gray-300 rounded-md p-2.5 text-gray-700 font-medium outline-none cursor-not-allowed" disabled>
                         <option value="COPA" selected>COPA (Computer Operator and Programming Assistant)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Email Address</label>
-                    <input type="email" id="reg-email" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Email Address</label>
+                    <input type="email" id="reg-email" required class="w-full bg-gray-50 border border-gray-300 rounded-md p-2.5 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-all">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Password (Min 8 characters)</label>
-                    <input type="password" id="reg-password" minlength="8" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Password (Min 8 characters)</label>
+                    <input type="password" id="reg-password" minlength="8" required class="w-full bg-gray-50 border border-gray-300 rounded-md p-2.5 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-all">
                 </div>
-                <button type="submit" id="register-btn" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-sm mt-4">Register</button>
+                <button type="submit" id="register-btn" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3.5 rounded-md mt-6 transition-colors shadow-sm">
+                    Complete Registration
+                </button>
             </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-xs font-medium text-gray-600">Already registered? <a href="#" onclick="toggleAuthMode(event)" class="text-blue-700 font-bold hover:underline">Secure Login Here</a></p>
+            </div>
         </div>
 
     </div>
