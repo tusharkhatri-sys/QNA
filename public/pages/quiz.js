@@ -699,6 +699,8 @@ async function submitQuiz(force = false) {
             console.error("Failed to update streak:", e);
         }
     }
+
+    if (testData) {
         localStorage.removeItem('activeTest');
         localStorage.removeItem('activeTestStudentName');
         localStorage.removeItem(`exam_state_${testData.code}`);
