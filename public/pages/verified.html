@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification - QNA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white border border-gray-300 w-full max-w-2xl rounded-md shadow-2xl p-10 relative overflow-hidden text-center">
+        
+        <!-- Header -->
+        <div class="mb-8 border-b border-gray-200 pb-6" id="status-header">
+            <div class="flex justify-center mb-4 text-blue-600">
+                <svg class="animate-spin" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                    <line x1="12" y1="18" x2="12" y2="22"></line>
+                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                    <line x1="2" y1="12" x2="6" y2="12"></line>
+                    <line x1="18" y1="12" x2="22" y2="12"></line>
+                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-gray-900 uppercase">Verifying Identity...</h2>
+        </div>
+        
+        <!-- Body Content -->
+        <div class="space-y-6 text-left" id="status-body">
+            <p class="text-base text-gray-700 font-medium text-center">
+                Please wait while we confirm your email securely with the server.
+            </p>
+        </div>
+
+        <!-- Download Links (Hidden Initially) -->
+        <div id="download-links" class="mt-10 flex-col sm:flex-row gap-4 justify-center hidden">
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe" class="flex-1 flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-bold py-3.5 px-6 rounded-md transition-colors shadow-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download EXE App
+            </a>
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/app-debug.apk" class="flex-1 flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3.5 px-6 rounded-md transition-colors shadow-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+                Download APK App
+            </a>
+        </div>
+    </div>
+
+    <!-- Supabase Logic -->
+    <script src="shared.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // First check if there's a hash with access_token (which means Supabase just redirected)
+            // If so, the supabase-js library automatically picks it up and establishes a session.
+            
+            setTimeout(async () => {
+                try {
+                    const { data: { session }, error } = await supabaseClient.auth.getSession();
+                    
+                    if (error || !session) {
+                        showError("Verification Link Invalid or Expired", "We could not verify your email. Please try registering again or request a new link.");
+                        return;
+                    }
+                    
+                    const user = session.user;
+                    if (user && user.email_confirmed_at) {
+                        showSuccess("Email Verified Successfully!");
+                    } else {
+                        // Sometimes email_confirmed_at might not be synced immediately in the local session,
+                        // force a refresh of the user object to get the latest status
+                        const { data: { user: freshUser }, error: userError } = await supabaseClient.auth.getUser();
+                        if (!userError && freshUser && freshUser.email_confirmed_at) {
+                            showSuccess("Email Verified Successfully!");
+                        } else {
+                            showError("Verification Pending", "Your email has not been verified yet. Please check your inbox for the confirmation link.");
+                        }
+                    }
+                } catch(e) {
+                    showError("Connection Error", "Failed to connect to the verification server. Please try again.");
+                }
+            }, 1000); // 1s delay to let Supabase process the URL hash tokens
+        });
+
+        function showSuccess(title) {
+            document.getElementById('status-header').innerHTML = `
+                <div class="flex justify-center mb-4 text-emerald-600">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-black tracking-tight text-gray-900 uppercase">${title}</h2>
+            `;
+            
+            document.getElementById('status-body').innerHTML = `
+                <div class="bg-emerald-50 border-l-4 border-emerald-600 p-4 rounded-r-md mb-4">
+                    <p class="text-sm text-emerald-800 font-bold uppercase tracking-wider mb-1">Identity Confirmed</p>
+                    <p class="text-sm text-emerald-700 font-medium leading-relaxed">
+                        Your email address has been successfully verified in our system. You are now authorized to access the training portal.
+                    </p>
+                </div>
+                <div class="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-md">
+                    <p class="text-sm text-red-800 font-bold uppercase tracking-wider mb-1">Critical Security Notice</p>
+                    <p class="text-sm text-red-700 font-medium leading-relaxed">
+                        For exam integrity, terminal access via standard web browsers is blocked. To log in and access your training panel, you must launch our official Windows (.EXE) Desktop App or Android (.APK) Secure Browser Wrapper.
+                    </p>
+                </div>
+            `;
+            
+            document.getElementById('download-links').classList.remove('hidden');
+            document.getElementById('download-links').classList.add('flex');
+            
+            // Sign out immediately so web browser has no active session (force app login)
+            supabaseClient.auth.signOut().catch(()=>{});
+        }
+
+        function showError(title, message) {
+            document.getElementById('status-header').innerHTML = `
+                <div class="flex justify-center mb-4 text-red-600">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-black tracking-tight text-red-600 uppercase">${title}</h2>
+            `;
+            
+            document.getElementById('status-body').innerHTML = `
+                <p class="text-base text-gray-700 font-medium text-center">
+                    ${message}
+                </p>
+            `;
+        }
+    </script>
+</body>
+</html>
