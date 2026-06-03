@@ -2,398 +2,158 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Student Dashboard | QNA Platform</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Dashboard - QNA Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../style.css?v=3">
-    <style>
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 40px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-        }
-        .profile-badge {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(15, 23, 42, 0.05);
-            padding: 8px 16px 8px 8px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-        }
-        .profile-avatar {
-            width: 32px; height: 32px;
-            background: linear-gradient(135deg, var(--accent), #e5c158);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 700;
-            color: #ffffff;
-        }
-        .dashboard-container {
-            margin-top: calc(100px + env(safe-area-inset-top));
-            padding: 40px;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            z-index: 10;
-            position: relative;
-        }
-
-        .panel-card {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 40px;
-            border-radius: var(--radius-lg);
-            box-shadow: 0 0 30px rgba(79, 70, 229, 0.05);
-        }
-        .bottom-nav {
-            display: none;
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            z-index: 100;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        @media (max-width: 640px) {
-            .bottom-nav { display: flex; justify-content: space-around; padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            color: var(--text-muted); cursor: pointer; transition: all 0.3s ease;
-        }
-        .nav-item.active { color: #818cf8; } /* Indigo 400 for better dark mode visibility */
-        .nav-item span { font-size: 0.75rem; font-weight: 600; }
-        .section-view { display: none; animation: fadeIn 0.3s ease; }
-        .section-view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 640px) {
-            .dashboard-container {
-                grid-template-columns: 1fr;
-                padding: 20px;
-                gap: 20px;
-                margin-top: calc(80px + env(safe-area-inset-top));
-                margin-bottom: 80px;
-            }
-            .panel-card {
-                padding: 24px;
-            }
-        }
-    </style>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen font-sans overflow-x-hidden relative" oncontextmenu="return false" oncopy="return false" oncut="return false" onpaste="return false">
-    <!-- KIOSK KEYBOARD LOCKS -->
-    <script>
-        document.addEventListener('keydown', function(e) {
-            // Block F5, Ctrl+R, F12, Ctrl+C, Ctrl+V, Alt+Left
-            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || e.key === 'F12' || (e.altKey && e.key === 'ArrowLeft')) {
-                e.preventDefault();
-            }
-        });
-    </script>
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen pb-12">
 
     <!-- Header -->
-    <header class="bg-white fixed top-0 w-full z-50 border-b border-gray-300 shadow-sm" style="padding-top: env(safe-area-inset-top);">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-sm bg-blue-800 flex items-center justify-center font-black text-lg border border-blue-900 relative overflow-hidden group">
-                    <span id="badge-initial" class="relative z-10 tracking-tighter text-white">Q</span>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight text-gray-900">QNA Portal</h1>
-                    <p class="text-[10px] text-blue-800 font-bold tracking-widest uppercase">Student Access</p>
-                </div>
-            </div>
-            
+    <header class="bg-white border-b border-gray-300 py-4 px-6 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-4">
-                <div class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-sm bg-gray-100 border border-gray-300 text-sm text-gray-900">
-                    <div class="w-2 h-2 rounded-full bg-green-600"></div>
-                    <span id="header-student-name" class="font-bold">Loading...</span>
+                <div class="w-12 h-12 bg-blue-900 text-white flex items-center justify-center font-bold text-xl rounded-sm">QNA</div>
+                <div>
+                    <h1 class="text-xl font-black text-gray-900 uppercase tracking-tight" id="header-name">Loading...</h1>
+                    <div class="flex gap-3 text-xs font-bold text-gray-600 uppercase tracking-wider mt-1">
+                        <span id="header-email">Loading...</span>
+                        <span class="text-gray-400">|</span>
+                        <span id="header-trade">Trade: COPA</span>
+                    </div>
                 </div>
-                <!-- Streak Counter -->
-                <div class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-sm bg-blue-50 border border-blue-200 text-blue-800 font-bold text-sm">
-                    <i data-lucide="flame" class="w-4 h-4 text-blue-800"></i>
-                    <span id="header-streak">0 Day Streak</span>
-                </div>
-                <button onclick="exitSafeBrowser()" class="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 gap-2 rounded-sm bg-white text-gray-900 hover:bg-gray-100 transition-none text-sm font-bold border border-gray-300">
-                    <i data-lucide="log-out" class="w-5 h-5 sm:w-4 sm:h-4"></i>
-                    <span class="hidden sm:inline">Log Out</span>
-                </button>
             </div>
+            <button onclick="logout()" class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-800 font-bold py-2 px-4 rounded-sm transition-colors text-sm uppercase">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+                Logout
+            </button>
         </div>
     </header>
 
-    <!-- Announcement Bar -->
-    <div id="announcement-bar" style="top: calc(5rem + env(safe-area-inset-top));" class="fixed left-0 w-full z-40 bg-blue-800 text-white py-2.5 px-4 shadow-sm transform -translate-y-full transition-transform duration-300 ease-out flex items-center justify-between gap-3 border-b border-blue-900">
-        <div class="flex items-center gap-3 w-full overflow-hidden">
-            <i data-lucide="bell-ring" class="w-4 h-4 shrink-0 text-white"></i>
-            <marquee scrollamount="5" class="font-bold text-sm w-full pr-4" id="announcement-text"></marquee>
-        </div>
-        <button onclick="document.getElementById('announcement-bar').classList.add('-translate-y-full')" class="shrink-0 w-7 h-7 flex items-center justify-center rounded-sm bg-blue-900 hover:bg-blue-950 text-white transition-none">
-            <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-    </div>
-
-    <div id="section-home" class="section-view active dashboard-container">
-        <!-- Live Test Panel -->
-        <div class="panel-card bg-white border border-gray-300 shadow-sm rounded-sm p-6" style="grid-column: 1 / -1;">
-            
-            <div class="flex items-center gap-4 mb-8">
-                <div class="w-14 h-14 rounded-sm bg-gray-100 flex items-center justify-center border border-gray-300">
-                    <i data-lucide="zap" class="w-7 h-7 text-gray-800"></i>
-                </div>
-                <div>
-                    <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-gray-900">Join Live Assessment</h2>
-                    <p class="text-sm text-gray-600 font-bold mt-1">Enter your 6-digit access code</p>
-                </div>
-            </div>
-            
-            <div id="join-error-msg" class="hidden mb-6 p-4 rounded-sm bg-red-50 border border-red-200 text-red-800 text-sm font-bold flex items-center gap-2">
-                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-                <span id="join-error-text"></span>
-            </div>
-            
-            <div class="space-y-6 w-full max-w-lg mx-auto md:mx-0">
-                <input type="hidden" id="student-name-input">
-                
-                <div class="bg-gray-50 p-5 rounded-sm border border-gray-300">
-                    <label class="block text-xs font-black text-gray-600 uppercase tracking-widest mb-3">Student Identity</label>
-                    <div class="flex items-center gap-4 bg-white p-4 rounded-sm border border-gray-300">
-                        <div class="w-10 h-10 rounded-sm bg-gray-100 flex items-center justify-center shrink-0 border border-gray-300">
-                            <i data-lucide="user" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div class="font-bold text-gray-900 capitalize truncate text-xl" id="student-name-display">Loading...</div>
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 p-5 rounded-sm border border-gray-300">
-                    <label class="block text-xs font-black text-gray-600 uppercase tracking-widest mb-3">Access Code</label>
-                    <!-- Auto-scaling Grid to prevent mobile cutoff -->
-                    <div class="grid grid-cols-6 gap-2 sm:gap-3 w-full" id="otp-container">
-                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-white border border-gray-300 rounded-sm text-gray-900 focus:border-blue-800 focus:ring-1 focus:ring-blue-800 uppercase transition-none" oninput="handleOtpInput(this, 1)" onkeydown="handleOtpBackspace(event, this, 1)" placeholder="•">
-                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-white border border-gray-300 rounded-sm text-gray-900 focus:border-blue-800 focus:ring-1 focus:ring-blue-800 uppercase transition-none" oninput="handleOtpInput(this, 2)" onkeydown="handleOtpBackspace(event, this, 2)" placeholder="•">
-                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-white border border-gray-300 rounded-sm text-gray-900 focus:border-blue-800 focus:ring-1 focus:ring-blue-800 uppercase transition-none" oninput="handleOtpInput(this, 3)" onkeydown="handleOtpBackspace(event, this, 3)" placeholder="•">
-                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-white border border-gray-300 rounded-sm text-gray-900 focus:border-blue-800 focus:ring-1 focus:ring-blue-800 uppercase transition-none" oninput="handleOtpInput(this, 4)" onkeydown="handleOtpBackspace(event, this, 4)" placeholder="•">
-                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-white border border-gray-300 rounded-sm text-gray-900 focus:border-blue-800 focus:ring-1 focus:ring-blue-800 uppercase transition-none" oninput="handleOtpInput(this, 5)" onkeydown="handleOtpBackspace(event, this, 5)" placeholder="•">
-                        <input type="text" maxlength="1" class="w-full aspect-[3/4] text-center text-xl sm:text-2xl font-black bg-white border border-gray-300 rounded-sm text-gray-900 focus:border-blue-800 focus:ring-1 focus:ring-blue-800 uppercase transition-none" oninput="handleOtpInput(this, 6)" onkeydown="handleOtpBackspace(event, this, 6)" placeholder="•">
-                    </div>
-                </div>
-
-                <button onclick="joinLiveTest()" class="w-full py-4 mt-4 rounded-sm bg-blue-800 hover:bg-blue-900 text-white font-bold text-lg transition-none flex items-center justify-center gap-3">
-                    <span>Initiate Session</span>
-                    <i data-lucide="arrow-right" class="w-6 h-6"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Self Practice Zone Panel (Light Government Theme) -->
-        <div class="panel-card bg-white border border-gray-300 shadow-sm rounded-sm" style="display: flex; flex-direction: column; justify-content: flex-start; padding: 24px; color: #111827;">
-            <div class="flex items-center gap-3 mb-6 border-b border-gray-300 pb-4">
-                <i data-lucide="book-open" class="w-8 h-8 text-blue-800"></i>
-                <div>
-                    <h2 class="text-xl font-bold text-gray-900 m-0">Self Practice Zone</h2>
-                    <p class="text-sm font-medium text-gray-600 m-0 mt-1">Independent mock assessment engine.</p>
-                </div>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Select Topic</label>
-                    <select id="mock-topic-select" class="w-full bg-white border border-gray-300 rounded-sm py-2 px-3 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800 transition-none">
-                        <option value="ALL" selected>All Topics</option>
-                        <option value="Computer Basics">Computer Basics</option>
-                        <option value="Operating Systems">Operating Systems</option>
-                        <option value="MS Office">MS Office</option>
-                        <option value="Database Management">Database Management</option>
-                        <option value="Networking">Networking</option>
-                        <option value="Web Design">Web Design</option>
-                        <option value="Programming">Programming</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-bold text-gray-900 mb-2">Number of Questions</label>
-                    <div class="flex gap-4">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="mock-q-count" value="25" checked class="w-4 h-4 text-blue-800 border-gray-300 focus:ring-blue-800">
-                            <span class="text-sm font-bold text-gray-700">25 Questions</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="mock-q-count" value="50" class="w-4 h-4 text-blue-800 border-gray-300 focus:ring-blue-800">
-                            <span class="text-sm font-bold text-gray-700">50 Questions</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button onclick="launchMockTest()" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-sm transition-none mt-4">Launch Mock Test</button>
-            </div>
-        </div>
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-6 mt-8 space-y-8">
         
-        <!-- Wall of Fame Panel -->
-        <div class="panel-card bg-white border border-gray-300 shadow-sm rounded-sm p-6" style="grid-column: 1 / -1;">
-            <div class="flex items-center gap-3 mb-6">
-                <i data-lucide="star" class="w-8 h-8 text-yellow-500 fill-yellow-500"></i>
-                <h2 class="text-xl font-bold text-gray-900 m-0">🌟 Hamare Sitare</h2>
-            </div>
-            <div class="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory scrollbar-hide" id="wof-container">
-                <div class="py-10 text-center text-gray-500 w-full font-medium">Loading superstars...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Analytics Section -->
-    <div id="section-analytics" class="section-view dashboard-container max-w-4xl">
-        <div class="panel-card bg-white border border-gray-300 shadow-sm rounded-sm p-6" style="grid-column: 1 / -1;">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900"><i data-lucide="bar-chart-2"></i> Performance Analytics</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-gray-50 border border-gray-300 rounded-sm p-6">
-                    <h3 class="text-sm font-bold text-gray-600 uppercase tracking-widest mb-4">Average Score</h3>
-                    <div class="text-4xl font-black text-blue-800" id="analytics-avg-score">--%</div>
+        <!-- EXAM CENTER: Section A & B -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Section A: Live Admin Exams -->
+            <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-6">
+                <div class="flex items-center gap-3 border-b border-gray-200 pb-4 mb-6">
+                    <i data-lucide="monitor" class="w-6 h-6 text-blue-800"></i>
+                    <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Live Assessments</h2>
                 </div>
-                <div class="bg-gray-50 border border-gray-300 rounded-sm p-6">
-                    <h3 class="text-sm font-bold text-gray-600 uppercase tracking-widest mb-4">Total Tests Taken</h3>
-                    <div class="text-4xl font-black text-blue-800" id="analytics-total-tests">0</div>
+                
+                <div id="live-tests-container" class="space-y-4">
+                    <div class="text-center text-sm font-bold text-gray-500 py-6">Checking for active assessments...</div>
                 </div>
             </div>
-            <div class="mt-8 bg-gray-50 border border-gray-300 rounded-sm p-6 h-[300px] flex items-center justify-center">
-                <canvas id="performanceChart"></canvas>
-            </div>
-        </div>
-    </div>
 
-    <!-- Alumni Section -->
-    <div id="section-alumni" class="section-view dashboard-container max-w-4xl">
-        <div class="panel-card bg-white border border-gray-300 shadow-sm rounded-sm p-6" style="grid-column: 1 / -1;">
-            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2 text-gray-900"><i data-lucide="award" class="text-blue-800"></i> Past Sessions Summary</h2>
+            <!-- Section B: Self Practice Zone -->
+            <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-6">
+                <div class="flex items-center gap-3 border-b border-gray-200 pb-4 mb-6">
+                    <i data-lucide="book-open" class="w-6 h-6 text-green-700"></i>
+                    <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Self Practice Zone</h2>
+                </div>
+                
+                <form id="practice-form" class="space-y-5" onsubmit="launchMockTest(event)">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Select Topic</label>
+                        <select id="practice-topic" class="w-full bg-gray-50 border border-gray-300 rounded-sm p-3 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                            <option value="ALL" selected>All Topics (Comprehensive)</option>
+                            <option value="Computer Basics">Computer Basics</option>
+                            <option value="Operating Systems">Operating Systems</option>
+                            <option value="MS Office">MS Office</option>
+                            <option value="Database Management">Database Management</option>
+                            <option value="Networking">Networking</option>
+                            <option value="Web Design">Web Design</option>
+                            <option value="Programming">Programming</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Number of Questions</label>
+                        <div class="flex gap-6">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="practice-count" value="25" checked class="w-4 h-4 text-green-700 border-gray-300 focus:ring-green-700">
+                                <span class="text-sm font-bold text-gray-900">25 Questions</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="practice-count" value="50" class="w-4 h-4 text-green-700 border-gray-300 focus:ring-green-700">
+                                <span class="text-sm font-bold text-gray-900">50 Questions</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-green-700 hover:bg-green-800 text-white font-bold py-3.5 rounded-sm mt-4 transition-colors shadow-sm uppercase tracking-wider text-sm flex items-center justify-center gap-2">
+                        <i data-lucide="play-circle" class="w-4 h-4"></i>
+                        Launch Mock Test
+                    </button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- PAST RESULTS & MARKSHEETS -->
+        <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-6">
+            <div class="flex items-center gap-3 border-b border-gray-200 pb-4 mb-6">
+                <i data-lucide="clipboard-list" class="w-6 h-6 text-gray-800"></i>
+                <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Past Results & Marksheets</h2>
+            </div>
+            
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse min-w-[600px]">
                     <thead>
-                        <tr class="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-300">
-                            <th class="py-4">Session</th>
-                            <th>Test Name</th>
-                            <th>Score</th>
+                        <tr class="bg-gray-100 border-y border-gray-300 text-xs font-black text-gray-600 uppercase tracking-wider">
+                            <th class="py-3 px-4">Date</th>
+                            <th class="py-3 px-4">Exam Type</th>
+                            <th class="py-3 px-4">Score</th>
+                            <th class="py-3 px-4 text-right">Action / Status</th>
                         </tr>
                     </thead>
-                    <tbody id="alumni-table-body" class="divide-y divide-gray-200">
-                        <tr><td colspan="3" class="py-8 text-center text-gray-500 font-medium">Loading past records...</td></tr>
+                    <tbody id="history-table-body" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">Loading history...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-    </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 z-[100] px-8 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex justify-between items-center shadow-md">
-        <div class="nav-item active flex flex-col items-center gap-1.5 cursor-pointer text-gray-500 hover:text-blue-800" onclick="switchTab('home')" id="nav-home">
-            <i data-lucide="home" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold tracking-wider uppercase">Home</span>
-        </div>
-        <div class="nav-item flex flex-col items-center gap-1.5 cursor-pointer text-gray-500 hover:text-blue-800" onclick="switchTab('analytics')" id="nav-analytics">
-            <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold tracking-wider uppercase">Stats</span>
-        </div>
-        <div class="nav-item flex flex-col items-center gap-1.5 cursor-pointer text-gray-500 hover:text-blue-800" onclick="switchTab('alumni')" id="nav-alumni">
-            <i data-lucide="history" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold tracking-wider uppercase">Records</span>
-        </div>
-    </nav>
+    </main>
 
-    <div id="results-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
-        <div class="bg-white border border-gray-300 rounded-md shadow-xl w-full max-w-3xl overflow-hidden flex flex-col">
-            <!-- STATUS BANNER -->
-            <div id="result-status-banner" class="w-full py-4 text-center text-white font-bold tracking-wider text-xl uppercase bg-gray-500">
-                EVALUATING...
+    <!-- Modal for Scorecard -->
+    <div id="scorecard-modal" class="hidden fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white border border-gray-300 rounded-sm shadow-2xl w-full max-w-lg overflow-hidden">
+            <div id="scorecard-banner" class="w-full py-4 text-center text-white font-black tracking-widest text-xl uppercase bg-blue-800">
+                OFFICIAL SCORECARD
             </div>
-            
-            <div class="p-6 md:p-8 text-gray-900">
-                <h2 class="text-2xl font-extrabold text-blue-900 mb-6 uppercase tracking-wide border-b border-gray-200 pb-2">Institutional Scorecard</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- LEFT COLUMN: TRAINEE DETAILS -->
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Trainee Details</h3>
-                        <table class="w-full text-left border-collapse">
-                            <tbody>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600 w-1/3">Name</th>
-                                    <td class="py-2 font-bold text-gray-900" id="result-trainee-name">N/A</td>
-                                </tr>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600">Roll/Email</th>
-                                    <td class="py-2 font-bold text-gray-900" id="result-trainee-email">N/A</td>
-                                </tr>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600">Exam Code</th>
-                                    <td class="py-2 font-bold text-gray-900" id="result-exam-code">N/A</td>
-                                </tr>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600">Duration</th>
-                                    <td class="py-2 font-bold text-gray-900" id="result-exam-duration">N/A</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- RIGHT COLUMN: EXAM METRICS -->
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Exam Metrics</h3>
-                        <table class="w-full text-left border-collapse">
-                            <tbody>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600 w-1/2">Total Questions</th>
-                                    <td class="py-2 font-bold text-gray-900" id="result-total">0</td>
-                                </tr>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600">Attempted</th>
-                                    <td class="py-2 font-bold text-gray-900" id="result-attempted">0</td>
-                                </tr>
-                                <tr class="border-b border-gray-200">
-                                    <th class="py-2 text-sm font-semibold text-gray-600">Correct Answers</th>
-                                    <td class="py-2 font-bold text-emerald-700" id="result-correct">0</td>
-                                </tr>
-                                <tr class="border-b border-gray-200 bg-gray-50">
-                                    <th class="py-3 px-2 text-sm font-bold text-gray-800">Final Percentage</th>
-                                    <td class="py-3 px-2 font-extrabold text-xl text-blue-900" id="result-percent">0%</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="mt-8 pt-6 border-t border-gray-200 flex justify-center">
-                    <button class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-md uppercase tracking-wider transition-colors" onclick="document.getElementById('results-modal').style.display='none'">
-                        Acknowledge & Exit
-                    </button>
-                </div>
+            <div class="p-6">
+                <table class="w-full text-left border-collapse text-sm mb-6">
+                    <tbody class="divide-y divide-gray-200 border-y border-gray-200">
+                        <tr>
+                            <th class="py-3 font-bold text-gray-600 uppercase tracking-wider w-1/2">Total Questions</th>
+                            <td class="py-3 font-black text-gray-900 text-right" id="scorecard-total">0</td>
+                        </tr>
+                        <tr>
+                            <th class="py-3 font-bold text-gray-600 uppercase tracking-wider">Correct Answers</th>
+                            <td class="py-3 font-black text-gray-900 text-right" id="scorecard-correct">0</td>
+                        </tr>
+                        <tr class="bg-gray-50">
+                            <th class="py-4 px-2 font-black text-gray-900 uppercase tracking-wider text-base">Final Percentage</th>
+                            <td class="py-4 px-2 font-black text-blue-800 text-2xl text-right" id="scorecard-percent">0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button onclick="closeScorecard()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-sm uppercase tracking-wider transition-colors border border-gray-300">
+                    Close
+                </button>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="../questions.js"></script>
+    <!-- Supabase Core and Logic -->
     <script src="shared.js"></script>
     <script src="student-dashboard.js"></script>
-    <script>
-        lucide.createIcons();
-        if (typeof fetchActiveSession === 'function') fetchActiveSession();
-    </script>
 </body>
 </html>
