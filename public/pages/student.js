@@ -201,10 +201,23 @@ const processResultsLogic = async () => {
         }
 
         // 3. POPULATE INSTITUTIONAL SCORECARD
-        set('result-trainee-name', res.studentName || 'N/A');
+        let displayTraineeName = res.studentName;
+        if (!displayTraineeName || displayTraineeName === 'N/A') {
+            const stu = getLoggedInStudent();
+            if (stu) displayTraineeName = stu.full_name || stu.name;
+        }
+        
+        set('result-trainee-name', displayTraineeName || 'N/A');
         set('result-trainee-email', res.studentEmail || 'N/A');
         set('result-exam-code', res.testCode || 'PRACTICE');
-        set('result-exam-duration', res.duration ? `${res.duration} Minutes` : 'N/A');
+        
+        let displayDuration = 'N/A';
+        if (res.isPractice || !res.testCode) {
+            displayDuration = 'Unlimited (Practice)';
+        } else if (res.duration) {
+            displayDuration = `${res.duration} Minutes`;
+        }
+        set('result-exam-duration', displayDuration);
         
         set('result-total', actualTotal);
         set('result-attempted', res.attempted);

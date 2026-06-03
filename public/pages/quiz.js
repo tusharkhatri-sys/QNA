@@ -660,7 +660,7 @@ async function submitQuiz(force = false) {
         score, attempted, incorrect, unanswered, total: currentQuiz.length, isPractice: !testData,
         testCode: testData ? testData.code : null,
         duration: testData ? testData.duration : null,
-        studentName: studentName,
+        studentName: studentName || (student ? (student.full_name || student.name) : 'N/A'),
         studentEmail: student ? student.email : 'N/A'
     }));
     // --- Gamification: Update Streak ---
