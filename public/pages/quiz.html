@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Live Assessment | QNA Platform</title>
     <link rel="stylesheet" href="../style.css?v=4">
+    <style>
+        /* Mobile WebView Anti-Zoom & Anti-Pinch */
+        body { touch-action: pan-y; }
+    </style>
 </head>
-<body>
+<body oncontextmenu="return false" oncopy="return false" oncut="return false" onpaste="return false">
+    <!-- KIOSK KEYBOARD LOCKS -->
+    <script>
+        document.addEventListener('keydown', function(e) {
+            // Block F5, Ctrl+R, F12, Ctrl+C, Ctrl+V, Alt+Left
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r') || e.key === 'F12' || (e.altKey && e.key === 'ArrowLeft')) {
+                e.preventDefault();
+            }
+        });
+    </script>
     <div id="quiz-screen" class="exam-layout">
         <!-- Header -->
         <header class="exam-header">
@@ -63,14 +76,16 @@
             </div>
         </div>
 
-        <!-- Custom Non-Blocking Modal -->
-        <div id="custom-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
-            <div style="background: white; padding: 30px; border-radius: 2px; border: 2px solid var(--border-color); max-width: 400px; width: 90%; text-align: center;">
-                <h3 id="custom-modal-title" class="font-bold text-lg mb-10">Alert</h3>
-                <p id="custom-modal-message" class="mb-10 text-sm" style="margin-bottom: 25px; line-height: 1.5;"></p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <button id="custom-modal-cancel" class="btn" style="display: none;">Cancel</button>
-                    <button id="custom-modal-confirm" class="btn btn-primary">OK</button>
+        <!-- Custom Non-Blocking Modal (White Government Theme) -->
+        <div id="custom-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 24, 39, 0.7); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+            <div style="background: #ffffff; padding: 32px; border-radius: 6px; border: 1px solid #E5E7EB; max-width: 420px; width: 90%; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                <div id="modal-icon" style="margin-bottom: 16px;"></div>
+                <h3 id="custom-modal-title" class="font-black text-gray-900 text-xl mb-4 tracking-tight uppercase">Alert</h3>
+                <p id="custom-modal-message" class="text-gray-700 text-sm font-medium mb-6 leading-relaxed"></p>
+                <div id="custom-modal-timer" class="hidden text-red-600 font-bold text-lg mb-6"></div>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="custom-modal-cancel" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2.5 px-6 rounded-md border border-gray-300 transition-colors" style="display: none;">Cancel</button>
+                    <button id="custom-modal-confirm" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2.5 px-6 rounded-md shadow-sm transition-colors">Acknowledge</button>
                 </div>
             </div>
         </div>

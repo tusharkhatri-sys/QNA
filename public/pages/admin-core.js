@@ -1,5 +1,39 @@
 // admin-core.js - Consolidated Logic for Admin Suite
 
+// --- CUSTOM ALERT UI OVERRIDE ---
+window.alert = function(message) {
+    let alertContainer = document.getElementById('admin-custom-alert');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'admin-custom-alert';
+        alertContainer.className = 'fixed top-4 right-4 z-[9999] flex flex-col gap-2';
+        document.body.appendChild(alertContainer);
+    }
+    
+    const isSuccess = message.toLowerCase().includes('success') || message.toLowerCase().includes('deployed');
+    const bgColor = isSuccess ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'bg-red-50 border-red-500 text-red-800';
+    
+    const alertBox = document.createElement('div');
+    alertBox.className = `p-4 border-l-4 shadow-lg rounded-r-md transform transition-all duration-300 translate-x-full ${bgColor} min-w-[300px] flex justify-between items-start bg-white`;
+    alertBox.innerHTML = `
+        <p class="font-bold text-sm mr-4">${message}</p>
+        <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-900 font-bold">&times;</button>
+    `;
+    
+    alertContainer.appendChild(alertBox);
+    setTimeout(() => alertBox.classList.remove('translate-x-full'), 10);
+    
+    setTimeout(() => {
+        if(alertBox.parentElement) {
+            alertBox.classList.add('translate-x-full');
+            setTimeout(() => alertBox.remove(), 300);
+        }
+    }, 4000);
+};
+
+window.showCustomAlert = function(message, type) {
+    window.alert(message); // Fallback to our new overridden alert
+};
 // --- SECURITY CHECK ---
 if (localStorage.getItem('admin_auth') !== 'true' && !window.location.href.includes('admin-login.html')) {
     window.location.href = 'admin-login.html';
@@ -27,6 +61,15 @@ function openModal(id) {
 function closeModal(id) { 
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden'); 
+    
+    if (id === 'create-modal') {
+        if (typeof currentStep !== 'undefined') currentStep = 1;
+        if (typeof testConfig !== 'undefined') testConfig = { topics: {} };
+        if (document.getElementById('t-name')) document.getElementById('t-name').value = '';
+        if (document.getElementById('t-time')) document.getElementById('t-time').value = '60';
+        if (document.getElementById('t-pass')) document.getElementById('t-pass').value = '40';
+        if (typeof renderStep === 'function') renderStep();
+    }
 }
 
 // --- DASHBOARD LOGIC ---
@@ -319,42 +362,42 @@ async function initTestManager() {
 
         list.innerHTML = tests.map(t => {
             const isArchived = t.data.isActive === 'archived';
-            const statusColor = isArchived ? 'bg-slate-500/10 text-slate-500 border-slate-500/20' :
-                                (t.data.isActive === 'active' || t.data.isActive === true) ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
-                                t.data.isActive === 'hold' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
-                                'bg-red-500/10 text-red-500 border-red-500/20';
+            const statusColor = isArchived ? 'bg-gray-100 text-gray-500 border-gray-200' :
+                                (t.data.isActive === 'active' || t.data.isActive === true) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
+                                t.data.isActive === 'hold' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
+                                'bg-red-50 text-red-700 border-red-200';
             const statusText = isArchived ? 'ARCHIVED' :
                                (t.data.isActive === true || t.data.isActive === 'active') ? 'ACTIVE' : 
                                (t.data.isActive === 'hold' ? 'PAUSED' : 'STOPPED');
                                
             return `
-            <div class="glass-card p-6 rounded-3xl flex items-center justify-between group hover:border-blue-500/30 transition-all cursor-pointer">
-                <div class="flex items-center gap-6" onclick="viewResults('${t.code}')">
-                    <div class="w-14 h-14 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-500 font-black text-lg">
+            <div class="bg-white border border-gray-200 p-5 rounded-md flex items-center justify-between group hover:border-blue-800 hover:shadow-md transition-all cursor-pointer mb-3">
+                <div class="flex items-center gap-5" onclick="viewResults('${t.code}')">
+                    <div class="w-14 h-14 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center text-blue-900 font-bold text-lg">
                         ${t.code}
                     </div>
                     <div>
-                        <div class="flex items-center gap-2">
-                            <h4 class="font-bold text-white">${escapeHTML(t.data.name)}</h4>
-                            <button onclick="event.stopPropagation(); toggleTestStatus('${t.code}', '${t.data.isActive}')" class="text-[9px] font-black px-2 py-0.5 rounded-full border ${statusColor} hover:opacity-80 uppercase transition-all">
+                        <div class="flex items-center gap-3">
+                            <h4 class="font-bold text-gray-900 text-lg">${escapeHTML(t.data.name)}</h4>
+                            <button onclick="event.stopPropagation(); toggleTestStatus('${t.code}', '${t.data.isActive}')" class="text-[10px] font-bold px-2.5 py-0.5 rounded border ${statusColor} hover:opacity-80 uppercase transition-all shadow-sm">
                                 ${statusText}
                             </button>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">${t.data.createdAt ? new Date(t.data.createdAt).toLocaleDateString() : 'N/A'} | ${t.data.duration} Mins</p>
+                        <p class="text-xs text-gray-500 mt-1 font-medium">${t.data.createdAt ? new Date(t.data.createdAt).toLocaleDateString() : 'N/A'} &bull; ${t.data.duration} Mins</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-6">
+                <div class="flex items-center gap-8">
                     <div class="text-center">
-                        <p class="text-[10px] font-black text-green-500/80 uppercase">Live</p>
-                        <p class="font-bold text-green-400">${t.data.liveStudents ? Object.keys(t.data.liveStudents).length : 0}</p>
+                        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Live</p>
+                        <p class="font-bold text-gray-900 text-lg">${t.data.liveStudents ? Object.keys(t.data.liveStudents).length : 0}</p>
                     </div>
                     <div class="text-center" onclick="viewResults('${t.code}')">
-                        <p class="text-[10px] font-black text-slate-500 uppercase">Students</p>
-                        <p class="font-bold">${(t.data.students || []).length}</p>
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Students</p>
+                        <p class="font-bold text-gray-900 text-lg">${(t.data.students || []).length}</p>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="viewResults('${t.code}')" class="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-blue-400 transition-all border border-transparent hover:border-blue-500/30" title="View Results"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></button>
-                        ${!isArchived ? `<button onclick="deleteTest('${t.code}')" class="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-red-500 transition-all border border-transparent hover:border-red-500/30" title="Archive Test"><i data-lucide="archive" class="w-5 h-5"></i></button>` : ''}
+                        <button onclick="viewResults('${t.code}')" class="p-2 bg-gray-50 rounded-md text-gray-500 hover:text-blue-800 hover:bg-blue-50 transition-all border border-gray-200 hover:border-blue-200" title="View Results"><i data-lucide="bar-chart-2" class="w-5 h-5"></i></button>
+                        ${!isArchived ? `<button onclick="deleteTest('${t.code}')" class="p-2 bg-gray-50 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all border border-gray-200 hover:border-red-200" title="Archive Test"><i data-lucide="archive" class="w-5 h-5"></i></button>` : ''}
                     </div>
                 </div>
             </div>
@@ -423,11 +466,11 @@ async function viewResults(code) {
             if (liveStudents.length > 0) {
                 document.getElementById('live-results-section').classList.remove('hidden');
                 document.getElementById('live-results-table-body').innerHTML = liveStudents.map(s => `
-                    <tr class="group hover:bg-white/[0.02] transition-all">
-                        <td class="py-4 border-b border-white/5 font-bold text-white">${escapeHTML(s.studentName || s.name || 'Unknown')}</td>
-                        <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
-                        <td class="py-4 border-b border-white/5 font-bold text-green-400">${s.answered || 0} / ${s.total || 0} <span class="text-[10px] text-slate-500 font-normal ml-2">Attempted</span></td>
-                        <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${s.joinedAt ? new Date(s.joinedAt).toLocaleTimeString() : 'N/A'}</td>
+                    <tr class="group hover:bg-gray-50 transition-all">
+                        <td class="py-4 border-b border-gray-100 font-bold text-gray-900">${escapeHTML(s.studentName || s.name || 'Unknown')}</td>
+                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">${escapeHTML(s.studentEmail || '')}</td>
+                        <td class="py-4 border-b border-gray-100 font-bold text-emerald-600">${s.answered || 0} / ${s.total || 0} <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-2">Attempted</span></td>
+                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${s.joinedAt ? new Date(s.joinedAt).toLocaleTimeString() : 'N/A'}</td>
                     </tr>
                 `).join('');
             }
@@ -445,27 +488,27 @@ async function viewResults(code) {
                     return;
                 }
 
-                document.getElementById('results-subtitle').innerHTML = `${students.length} submissions found. <button onclick="exportTestResultsCSV()" class="ml-4 text-[10px] font-black uppercase px-3 py-1 bg-green-500/10 text-green-400 rounded hover:bg-green-500/20 transition-all border border-green-500/20 inline-flex items-center gap-1"><i data-lucide="download" class="w-3 h-3"></i> Export</button>`;
+                document.getElementById('results-subtitle').innerHTML = `${students.length} submissions found. <button onclick="exportTestResultsCSV()" class="ml-4 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-200 hover:bg-emerald-100 transition-all inline-flex items-center gap-1 shadow-sm"><i data-lucide="download" class="w-3 h-3"></i> Export</button>`;
                 setTimeout(() => lucide.createIcons(), 50);
 
                 students.sort((a, b) => (b.score || 0) - (a.score || 0));
 
                 document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
-                    <tr class="group hover:bg-white/[0.02] transition-all">
-                        <td class="py-4 border-b border-white/5">
-                            <p class="font-bold text-white">${escapeHTML(s.studentName || 'Unknown')}</p>
+                    <tr class="group hover:bg-gray-50 transition-all">
+                        <td class="py-4 border-b border-gray-100">
+                            <p class="font-bold text-gray-900">${escapeHTML(s.studentName || 'Unknown')}</p>
                         </td>
-                        <td class="py-4 border-b border-white/5 text-sm text-slate-400">${escapeHTML(s.studentEmail || '')}</td>
-                        <td class="py-4 border-b border-white/5 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-green-500' : 'text-red-500'}">${s.score} / ${s.total}</td>
-                        <td class="py-4 border-b border-white/5 text-sm text-slate-400 text-right">${new Date(s.submittedAt).toLocaleString()}</td>
-                        <td class="py-4 border-b border-white/5 text-right">
-                            ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-3 py-1 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/40 border border-blue-500/20 transition-all">Details</button>` : `<span class="text-xs text-slate-500">N/A</span>`}
+                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">${escapeHTML(s.studentEmail || '')}</td>
+                        <td class="py-4 border-b border-gray-100 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-emerald-600' : 'text-red-600'}">${s.score} / ${s.total}</td>
+                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${new Date(s.submittedAt).toLocaleString()}</td>
+                        <td class="py-4 border-b border-gray-100 text-right">
+                            ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-4 py-1.5 bg-blue-50 text-blue-800 rounded-md hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
                         </td>
                     </tr>
                 `).join('');
                 lucide.createIcons();
             } else {
-                document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
+                document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-500 font-medium italic">No submissions yet.</td></tr>';
             }
         }
     } catch (err) {
@@ -487,20 +530,20 @@ function viewDetailedResults(studentIndex) {
         const isCorrect = dr.studentAnswerIndex === dr.correctAnswerIndex;
         let optionsHtml = dr.options.map((opt, oIdx) => {
             let className = "p-2 rounded mt-1 text-sm ";
-            if (oIdx === dr.correctAnswerIndex) className += "bg-green-500/20 text-green-400 border border-green-500/30 font-bold";
-            else if (oIdx === dr.studentAnswerIndex) className += "bg-red-500/20 text-red-400 border border-red-500/30";
-            else className += "bg-slate-800/50 text-slate-400 border border-white/5";
+            if (oIdx === dr.correctAnswerIndex) className += "bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold";
+            else if (oIdx === dr.studentAnswerIndex) className += "bg-red-50 text-red-700 border border-red-200";
+            else className += "bg-gray-50 text-gray-600 border border-gray-200";
             
             return `<div class="${className}">${String.fromCharCode(65+oIdx)}. ${escapeHTML(opt)}</div>`;
         }).join('');
         
         return `
-            <div class="p-4 rounded-xl border ${isCorrect ? 'border-green-500/20 bg-green-500/5' : 'border-red-500/20 bg-red-500/5'}">
-                <p class="font-bold text-sm mb-2">Q${qIdx+1}: ${escapeHTML(dr.questionText)}</p>
+            <div class="p-4 rounded-md border ${isCorrect ? 'border-emerald-200 bg-emerald-50/50' : 'border-red-200 bg-red-50/50'}">
+                <p class="font-bold text-sm mb-2 text-gray-900">Q${qIdx+1}: ${escapeHTML(dr.questionText)}</p>
                 <div class="space-y-1">
                     ${optionsHtml}
                 </div>
-                ${dr.studentAnswerIndex === null ? '<p class="text-xs text-red-500 mt-2 font-bold">Unanswered</p>' : ''}
+                ${dr.studentAnswerIndex === null ? '<p class="text-xs text-red-600 mt-2 font-bold uppercase tracking-wider">Unanswered</p>' : ''}
             </div>
         `;
     }).join('');
@@ -516,17 +559,17 @@ function renderStep() {
         content.innerHTML = `
             <div class="space-y-6">
                 <div>
-                    <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-widest">Test Title</label>
-                    <input type="text" id="t-name" class="w-full bg-slate-800/50 border border-white/5 rounded-2xl p-4 outline-none focus:border-blue-500" placeholder="e.g. Mid-term Assessment 2026">
+                    <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Test Title</label>
+                    <input type="text" id="t-name" class="w-full bg-white border border-gray-300 rounded-md p-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800" placeholder="e.g. Mid-term Assessment 2026">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-widest">Duration (Mins)</label>
-                        <input type="number" id="t-time" class="w-full bg-slate-800/50 border border-white/5 rounded-2xl p-4 outline-none" value="60">
+                        <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Duration (Mins)</label>
+                        <input type="number" id="t-time" class="w-full bg-white border border-gray-300 rounded-md p-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800" value="60">
                     </div>
                     <div>
-                        <label class="block text-xs font-black text-slate-500 mb-2 uppercase tracking-widest">Passing Score (%)</label>
-                        <input type="number" id="t-pass" class="w-full bg-slate-800/50 border border-white/5 rounded-2xl p-4 outline-none" value="40">
+                        <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Passing Score (%)</label>
+                        <input type="number" id="t-pass" class="w-full bg-white border border-gray-300 rounded-md p-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800" value="40">
                     </div>
                 </div>
             </div>
@@ -534,159 +577,175 @@ function renderStep() {
     } else if (currentStep === 2) {
         const topicsHTML = (typeof QUESTIONS_DATA !== 'undefined' && QUESTIONS_DATA.length > 0)
             ? `
-                <div class="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl mb-4 flex items-center justify-between">
+                <div class="p-4 bg-gray-50 border border-gray-200 rounded-md mb-6 flex items-center justify-between">
                     <div>
-                        <h4 class="font-bold text-purple-400">Random Mix from All Topics</h4>
-                        <p class="text-[10px] text-slate-400">Specify total questions to randomly pick across everything.</p>
+                        <h4 class="font-bold text-gray-900">Auto-Generate Assessment</h4>
+                        <p class="text-xs text-gray-500 mt-1">Randomly pick a specific number of questions across all available topics.</p>
                     </div>
-                    <input type="number" id="random-total-count" placeholder="Total Qs" class="w-24 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-purple-500 outline-none">
+                    <input type="number" id="random-total-count" placeholder="Total Qs" class="w-24 bg-white border border-gray-300 rounded-md p-2 text-sm text-center text-gray-900 focus:border-blue-800 outline-none">
                 </div>
-                <div class="text-center text-xs font-bold text-slate-500 mb-4 tracking-widest uppercase">-- OR PICK BY TOPIC --</div>
-                <div class="flex justify-end mb-2"><button onclick="document.querySelectorAll('.topic-count').forEach(tc => { tc.value = tc.max; document.getElementById('random-total-count').value = ''; })" class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-bold hover:bg-blue-600/40 transition-all cursor-pointer">Select All Max Questions</button></div>
+                
+                <div class="flex items-center gap-4 mb-4">
+                    <hr class="flex-1 border-gray-200">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">OR TOPIC BLUEPRINT</span>
+                    <hr class="flex-1 border-gray-200">
+                </div>
+                
+                <div class="flex justify-end mb-3">
+                    <button onclick="document.querySelectorAll('.topic-count').forEach(tc => { tc.value = tc.max; document.getElementById('random-total-count').value = ''; })" class="px-4 py-2 bg-blue-50 text-blue-800 rounded-md text-xs font-bold hover:bg-blue-100 transition-all border border-blue-100">Select All Available</button>
+                </div>
             ` + QUESTIONS_DATA.map((t, idx) => `
-                <div class="topic-row flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5" data-topic="${t.topic}">
+                <div class="topic-row flex items-center justify-between p-4 bg-white rounded-md border border-gray-200 mb-2" data-topic="${t.topic}">
                     <div class="flex items-center gap-4">
                         <div>
-                            <p class="topic-name text-sm font-bold">${t.topic}</p>
-                            <p class="text-[10px] text-slate-500">${t.questions.length} Questions Available</p>
+                            <p class="topic-name text-sm font-bold text-gray-900">${t.topic}</p>
+                            <p class="text-[10px] font-medium text-gray-500 uppercase mt-1 tracking-wider">${t.questions.length} Questions Bank</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="openManualSelect(${idx})" class="text-xs font-bold px-3 py-2 rounded-lg bg-blue-600/10 text-blue-400 hover:bg-blue-600/30 transition-all border border-blue-500/20">Browse</button>
-                        <input type="number" placeholder="Pick N" min="0" max="${t.questions.length}" class="topic-count w-20 bg-slate-800 border border-white/10 rounded-lg p-2 text-sm text-center focus:border-blue-500 outline-none">
+                    <div class="flex items-center gap-3">
+                        <button onclick="openManualSelect(${idx})" class="text-xs font-bold px-4 py-2 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition-all border border-gray-300 shadow-sm">Browse</button>
+                        <input type="number" placeholder="Pick N" min="0" max="${t.questions.length}" class="topic-count w-20 bg-white border border-gray-300 rounded-md p-2 text-sm text-center text-gray-900 focus:border-blue-800 outline-none">
                         <input type="hidden" class="topic-manual-data" value="">
                     </div>
                 </div>
             `).join('')
-            : '<p class="text-slate-500 text-center py-8">Question bank not loaded. Please refresh.</p>';
-        content.innerHTML = `<div class="space-y-4 max-h-[400px] overflow-y-auto pr-2">${topicsHTML}</div>`;
-    } else {
-        content.innerHTML = `
-            <div class="space-y-6">
-                <div class="p-6 bg-blue-600/10 rounded-2xl border border-blue-500/20">
-                    <h4 class="font-bold text-blue-400 mb-2">Shuffle Protocol Enabled</h4>
-                    <p class="text-sm text-slate-400">Every student will receive a unique set of questions. Option order (A,B,C,D) will be randomized per session.</p>
-                </div>
-                <div class="flex items-center justify-between p-4 border border-white/5 rounded-2xl">
-                    <span class="text-sm font-bold">Safe Browser Mode (Kiosk)</span>
-                    <div class="w-12 h-6 bg-blue-600 rounded-full relative"><div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div></div>
-                </div>
-            </div>
-        `;
+            : '<p class="text-gray-500 text-center py-8">Question bank not loaded. Please verify questions.js.</p>';
+        content.innerHTML = `<div class="max-h-[400px] overflow-y-auto pr-2">${topicsHTML}</div>`;
     }
 
     // Update Headers
     document.querySelectorAll('.stepper-btn').forEach((btn, i) => {
-        if (i + 1 === currentStep) btn.classList.add('active');
-        else btn.classList.remove('active');
+        if (i + 1 === currentStep) {
+            btn.classList.add('active', 'border-blue-800', 'text-blue-800');
+            btn.classList.remove('border-transparent', 'text-gray-400');
+        } else {
+            btn.classList.remove('active', 'border-blue-800', 'text-blue-800');
+            btn.classList.add('border-transparent', 'text-gray-400');
+        }
     });
 
     document.getElementById('prev-btn').classList.toggle('hidden', currentStep === 1);
-    document.getElementById('next-btn').textContent = currentStep === 3 ? 'Deploy' : 'Continue';
+    document.getElementById('next-btn').textContent = currentStep === 2 ? 'Deploy Assessment' : 'Continue';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('next-btn')?.addEventListener('click', async () => {
-        if (currentStep === 1) {
-            testConfig.name = document.getElementById('t-name').value;
-            testConfig.duration = document.getElementById('t-time').value;
-            testConfig.passScore = document.getElementById('t-pass').value;
-            currentStep++;
-            renderStep();
-        } else if (currentStep === 2) {
-            const randomInput = document.getElementById('random-total-count');
-            const randomCount = randomInput ? parseInt(randomInput.value) : 0;
-            testConfig.topicConfig = {};
-            
-            if (randomCount > 0) {
-                testConfig.isRandomMix = true;
-                testConfig.randomTotal = randomCount;
-            } else {
-                testConfig.isRandomMix = false;
-                testConfig.randomTotal = 0;
-                let totalQ = 0;
-                const rows = document.querySelectorAll('#stepper-content .topic-row');
-                rows.forEach(row => {
-                    const topicEl = row.querySelector('.topic-name');
-                    const numEl = row.querySelector('.topic-count');
-                    const manualDataEl = row.querySelector('.topic-manual-data');
-                    
-                    const topic = topicEl ? topicEl.textContent.trim() : null;
-                    const count = numEl ? parseInt(numEl.value || 0) : 0;
-                    
-                    let manualData = null;
-                    if (manualDataEl && manualDataEl.value) {
-                        try {
-                            manualData = JSON.parse(manualDataEl.value);
-                        } catch(e) {
-                            console.error("Failed to parse manual data", e);
-                        }
-                    }
-                    
-                    if (topic) {
-                        if (manualData && manualData.length > 0) {
-                            testConfig.topicConfig[topic] = { mode: 'manual', indices: manualData };
-                            totalQ += manualData.length;
-                        } else if (count > 0) {
-                            testConfig.topicConfig[topic] = count;
-                            totalQ += count;
-                        }
-                    }
-                });
+    const nextBtn = document.getElementById('next-btn');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', async () => {
+            if (currentStep === 1) {
+                testConfig.name = document.getElementById('t-name').value;
+                testConfig.duration = document.getElementById('t-time').value;
+                testConfig.passScore = document.getElementById('t-pass').value;
+                currentStep++;
+                renderStep();
+            } else if (currentStep === 2) {
+                const randomInput = document.getElementById('random-total-count');
+                const randomCount = randomInput ? parseInt(randomInput.value) : 0;
+                testConfig.topicConfig = {};
                 
-                if (totalQ === 0) {
-                    alert('Please select at least 1 question from topics OR enter a Random Mix Total.');
-                    return;
+                if (randomCount > 0) {
+                    testConfig.isRandomMix = true;
+                    testConfig.randomTotal = randomCount;
+                } else {
+                    testConfig.isRandomMix = false;
+                    testConfig.randomTotal = 0;
+                    let totalQ = 0;
+                    const rows = document.querySelectorAll('#stepper-content .topic-row');
+                    rows.forEach(row => {
+                        const topicEl = row.querySelector('.topic-name');
+                        const numEl = row.querySelector('.topic-count');
+                        const manualDataEl = row.querySelector('.topic-manual-data');
+                        
+                        const topic = topicEl ? topicEl.textContent.trim() : null;
+                        const count = numEl ? parseInt(numEl.value || 0) : 0;
+                        
+                        let manualData = null;
+                        if (manualDataEl && manualDataEl.value) {
+                            try {
+                                manualData = JSON.parse(manualDataEl.value);
+                            } catch(e) {
+                                console.error("Failed to parse manual data", e);
+                            }
+                        }
+                        
+                        if (topic) {
+                            if (manualData && manualData.length > 0) {
+                                testConfig.topicConfig[topic] = { mode: 'manual', indices: manualData };
+                                totalQ += manualData.length;
+                            } else if (count > 0) {
+                                testConfig.topicConfig[topic] = count;
+                                totalQ += count;
+                            }
+                        }
+                    });
+                    
+                    if (totalQ === 0) {
+                        alert('Please select at least 1 question from topics OR enter an Auto-Generate Total.');
+                        return;
+                    }
+                }
+                // Deploy to Supabase on Step 2 completion
+                const btn = document.getElementById('next-btn');
+                btn.textContent = 'Deploying...';
+                btn.disabled = true;
+
+
+                try {
+                    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                    const payload = {
+                        code: code,
+                        data: {
+                            name: testConfig.name || 'Untitled Test',
+                            duration: parseInt(testConfig.duration) || 60,
+                            passScore: parseInt(testConfig.passScore) || 40,
+                            topicConfig: testConfig.topicConfig,
+                            isRandomMix: testConfig.isRandomMix,
+                            randomTotal: testConfig.randomTotal,
+                            createdAt: new Date().toISOString(),
+                            isActive: 'active',
+                            students: [],
+                            liveStudents: {}
+                        }
+                    };
+
+                    const { error } = await supabaseClient.from('tests').insert(payload);
+                    if (error) throw error;
+
+                    showCustomAlert('Assessment Deployed Successfully! Code: ' + code, 'success');
+                    closeModal('create-modal');
+                    
+                    // Reset modal state
+                    currentStep = 1;
+                    testConfig = { topics: {} };
+                    if (document.getElementById('t-name')) document.getElementById('t-name').value = '';
+                    if (document.getElementById('t-time')) document.getElementById('t-time').value = '60';
+                    if (document.getElementById('t-pass')) document.getElementById('t-pass').value = '40';
+
+                    initTestManager(); // Refresh list
+                } catch (err) {
+                    console.error('Deployment error:', err);
+                    showCustomAlert('Failed to deploy test: ' + err.message, 'error');
+                } finally {
+                    btn.textContent = 'Deploy Assessment';
+                    btn.disabled = false;
                 }
             }
-            currentStep++;
-            renderStep();
-        } else {
-            // Deploy to Supabase
-            const btn = document.getElementById('next-btn');
-            btn.textContent = 'Deploying...';
-            btn.disabled = true;
+        });
+    } else {
+        console.warn("CRITICAL: 'next-btn' (Create Session/Deploy) not found in the DOM. Check HTML IDs.");
+    }
 
-            try {
-                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-                const payload = {
-                    code: code,
-                    data: {
-                        name: testConfig.name || 'Untitled Test',
-                        duration: parseInt(testConfig.duration) || 60,
-                        passScore: parseInt(testConfig.passScore) || 40,
-                        topicConfig: testConfig.topicConfig,
-                        isRandomMix: testConfig.isRandomMix,
-                        randomTotal: testConfig.randomTotal,
-                        createdAt: new Date().toISOString(),
-                        isActive: 'active',
-                        students: [],
-                        liveStudents: {}
-                    }
-                };
-
-                const { error } = await supabaseClient.from('tests').insert(payload);
-                if (error) throw error;
-
-                alert('Assessment Deployed Successfully! Code: ' + code);
-                closeModal('create-modal');
-                initTestManager(); // Refresh list
-            } catch (err) {
-                console.error('Deployment error:', err);
-                alert('Failed to deploy test: ' + err.message);
-            } finally {
-                btn.textContent = 'Deploy';
-                btn.disabled = false;
+    const prevBtn = document.getElementById('prev-btn');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentStep > 1) {
+                currentStep--;
+                renderStep();
             }
-        }
-    });
-
-    document.getElementById('prev-btn')?.addEventListener('click', () => {
-        if (currentStep > 1) {
-            currentStep--;
-            renderStep();
-        }
-    });
+        });
+    } else {
+        console.warn("CRITICAL: 'prev-btn' not found in the DOM. Check HTML IDs.");
+    }
 });
 
 // --- STUDENTS LIST LOGIC ---
@@ -843,13 +902,13 @@ function openManualSelect(topicIdx) {
     t.questions.forEach((q, idx) => {
         const isChecked = selectedIndices.includes(idx) ? 'checked' : '';
         html += `
-            <div class="flex items-start gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-blue-500/30 transition-all cursor-pointer" onclick="const cb = this.querySelector('input[type=checkbox]'); cb.checked = !cb.checked; updateManualCount();">
-                <input type="checkbox" class="manual-q-cb mt-1 cursor-pointer w-4 h-4 rounded" value="${idx}" ${isChecked} onclick="event.stopPropagation(); updateManualCount();">
+            <div class="flex items-start gap-4 p-4 bg-white border border-gray-200 rounded-md hover:border-blue-800 hover:shadow-sm transition-all cursor-pointer" onclick="const cb = this.querySelector('input[type=checkbox]'); cb.checked = !cb.checked; updateManualCount();">
+                <input type="checkbox" class="manual-q-cb mt-1 cursor-pointer w-4 h-4 rounded text-blue-800 focus:ring-blue-800 border-gray-300" value="${idx}" ${isChecked} onclick="event.stopPropagation(); updateManualCount();">
                 <div class="flex-1">
-                    <p class="text-sm font-bold text-slate-200 mb-1">${q.q}</p>
-                    ${q.q_hi ? `<p class="text-[10px] text-slate-400 mb-2">${q.q_hi}</p>` : ''}
+                    <p class="text-sm font-bold text-gray-900 mb-1">${q.q}</p>
+                    ${q.q_hi ? `<p class="text-[10px] font-medium text-gray-500 mb-2">${q.q_hi}</p>` : ''}
                     <div class="grid grid-cols-2 gap-2 mt-2">
-                        ${q.o.map((opt, oIdx) => `<div class="text-[10px] px-2 py-1 rounded bg-slate-800 ${oIdx === q.a ? 'border border-green-500/50 text-green-400' : 'text-slate-500'}">${opt}</div>`).join('')}
+                        ${q.o.map((opt, oIdx) => `<div class="text-[10px] px-2 py-1.5 rounded-md ${oIdx === q.a ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold' : 'bg-gray-50 border border-gray-200 text-gray-500 font-medium'}">${opt}</div>`).join('')}
                     </div>
                 </div>
             </div>
@@ -1062,9 +1121,9 @@ async function initSessionManager() {
                <button onclick="deleteSession('${s.id}')" class="text-red-400 hover:text-red-300 text-xs font-bold transition-colors ml-3"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>`;
 
         return `
-            <tr class="hover:bg-white/5 transition-colors">
-                <td class="p-4 font-bold text-white">${s.name}</td>
-                <td class="p-4 text-slate-400 text-xs">${s.start_date} to ${s.end_date}</td>
+            <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                <td class="p-4 font-bold text-gray-900">${s.name}</td>
+                <td class="p-4 text-gray-500 font-medium text-xs">${s.start_date} to ${s.end_date}</td>
                 <td class="p-4 text-center">${statusBadge}</td>
                 <td class="p-4 text-right">${actionBtn}</td>
             </tr>
@@ -1216,4 +1275,91 @@ document.addEventListener('DOMContentLoaded', async () => {
     else if (path.includes('admin-students')) initStudentsList();
     else if (path.includes('admin-tests')) initTestManager();
     else if (path.includes('admin-live')) loadLiveSessions();
+    else if (path.includes('admin-results')) initResultsPage();
 });
+
+// --- RESULTS PAGE LOGIC ---
+async function initResultsPage() {
+    const sessionDropdown = document.getElementById('session-select-dropdown');
+    if (!sessionDropdown) return;
+
+    try {
+        const { data: tests, error } = await supabaseClient
+            .from('tests')
+            .select('id, code, data')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        tests.forEach(test => {
+            const name = test.data?.name || 'Untitled Session';
+            const studentsCount = test.data?.students ? test.data.students.length : 0;
+            const option = document.createElement('option');
+            option.value = test.id;
+            option.textContent = `${name} [${test.code}] (${studentsCount} submissions)`;
+            // Store stringified submissions for instant access without re-querying
+            option.dataset.students = JSON.stringify(test.data?.students || []);
+            option.dataset.code = test.code;
+            sessionDropdown.appendChild(option);
+        });
+
+        sessionDropdown.addEventListener('change', (e) => {
+            const tbody = document.getElementById('results-table-body');
+            if (!tbody) {
+                console.warn("CRITICAL: 'results-table-body' not found in the DOM.");
+                return;
+            }
+
+            if (!e.target.value) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Select a test session to load results...</td></tr>';
+                return;
+            }
+
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            let students = [];
+            
+            try {
+                students = JSON.parse(selectedOption.dataset.students || '[]');
+            } catch (err) {
+                console.error("Failed to parse student data", err);
+            }
+
+            if (students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No submissions found for this session.</td></tr>';
+                return;
+            }
+
+            // Sort students by score descending
+            students.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+            tbody.innerHTML = students.map(s => {
+                const passClass = s.passed ? 'badge-green' : 'badge-red';
+                const passText = s.passed ? 'PASSED' : 'FAILED';
+                const submitTime = s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'Unknown';
+                
+                return `
+                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                        <td class="p-4">
+                            <p class="font-bold text-gray-900">${s.studentName || 'Unknown'}</p>
+                            <p class="text-xs text-gray-500">${s.studentEmail || 'N/A'}</p>
+                        </td>
+                        <td class="p-4 font-mono text-sm text-gray-600 font-bold">${selectedOption.dataset.code}</td>
+                        <td class="p-4 text-gray-500 text-sm font-medium">${submitTime}</td>
+                        <td class="p-4 font-bold text-gray-900">${s.score} / ${s.total || '?'}</td>
+                        <td class="p-4"><span class="badge ${passClass}">${passText}</span></td>
+                        <td class="p-4">
+                            <button onclick="alert('Detailed scorecard view hook goes here')" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1">
+                                <i data-lucide="eye" class="w-4 h-4"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+
+    } catch (err) {
+        console.error("Failed to fetch session list from Supabase:", err);
+    }
+}

@@ -1,225 +1,190 @@
-// ─── CONFIG ────────────────────────────────────────────────
-var SAFE_BROWSER_UA = 'QnaCopa-Safe-Browser-v1';
-var DOWNLOAD_URL = 'https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe';
+// ===== SAFE BROWSER DETECTION =====
+function isSafeBrowser() {
+    return navigator.userAgent.includes('Electron') || window.electronAPI;
+}
 
-// ─── STEP 2: UI SHIELD + BOOT LOCK ────────────────────────
-// Inject a full-screen splash that BLOCKS the login UI from ever
-// flashing while Supabase is still hydrating from localStorage.
-(function injectSplash() {
-    const splash = document.createElement('div');
-    splash.id = 'boot-splash';
-    splash.style.cssText = [
-        'position:fixed', 'inset:0', 'z-index:9999',
-        'background:#0f172a',
-        'display:flex', 'flex-direction:column',
-        'align-items:center', 'justify-content:center',
-        'transition:opacity 0.4s ease'
-    ].join(';');
-    splash.innerHTML = `
-        <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 0 40px rgba(99,102,241,0.4);">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        </div>
-        <div style="color:#94a3b8;font-size:0.85rem;letter-spacing:0.1em;font-family:sans-serif;">LOADING SESSION...</div>`;
-    document.documentElement.appendChild(splash);
-})();
-
-// ─── BOOT LOCK: Wait for Supabase to fully hydrate, THEN decide ──
-(async function enforceAutoLogin() {
-    try {
-        // This waits for INITIAL_SESSION event — the real hydration signal
-        const session = await ensureSupabaseAuthReady();
-
-        const splash = document.getElementById('boot-splash');
-
-        if (session) {
-            // Valid session found — go directly to dashboard, splash stays until redirect
-            console.log('[Auth] Valid session hydrated. Redirecting to dashboard.');
-            window.location.replace('student.html');
-            return; // Stop all further execution on this page
-        }
-
-        // No session — fade out splash and show login form
-        if (splash) {
-            splash.style.opacity = '0';
-            setTimeout(() => splash.remove(), 400);
-        }
-        showLoginUI();
-
-    } catch (err) {
-        console.warn('[Auth] Boot lock error, falling back to login.', err);
-        const splash = document.getElementById('boot-splash');
-        if (splash) splash.remove();
-        showLoginUI();
-    }
-})();
-
-function showLoginUI() {
-    var ua = navigator.userAgent || '';
-    var isSafeBrowser = true; // ua.indexOf(SAFE_BROWSER_UA) !== -1;
-
-    var downloadSection = document.getElementById('download-section');
-    var loginSection = document.getElementById('login-section');
-    var exitBtn = document.getElementById('exit-app-btn');
-    var downloadBtn = document.getElementById('download-exe-btn');
-
-    if (!loginSection || !downloadSection) return;
-
-    if (isSafeBrowser) {
-        loginSection.classList.add('active');
-        downloadSection.classList.remove('active');
-        if (exitBtn) exitBtn.style.display = 'block';
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', () => {
+    // Determine which UI to show based on browser type
+    if (isSafeBrowser()) {
+        document.getElementById('login-section').classList.add('active');
+        document.getElementById('download-section').classList.remove('active');
     } else {
-        downloadSection.classList.add('active');
-        loginSection.classList.remove('active');
-        if (exitBtn) exitBtn.style.display = 'none';
+        document.getElementById('download-section').classList.add('active');
+        document.getElementById('login-section').classList.remove('active');
     }
+});
 
-    if (downloadBtn) {
-        downloadBtn.href = DOWNLOAD_URL;
+// ===== DOWNLOAD HANDLER =====
+function handleDownload(e) {
+    e.preventDefault();
+    // In a real scenario, this links to the actual GitHub release EXE
+    alert("Downloading QNA Safe Browser...");
+}
+
+// ===== SAFE BROWSER EXIT =====
+function exitSafeBrowser() {
+    if (window.electronAPI && window.electronAPI.exitApp) {
+        window.electronAPI.exitApp();
+    } else {
+        window.close();
     }
 }
 
+// ===== GLOBAL STATE =====
+let verifiedStudent = null;
+let verifiedExam = null;
 
+// ===== STEP 1: VERIFY TRAINEE & EXAM =====
+async function verifyTrainee() {
+    const email = document.getElementById('auth-email').value.trim();
+    const examCode = document.getElementById('auth-exam-code').value.trim().toUpperCase();
+    const errObj = document.getElementById('auth-error-msg');
+    const btn = document.getElementById('auth-submit-btn');
 
-// ─── DOWNLOAD HANDLER ──────────────────────────────────────
-function handleDownload(event) {
-    // If URL is still the placeholder, show a helpful alert
-    if (DOWNLOAD_URL.indexOf('YOUR_GITHUB_USERNAME') !== -1) {
-        event.preventDefault();
-        alert(
-            '⚠️ Download link not configured yet!\n\n' +
-            'Admin: Update the DOWNLOAD_URL variable in auth.js with your actual .exe download link.\n\n' +
-            'Options:\n' +
-            '1. GitHub Releases: Upload .exe to a GitHub repo release\n' +
-            '2. Google Drive: Share .exe as a direct download link\n' +
-            '3. Any file hosting service with a direct URL'
-        );
-        return;
-    }
-    // Otherwise, the <a> tag href will handle the download naturally
-}
+    errObj.classList.add('hidden');
+    errObj.textContent = '';
 
-
-// ─── LOGIN / REGISTER TOGGLE ───────────────────────────────
-var authMode = 'login';
-
-function toggleAuthMode() {
-    authMode = authMode === 'login' ? 'register' : 'login';
-    document.getElementById('auth-title').textContent = authMode === 'login' ? 'Student Login' : 'Student Registration';
-    document.getElementById('auth-subtitle').textContent = authMode === 'login' ? 'Login to access your exam dashboard' : 'Create an account to take tests';
-    document.getElementById('auth-name-group').style.display = authMode === 'login' ? 'none' : 'block';
-    document.getElementById('auth-submit-btn').textContent = authMode === 'login' ? 'Login' : 'Register';
-    document.getElementById('auth-toggle-text').textContent = authMode === 'login' ? "Don't have an account?" : "Already have an account?";
-    document.getElementById('auth-toggle-btn').textContent = authMode === 'login' ? 'Register' : 'Login';
-    document.getElementById('auth-error-msg').style.display = 'none';
-}
-
-
-// ─── SUBMIT AUTH (Login or Register) ───────────────────────
-async function submitAuth() {
-    var email = document.getElementById('auth-email').value.trim();
-    var password = document.getElementById('auth-password').value.trim();
-    var name = document.getElementById('auth-name').value.trim();
-    var errObj = document.getElementById('auth-error-msg');
-
-    if (!email || !password || (authMode === 'register' && !name)) {
-        errObj.textContent = 'Please fill all fields';
-        errObj.style.display = 'block';
+    if (!email || !examCode) {
+        errObj.textContent = 'Please enter both Email and Exam Code.';
+        errObj.classList.remove('hidden');
         return;
     }
 
-    var btn = document.getElementById('auth-submit-btn');
-    btn.textContent = 'Processing...';
+    if (examCode.length !== 6) {
+        errObj.textContent = 'Exam Code must be exactly 6 characters.';
+        errObj.classList.remove('hidden');
+        return;
+    }
+
+    btn.textContent = 'Verifying...';
     btn.disabled = true;
 
     try {
-        if (authMode === 'login') {
-            // ─── LOGIN: Use Supabase Auth directly (creates a real session) ───
-            const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
+        // 1. Verify Exam Code exists and is active
+        const { data: testData, error: testErr } = await supabaseClient
+            .from('tests')
+            .select('*')
+            .eq('code', examCode)
+            .single();
 
-            if (authError || !authData?.session) {
-                errObj.textContent = authError?.message || 'Invalid email or password.';
-                errObj.style.display = 'block';
-                btn.textContent = 'Login';
-                btn.disabled = false;
-                return;
-            }
-
-            // Fetch student name from DB to populate localStorage cache
-            const { data: studentDb } = await supabaseClient
-                .from('students')
-                .select('name, email')
-                .eq('email', email)
-                .single();
-
-            localStorage.setItem('loggedInStudent', JSON.stringify({
-                email: studentDb?.email || email,
-                name: studentDb?.name || email.split('@')[0]
-            }));
-
-            // Session is now real — redirect will succeed
-            window.location.replace('student.html');
-
-        } else {
-            // ─── REGISTER: Use custom API (handles DB row creation) ───
-            var res = await fetch(API_URL + '/students/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, password: password, name: name })
-            });
-            var data = await res.json();
-
-            if (data.success) {
-                // After register, sign in to create a real Supabase session
-                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-
-                if (authError || !authData?.session) {
-                    errObj.textContent = 'Registered! Please login now.';
-                    errObj.style.display = 'block';
-                    btn.textContent = 'Register';
-                    btn.disabled = false;
-                    // Switch to login mode
-                    authMode = 'login';
-                    toggleAuthMode();
-                    return;
-                }
-
-                localStorage.setItem('loggedInStudent', JSON.stringify({
-                    email: email,
-                    name: name
-                }));
-                window.location.replace('student.html');
-            } else {
-                errObj.textContent = data.message || 'Registration failed.';
-                errObj.style.display = 'block';
-                btn.textContent = 'Register';
-                btn.disabled = false;
-            }
+        if (testErr || !testData) {
+            errObj.textContent = 'Invalid Exam Code. Please check with your invigilator.';
+            errObj.classList.remove('hidden');
+            btn.textContent = 'Verify & Proceed';
+            btn.disabled = false;
+            return;
         }
-    } catch (e) {
-        console.error('submitAuth error:', e);
-        errObj.textContent = 'Network error. Please try again.';
-        errObj.style.display = 'block';
-        btn.textContent = authMode === 'login' ? 'Login' : 'Register';
+
+        // Check if test is active (assuming status is stored in JSON or implicitly active)
+        // If there's a strict status field in data JSON, check it:
+        if (testData.data && testData.data.status === 'completed') {
+            errObj.textContent = 'This exam has already concluded.';
+            errObj.classList.remove('hidden');
+            btn.textContent = 'Verify & Proceed';
+            btn.disabled = false;
+            return;
+        }
+
+        // 2. Verify Student Email exists
+        const { data: studentDb, error: studentErr } = await supabaseClient
+            .from('students')
+            .select('name, email')
+            .eq('email', email)
+            .single();
+
+        if (studentErr || !studentDb) {
+            errObj.textContent = 'Student not found. Ensure you are entering the registered email.';
+            errObj.classList.remove('hidden');
+            btn.textContent = 'Verify & Proceed';
+            btn.disabled = false;
+            return;
+        }
+
+        // Success! Store in memory and proceed to Step 2
+        verifiedStudent = { email: studentDb.email, name: studentDb.name };
+        verifiedExam = testData;
+
+        // Transition to Rules Section
+        document.getElementById('login-section').classList.remove('active');
+        document.getElementById('rules-section').classList.add('active');
+
+    } catch (err) {
+        console.error('Verification Error:', err);
+        errObj.textContent = 'A network error occurred. Please try again.';
+        errObj.classList.remove('hidden');
+        btn.textContent = 'Verify & Proceed';
         btn.disabled = false;
     }
 }
 
-
-
-// ─── EXIT SAFE BROWSER ─────────────────────────────────────
-function exitSafeBrowser() {
-    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
-        window.Capacitor.Plugins.App.exitApp();
-    } else if (window.qnaBrowser && typeof window.qnaBrowser.closeApp === 'function') {
-        window.qnaBrowser.closeApp();
+// ===== STEP 2: RULES ACKNOWLEDGEMENT =====
+function toggleStartButton() {
+    const isChecked = document.getElementById('rules-checkbox').checked;
+    const startBtn = document.getElementById('start-exam-btn');
+    
+    if (isChecked) {
+        startBtn.disabled = false;
+        startBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        startBtn.classList.add('bg-blue-800', 'hover:bg-blue-900', 'text-white');
     } else {
-        alert("This feature only works in the QNA Safe Browser.");
+        startBtn.disabled = true;
+        startBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        startBtn.classList.remove('bg-blue-800', 'hover:bg-blue-900', 'text-white');
+    }
+}
+
+// ===== STEP 3: START EXAM =====
+async function startExam() {
+    const btn = document.getElementById('start-exam-btn');
+    btn.textContent = 'Initializing Secure Environment...';
+    btn.disabled = true;
+
+    try {
+        const testData = verifiedExam.data || {};
+        const liveStudents = testData.liveStudents || {};
+
+        // Add or update student in liveStudents
+        if (!liveStudents[verifiedStudent.email]) {
+            liveStudents[verifiedStudent.email] = {
+                studentName: verifiedStudent.name,
+                studentEmail: verifiedStudent.email,
+                joinedAt: new Date().toISOString(),
+                answered: 0,
+                total: testData.questions ? testData.questions.length : 0,
+                is_online: true,
+                score: 0
+            };
+
+            testData.liveStudents = liveStudents;
+
+            // Update Supabase
+            const { error: updateErr } = await supabaseClient
+                .from('tests')
+                .update({ data: testData })
+                .eq('code', verifiedExam.code);
+
+            if (updateErr) {
+                console.error("Failed to join exam on server:", updateErr);
+                alert("Failed to connect to the exam server. Please retry.");
+                btn.textContent = 'Acknowledge & Start Exam';
+                btn.disabled = false;
+                return;
+            }
+        }
+
+        // Save local session state
+        localStorage.setItem('loggedInStudent', JSON.stringify(verifiedStudent));
+        localStorage.setItem('activeExamCode', verifiedExam.code);
+        // Set a flag indicating they bypassed Supabase Auth
+        localStorage.setItem('authBypass', 'true');
+
+        window.location.replace('student.html');
+
+    } catch (err) {
+        console.error('Start Exam Error:', err);
+        alert('An unexpected error occurred. Please try again.');
+        btn.textContent = 'Acknowledge & Start Exam';
+        btn.disabled = false;
     }
 }

@@ -20,6 +20,80 @@ let timeRemaining = 0;
 let liveTestTimer = null;
 let isSubmitting = false;
 let offlineBuffer = false;
+let violationCount = 0;
+let strikeTimer = null;
+let currentTestEndTime = 0;
+
+// === 1. KIOSK VISIBILITY/FOCUS DETECTOR ===
+function handleVisibilityLoss() {
+    if (isSubmitting || !testData) return;
+    if (strikeTimer) return; // Prevent overlapping rapid blurs from Android OS from instant-terminating
+    
+    violationCount++;
+    debouncedReportLiveProgress(); // Sync violation to Supabase
+
+    if (violationCount >= 2) {
+        showCustomModal("Exam Terminated", "You have repeatedly lost focus from the secure environment. Your exam is being submitted automatically.", false);
+        setTimeout(() => submitQuiz(true), 2000);
+    } else {
+        let countdown = 10;
+        const timerEl = document.getElementById('custom-modal-timer');
+        if (timerEl) {
+            timerEl.classList.remove('hidden');
+            timerEl.style.display = 'block';
+            timerEl.textContent = `Auto-submitting in ${countdown}s...`;
+        }
+        
+        showCustomModal(
+            "System Focus Lost", 
+            "Please do not attempt to look outside the exam window. Return immediately.", 
+            true, 
+            () => {
+                clearInterval(strikeTimer);
+                strikeTimer = null; // Reset for future blurs
+                if(timerEl) { timerEl.classList.add('hidden'); timerEl.style.display = 'none'; }
+            }
+        );
+        
+        strikeTimer = setInterval(() => {
+            countdown--;
+            if(timerEl) timerEl.textContent = `Auto-submitting in ${countdown}s...`;
+            if (countdown <= 0) {
+                clearInterval(strikeTimer);
+                strikeTimer = null;
+                if(timerEl) { timerEl.classList.add('hidden'); timerEl.style.display = 'none'; }
+                submitQuiz(true);
+            }
+        }, 1000);
+    }
+}
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) handleVisibilityLoss();
+});
+window.addEventListener('blur', () => {
+    handleVisibilityLoss();
+});
+
+// === 3. MOBILE WEBVIEW ANTI-BACK-SWIPE ===
+history.pushState(null, null, location.href);
+window.onpopstate = function () {
+    history.pushState(null, null, location.href);
+};
+
+// === 2. LOCAL REFRESH IMMUNITY (AUTO-SAVE STATE) ===
+function saveExamState() {
+    if (!testData) return;
+    const state = {
+        currentQuiz,
+        userAnswers,
+        visitedQuestions: Array.from(visitedQuestions),
+        markedQuestions: Array.from(markedQuestions),
+        testEndTime: currentTestEndTime,
+        violationCount
+    };
+    localStorage.setItem(`exam_state_${testData.code}`, JSON.stringify(state));
+}
 
 window.addEventListener('online', async () => {
     if (offlineBuffer && testData && !isSubmitting) {
@@ -98,46 +172,62 @@ function initQuiz() {
 function initLiveTest() {
     document.getElementById('quiz-topic-name').textContent = testData.name || 'Untitled Test';
     
-    if (testData.isRandomMix) {
-        let allPool = QUESTIONS_DATA.flatMap(tObj => tObj.questions);
-        currentQuiz = shuffleArray(allPool).slice(0, testData.randomTotal || 50);
+    const savedStateRaw = localStorage.getItem(`exam_state_${testData.code}`);
+    if (savedStateRaw) {
+        // HYDRATE (Refresh Immunity)
+        const state = JSON.parse(savedStateRaw);
+        currentQuiz = state.currentQuiz;
+        userAnswers = state.userAnswers;
+        visitedQuestions = new Set(state.visitedQuestions || []);
+        markedQuestions = new Set(state.markedQuestions || []);
+        currentTestEndTime = state.testEndTime;
+        violationCount = state.violationCount || 0;
+        
+        timeRemaining = Math.max(0, Math.round((currentTestEndTime - Date.now()) / 1000));
+        console.log('[Live Engine] Hydrated state from LocalStorage.');
     } else {
-        const config = testData.topicConfig || {};
-        for (const [topicName, val] of Object.entries(config)) {
-            const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
-            if (tObj) {
-                if (typeof val === 'object' && val.mode === 'manual') {
-                    let selectedQuestions = val.indices.map(i => tObj.questions[i]).filter(Boolean);
-                    currentQuiz = currentQuiz.concat(selectedQuestions);
-                } else {
-                    const count = typeof val === 'number' ? val : 0;
-                    let pool = shuffleArray([...tObj.questions]);
-                    currentQuiz = currentQuiz.concat(pool.slice(0, count));
+        // FRESH START
+        if (testData.isRandomMix) {
+            let allPool = QUESTIONS_DATA.flatMap(tObj => tObj.questions);
+            currentQuiz = shuffleArray(allPool).slice(0, testData.randomTotal || 50);
+        } else {
+            const config = testData.topicConfig || {};
+            for (const [topicName, val] of Object.entries(config)) {
+                const tObj = QUESTIONS_DATA.find(t => t.topic === topicName);
+                if (tObj) {
+                    if (typeof val === 'object' && val.mode === 'manual') {
+                        let selectedQuestions = val.indices.map(i => tObj.questions[i]).filter(Boolean);
+                        currentQuiz = currentQuiz.concat(selectedQuestions);
+                    } else {
+                        const count = typeof val === 'number' ? val : 0;
+                        let pool = shuffleArray([...tObj.questions]);
+                        currentQuiz = currentQuiz.concat(pool.slice(0, count));
+                    }
                 }
             }
+            shuffleArray(currentQuiz);
         }
-        shuffleArray(currentQuiz);
-    }
-    
-    // ANTI-CHEAT: Randomize Option Order for each student
-    currentQuiz = currentQuiz.map(orig => {
-        const q = JSON.parse(JSON.stringify(orig));
-        let opts = q.o.map((text, idx) => ({ text, idx, hiText: q.o_hi ? q.o_hi[idx] : null }));
-        shuffleArray(opts);
         
-        q.o = opts.map(o => o.text);
-        if (q.o_hi) q.o_hi = opts.map(o => o.hiText);
-        q.a = opts.findIndex(o => o.idx === orig.a);
-        return q;
-    });
-    
-    timeRemaining = (testData.duration || 60) * 60;
-    const durationMs = timeRemaining * 1000;
-    const testEndTime = Date.now() + durationMs;
+        // ANTI-CHEAT: Randomize Option Order for each student
+        currentQuiz = currentQuiz.map(orig => {
+            const q = JSON.parse(JSON.stringify(orig));
+            let opts = q.o.map((text, idx) => ({ text, idx, hiText: q.o_hi ? q.o_hi[idx] : null }));
+            shuffleArray(opts);
+            
+            q.o = opts.map(o => o.text);
+            if (q.o_hi) q.o_hi = opts.map(o => o.hiText);
+            q.a = opts.findIndex(o => o.idx === orig.a);
+            return q;
+        });
+        
+        timeRemaining = (testData.duration || 60) * 60;
+        currentTestEndTime = Date.now() + (timeRemaining * 1000);
+        saveExamState();
+    }
     
     updateTimerDisplay();
     liveTestTimer = setInterval(() => {
-        timeRemaining = Math.round((testEndTime - Date.now()) / 1000);
+        timeRemaining = Math.round((currentTestEndTime - Date.now()) / 1000);
         
         if (timeRemaining <= 0) {
             timeRemaining = 0;
@@ -197,14 +287,16 @@ function initPracticeMode() {
     
     if (mode === 'topic') {
         const selectedTopic = localStorage.getItem('practiceTopic');
+        const count = parseInt(localStorage.getItem('practiceCount') || '50', 10);
         const tObj = QUESTIONS_DATA.find(t => t.topic === selectedTopic);
         if (tObj) {
             let pool = shuffleArray([...tObj.questions]);
-            currentQuiz = pool.slice(0, 50);
+            currentQuiz = pool.slice(0, count);
         }
     } else {
+        const count = parseInt(localStorage.getItem('practiceCount') || '50', 10);
         QUESTIONS_DATA.forEach(t => currentQuiz = currentQuiz.concat(t.questions));
-        currentQuiz = shuffleArray(currentQuiz).slice(0, 50);
+        currentQuiz = shuffleArray(currentQuiz).slice(0, count);
     }
     renderQuestion();
     // Practice mode: no live progress reporting needed
@@ -287,6 +379,7 @@ function renderQuestion() {
 function selectOption(idx) {
     if (isSubmitting) return;
     userAnswers[currentIndex] = idx;
+    saveExamState();
     // Do NOT automatically go to next question in strict govt mode.
     renderQuestion(); 
     if(testData) debouncedReportLiveProgress();
@@ -294,19 +387,36 @@ function selectOption(idx) {
 
 function clearResponse() {
     if (isSubmitting) return;
-    delete userAnswers[currentIndex];
-    markedQuestions.delete(currentIndex);
+    if (userAnswers[currentIndex] !== undefined) {
+        delete userAnswers[currentIndex];
+    }
+    // Clear UI radio buttons instantly
+    const optInputs = document.querySelectorAll('input[name="quiz-option"]');
+    optInputs.forEach(input => input.checked = false);
+    
+    saveExamState();
     renderQuestion();
     if(testData) debouncedReportLiveProgress();
 }
 
 function toggleMarkForReview() {
     if (isSubmitting) return;
+    
+    // Before marking, save the selected radio button answer if any
+    const optInputs = document.querySelectorAll('input[name="quiz-option"]');
+    optInputs.forEach(input => {
+        if (input.checked) {
+            userAnswers[currentIndex] = parseInt(input.value);
+        }
+    });
+    
     if (markedQuestions.has(currentIndex)) {
         markedQuestions.delete(currentIndex);
     } else {
         markedQuestions.add(currentIndex);
     }
+    
+    saveExamState();
     nextQuestion(); // Govt portals usually auto-next on "Mark for Review & Next"
 }
 
@@ -353,13 +463,15 @@ function renderPalette() {
 }
 
 function nextQuestion() {
-    // If it's answered, remove mark
-    if (userAnswers[currentIndex] !== undefined && !markedQuestions.has(currentIndex)) {
-        // Normal save & next
+    // If it's answered, hitting Save & Next removes the mark (Govt spec)
+    if (userAnswers[currentIndex] !== undefined && markedQuestions.has(currentIndex)) {
+        markedQuestions.delete(currentIndex);
     }
     
     if (currentIndex < currentQuiz.length - 1) {
         currentIndex++;
+        visitedQuestions.add(currentIndex);
+        saveExamState();
         renderQuestion();
     }
 }
@@ -367,6 +479,8 @@ function nextQuestion() {
 function prevQuestion() {
     if (currentIndex > 0) {
         currentIndex--;
+        visitedQuestions.add(currentIndex);
+        saveExamState();
         renderQuestion();
     }
 }
@@ -381,14 +495,14 @@ const debouncedReportLiveProgress = debounce(async () => {
     const answered = Object.keys(userAnswers).length;
     const emailKey = student ? student.email : studentName;
     try {
-        // FIXED: Using atomic RPC to avoid JSON race conditions
         const { error } = await supabaseClient.rpc('upsert_live_progress', {
             p_test_code: testData.code,
             p_email_key: emailKey,
             p_student_name: studentName,
             p_student_email: student ? student.email : '',
             p_answered: answered,
-            p_total: currentQuiz.length
+            p_total: currentQuiz.length,
+            p_violation_count: violationCount // Add violation count if RPC supports it, else ignore
         });
         
         if (error) throw error;
@@ -441,11 +555,6 @@ async function submitQuiz(force = false) {
     if (window.studentRealtimeSub) supabaseClient.removeChannel(window.studentRealtimeSub);
     document.getElementById('submit-btn').textContent = 'Submitting...';
     document.getElementById('submit-btn').disabled = true;
-    
-    // PRE-FLIGHT AUTH CHECK (Session Refresh)
-    if (typeof ensureSupabaseSession === 'function') {
-        await ensureSupabaseSession();
-    }
     
     score = 0;
     const attempted = Object.keys(userAnswers).length;
@@ -548,9 +657,12 @@ async function submitQuiz(force = false) {
     const incorrect = currentQuiz.length - score;   // includes skipped/unanswered
     const unanswered = currentQuiz.length - attempted;
     localStorage.setItem('lastQuizResults', JSON.stringify({ 
-        score, attempted, incorrect, unanswered, total: currentQuiz.length, isPractice: !testData
+        score, attempted, incorrect, unanswered, total: currentQuiz.length, isPractice: !testData,
+        testCode: testData ? testData.code : null,
+        duration: testData ? testData.duration : null,
+        studentName: studentName,
+        studentEmail: student ? student.email : 'N/A'
     }));
-    
     // --- Gamification: Update Streak ---
     if (student && student.email) {
         try {
@@ -587,10 +699,16 @@ async function submitQuiz(force = false) {
             console.error("Failed to update streak:", e);
         }
     }
-    
-    localStorage.removeItem('activeTest');
-    localStorage.removeItem('activeTestStudentName');
-    window.location.href = 'student.html';
+        localStorage.removeItem('activeTest');
+        localStorage.removeItem('activeTestStudentName');
+        localStorage.removeItem(`exam_state_${testData.code}`);
+        
+        window.location.replace('student.html');
+    } else {
+        localStorage.removeItem('practiceMode');
+        localStorage.removeItem('practiceTopic');
+        window.location.replace('student.html');
+    }
 }
 
 if (document.readyState === 'loading') {

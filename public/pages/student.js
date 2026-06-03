@@ -45,45 +45,60 @@ const renderUI = () => {
 };
 
 const initLogic = async () => {
-    // SINGLE SOURCE OF TRUTH: Supabase session via boot lock
-    const session = await ensureSupabaseAuthReady();
+    const isBypass = localStorage.getItem('authBypass') === 'true';
+    let sessionEmail = null;
 
-    if (!session) {
-        console.warn('[Student] No active session. Redirecting to login.');
-        window.location.replace('auth.html');
-        return;
-    }
-
-    const sessionEmail = session.user.email;
-
-    // Check if localStorage student data exists AND has required fields
-    const cachedStudent = getLoggedInStudent();
-    const isValidCache = cachedStudent && cachedStudent.email && cachedStudent.name;
-
-    if (isValidCache) {
-        // Cache is good — use it directly
+    if (isBypass) {
+        // Option A CBT Login (Email + Exam Code) bypasses Supabase Auth
+        const cachedStudent = getLoggedInStudent();
+        if (!cachedStudent || !cachedStudent.email || !cachedStudent.name) {
+            console.warn('[Student] Invalid bypass state. Redirecting to login.');
+            window.location.replace('auth.html');
+            return;
+        }
         student = cachedStudent;
+        sessionEmail = student.email;
     } else {
-        // Cache missing or incomplete — fetch from DB using verified session email
-        console.log('[Student] Repopulating student data from DB for:', sessionEmail);
-        const { data: studentDb, error: fetchErr } = await supabaseClient
-            .from('students')
-            .select('name, email')
-            .eq('email', sessionEmail)
-            .single();
+        // SINGLE SOURCE OF TRUTH: Supabase session via boot lock (Fallback for legacy)
+        const session = await ensureSupabaseAuthReady();
 
-        if (studentDb && !fetchErr) {
-            student = { email: studentDb.email, name: studentDb.name };
-            // Write back to localStorage with correct structure
-            localStorage.setItem('loggedInStudent', JSON.stringify(student));
+        if (!session) {
+            console.warn('[Student] No active session. Redirecting to login.');
+            window.location.replace('auth.html');
+            return;
+        }
+
+        sessionEmail = session.user.email;
+
+        // Check if localStorage student data exists AND has required fields
+        const cachedStudent = getLoggedInStudent();
+        const isValidCache = cachedStudent && cachedStudent.email && cachedStudent.name;
+
+        if (isValidCache) {
+            // Cache is good — use it directly
+            student = cachedStudent;
         } else {
-            // DB fetch failed — build minimal object from session so UI doesn't break
-            console.warn('[Student] DB fetch failed. Using session email as fallback.');
-            student = {
-                email: sessionEmail,
-                name: session.user.user_metadata?.name || sessionEmail.split('@')[0]
-            };
-            localStorage.setItem('loggedInStudent', JSON.stringify(student));
+            // Cache missing or incomplete — fetch from DB using verified session email
+            console.log('[Student] Repopulating student data from DB for:', sessionEmail);
+            const { data: studentDb, error: fetchErr } = await supabaseClient
+                .from('students')
+                .select('name, email')
+                .eq('email', sessionEmail)
+                .single();
+
+            if (studentDb && !fetchErr) {
+                student = { email: studentDb.email, name: studentDb.name };
+                // Write back to localStorage with correct structure
+                localStorage.setItem('loggedInStudent', JSON.stringify(student));
+            } else {
+                // DB fetch failed — build minimal object from session so UI doesn't break
+                console.warn('[Student] DB fetch failed. Using session email as fallback.');
+                student = {
+                    email: sessionEmail,
+                    name: session.user.user_metadata?.name || sessionEmail.split('@')[0]
+                };
+                localStorage.setItem('loggedInStudent', JSON.stringify(student));
+            }
         }
     }
 
@@ -98,68 +113,120 @@ if (document.readyState === 'loading') {
     initLogic();
 }
     
-const processResultsLogic = () => {
+const processResultsLogic = async () => {
     const lastResults = localStorage.getItem('lastQuizResults');
     if (!lastResults) return;
 
     try {
         const res = JSON.parse(lastResults);
         
-        // Save to history for every test (practice or live)
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        };
+        
+        let passingThreshold = 50; // Default fallback
+        let totalQuestionsDB = res.total; // Default fallback
+
+        // 1. SECURE TAMPER-PROOF EVALUATION: Fetch true threshold from DB
+        if (res.testCode && window.supabaseClient) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('tests')
+                    .select('data')
+                    .eq('code', res.testCode)
+                    .single();
+                if (!error && data && data.data) {
+                    if (data.data.passingScore !== undefined) {
+                        passingThreshold = parseInt(data.data.passingScore, 10);
+                    }
+                    if (data.data.questions && Array.isArray(data.data.questions)) {
+                        totalQuestionsDB = data.data.questions.length;
+                    }
+                    if (data.is_published !== undefined) {
+                        res.is_published = data.is_published;
+                    }
+                }
+            } catch(dbErr) {
+                console.error("Secure DB evaluation check failed", dbErr);
+            }
+        }
+
+        // Save to history
         let history = [];
         try {
             history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
         } catch(e) {
             history = [];
         }
+        
+        // Recalculate percent strictly against DB total if available
+        const actualTotal = totalQuestionsDB || res.total;
+        const percent = Math.round((res.score / actualTotal) * 100);
+
         history.push({
             date: new Date().toISOString(),
             score: res.score,
-            total: res.total,
-            percent: Math.round((res.score / res.total) * 100),
+            total: actualTotal,
+            percent: percent,
             isPractice: res.isPractice
         });
         localStorage.setItem('studentTestHistory', JSON.stringify(history));
 
-        // Populate result elements safely
-        const percent = Math.round((res.score / res.total) * 100);
-
-        const set = (id, val) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = val;
-        };
-
-        set('result-score-text',  `${res.score} / ${res.total}`);
-        set('result-attempted',   res.attempted);
-        set('result-total',       res.total);
-        set('result-correct',     res.score);
-        set('result-incorrect',   res.incorrect);
-        set('result-unanswered',  res.unanswered ?? (res.total - res.attempted));
-        set('result-percent',     `${percent}%`);
-
-        // Color-code the percent
-        const percentEl = document.getElementById('result-percent');
-        if (percentEl) {
-            percentEl.style.color = percent >= 80 ? '#22c55e'
-                                  : percent >= 50 ? '#60a5fa'
-                                  : '#ef4444';
+        // 2. AUTOMATIC LOCK-OUT STATE: Clear exam state immediately to prevent re-entry
+        if (res.testCode) {
+            localStorage.removeItem(`exam_state_${res.testCode}`);
+            localStorage.removeItem('activeTest');
+            localStorage.removeItem('activeTestStudentName');
         }
 
-        // Always show the modal
+        // 3. ADMIN PUBLISH LOCK CHECK
+        if (!res.isPractice && res.is_published === false) {
+            const modal = document.getElementById('results-modal');
+            if (modal) modal.style.display = 'none'; // Ensure hidden
+            
+            // Mark history specifically
+            history[history.length - 1].status = 'Pending Publication';
+            localStorage.setItem('studentTestHistory', JSON.stringify(history));
+            
+            // Alert user visually without native alert
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = "position:fixed; top:20px; right:20px; background:#f0fdf4; border:1px solid #22c55e; color:#166534; padding:15px; border-radius:4px; font-weight:bold; z-index:9999; box-shadow:0 4px 6px rgba(0,0,0,0.1);";
+            wrapper.innerHTML = "Exam Submitted Securely. Result awaiting administrator publication.";
+            document.body.appendChild(wrapper);
+            setTimeout(() => wrapper.remove(), 6000);
+            
+            localStorage.removeItem('lastQuizResults');
+            return; // STOP execution, do not show scorecard
+        }
+
+        // 3. POPULATE INSTITUTIONAL SCORECARD
+        set('result-trainee-name', res.studentName || 'N/A');
+        set('result-trainee-email', res.studentEmail || 'N/A');
+        set('result-exam-code', res.testCode || 'PRACTICE');
+        set('result-exam-duration', res.duration ? `${res.duration} Minutes` : 'N/A');
+        
+        set('result-total', actualTotal);
+        set('result-attempted', res.attempted);
+        set('result-correct', res.score);
+        set('result-percent', `${percent}%`);
+
+        // Evaluate Pass/Fail Banner
+        const bannerEl = document.getElementById('result-status-banner');
+        if (bannerEl) {
+            if (percent >= passingThreshold) {
+                bannerEl.textContent = 'STATUS: PASS';
+                bannerEl.className = 'w-full py-4 text-center text-white font-bold tracking-wider text-xl uppercase bg-emerald-600';
+            } else {
+                bannerEl.textContent = 'STATUS: FAIL';
+                bannerEl.className = 'w-full py-4 text-center text-white font-bold tracking-wider text-xl uppercase bg-red-600';
+            }
+        }
+
+        // Show Modal
         const modal = document.getElementById('results-modal');
         if (modal) {
             modal.style.display = 'flex';
-        } else {
-            // Fallback: create a simple inline alert if modal element missing in HTML
-            console.warn('[Results] results-modal element not found. Check student.html');
-        }
-
-        // Confetti if score >= 80%
-        if (percent >= 80 && window.confetti) {
-            setTimeout(() => {
-                try { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); }
-                catch (e) { console.warn("Confetti failed", e); }
-            }, 400);
         }
 
     } catch(e) {
@@ -167,7 +234,6 @@ const processResultsLogic = () => {
     }
     
     localStorage.removeItem('lastQuizResults');
-
 };
 
 // NOTE: processResultsLogic() is now called from inside renderUI()
@@ -380,44 +446,25 @@ async function syncPendingSubmissions() {
 window.addEventListener('online', syncPendingSubmissions);
 
 
-function startLocalPractice(mode) {
-    if (mode === 'topic') {
-        let options = QUESTIONS_DATA.map(t => `<button class="btn btn-secondary" style="margin-bottom:10px; width:100%; text-align:left;" onclick="launchTopicPractice('${t.topic}')">${t.topic} (${t.questions.length} Qs)</button>`).join('');
-        
-        let modal = document.createElement('div');
-        modal.id = 'topic-select-modal';
-        modal.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(5px); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px;";
-        modal.innerHTML = `
-            <div style="background:var(--bg-card); padding:30px; border-radius:20px; border:1px solid var(--border); width:100%; max-width:400px; max-height:80vh; display:flex; flex-direction:column;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 style="font-size:1.2rem; font-weight:700;">Select a Topic</h3>
-                    <button onclick="document.getElementById('topic-select-modal').remove()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.5rem;">&times;</button>
-                </div>
-                <div style="overflow-y:auto; flex-1; padding-right:10px;">
-                    ${options}
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        return;
+window.launchMockTest = function() {
+    const topic = document.getElementById('mock-topic-select').value;
+    const count = document.querySelector('input[name="mock-q-count"]:checked').value;
+    
+    // EXPLICITLY CLEAR LIVE TEST STATE
+    localStorage.removeItem('activeTest');
+    localStorage.removeItem('activeTestStudentName');
+    
+    localStorage.setItem('practiceMode', topic === 'ALL' ? 'mock' : 'topic');
+    if (topic !== 'ALL') {
+        localStorage.setItem('practiceTopic', topic);
     }
-    // EXPLICITLY CLEAR LIVE TEST STATE
-    localStorage.removeItem('activeTest');
-    localStorage.removeItem('activeTestStudentName');
+    localStorage.setItem('practiceCount', count);
     
-    localStorage.setItem('practiceMode', mode);
     window.location.href = 'quiz.html';
-}
+};
 
-function launchTopicPractice(topic) {
-    // EXPLICITLY CLEAR LIVE TEST STATE
-    localStorage.removeItem('activeTest');
-    localStorage.removeItem('activeTestStudentName');
-    
-    localStorage.setItem('practiceMode', 'topic');
-    localStorage.setItem('practiceTopic', topic);
-    window.location.href = 'quiz.html';
-}
+
+
 
 // Gamification and Extra Features
 async function initStudentDashboard() {

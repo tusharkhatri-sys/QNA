@@ -58,26 +58,26 @@
 
         <!-- Main Content Area -->
         <main class="flex-1 overflow-y-auto bg-gray-50 p-8">
-        <header class="flex justify-between items-center mb-10">
+        <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-3xl font-black tracking-tight text-slate-900">Test Manager</h1>
-                <p class="text-slate-600 font-medium">Create and deploy assessments.</p>
+                <h1 class="text-3xl font-black tracking-tight text-gray-900">Test Manager</h1>
+                <p class="text-gray-600 font-medium mt-1">Create and deploy assessments.</p>
             </div>
-            <button onclick="openModal('create-modal')" class="bg-blue-600 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20">
+            <button onclick="openModal('create-modal')" class="bg-blue-800 hover:bg-blue-900 text-white px-6 py-2.5 rounded-md font-bold flex items-center gap-2">
                 <i data-lucide="plus" class="w-5 h-5"></i> New Test
             </button>
         </header>
 
         <!-- Search & Filter -->
-        <div class="bg-white border border-gray-200 shadow-sm p-6 rounded-[2rem] mb-10 flex gap-4">
+        <div class="bg-white border border-gray-200 p-6 rounded-md mb-8 flex gap-4 shadow-sm">
             <div class="flex-1 relative">
-                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
-                <input type="text" placeholder="Search assessments..." class="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-12 text-slate-900 outline-none">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5"></i>
+                <input type="text" placeholder="Search assessments..." class="w-full bg-white border border-gray-300 rounded-md py-2.5 pl-12 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
             </div>
-            <select id="session-filter" onchange="initTestManager()" class="bg-gray-50/50 border border-gray-200 rounded-xl px-6 py-3 text-slate-900 outline-none">
+            <select id="session-filter" onchange="initTestManager()" class="bg-white border border-gray-300 rounded-md px-6 py-2.5 text-gray-900 outline-none focus:border-blue-800">
                 <option value="All">All Sessions</option>
             </select>
-            <select id="status-filter" onchange="initTestManager()" class="bg-gray-50/50 border border-gray-200 rounded-xl px-6 py-3 text-slate-900 outline-none">
+            <select id="status-filter" onchange="initTestManager()" class="bg-white border border-gray-300 rounded-md px-6 py-2.5 text-gray-900 outline-none focus:border-blue-800">
                 <option value="all">All Status</option>
                 <option value="active" selected>Active</option>
                 <option value="archived">Archived</option>
@@ -85,62 +85,61 @@
         </div>
 
         <!-- Tests List -->
-        <div id="tests-list" class="grid grid-cols-1 gap-4">
-            <div class="py-20 text-center text-slate-500 italic">Loading active tests...</div>
+        <div id="tests-list" class="flex flex-col">
+            <div class="py-20 text-center text-gray-500 font-medium italic">Loading active tests...</div>
         </div>
 
         <!-- Create Test Modal (The Big Stepper) -->
-        <div id="create-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative">
-                <button onclick="closeModal('create-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <div id="create-modal" class="fixed inset-0 bg-gray-900/60 hidden z-[100] flex items-center justify-center p-6">
+            <div class="bg-white border border-gray-300 w-full max-w-4xl rounded-md p-10 overflow-hidden relative shadow-2xl">
+                <button onclick="closeModal('create-modal')" class="absolute top-6 right-6 text-gray-500 hover:text-gray-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
-                <h2 class="text-2xl font-black mb-8">Deploy New Assessment</h2>
+                <h2 class="text-2xl font-black text-gray-900 mb-8">Deploy New Assessment</h2>
                 
                 <!-- Stepper Headers -->
-                <div class="flex gap-4 mb-10">
-                    <div class="stepper-btn active px-6 py-2 rounded-full border border-gray-300 text-xs font-black uppercase tracking-widest transition-all">Step 1: Core Info</div>
-                    <div class="stepper-btn px-6 py-2 rounded-full border border-gray-300 text-xs font-black uppercase tracking-widest transition-all">Step 2: Question Pool</div>
-                    <div class="stepper-btn px-6 py-2 rounded-full border border-gray-300 text-xs font-black uppercase tracking-widest transition-all">Step 3: Protocol</div>
+                <div class="flex gap-4 mb-8 border-b border-gray-200 pb-4">
+                    <div class="stepper-btn active px-4 py-2 border-b-2 border-transparent text-sm font-bold uppercase tracking-wider text-gray-400">Step 1: Test Metadata</div>
+                    <div class="stepper-btn px-4 py-2 border-b-2 border-transparent text-sm font-bold uppercase tracking-wider text-gray-400">Step 2: Question Sourcing</div>
                 </div>
 
                 <div id="stepper-content" class="min-h-[400px]">
                     <!-- Dynamic Step Content -->
                 </div>
 
-                <div class="flex justify-between mt-10">
-                    <button id="prev-btn" class="hidden px-8 py-3 rounded-2xl border border-gray-300 font-bold">Back</button>
-                    <button id="next-btn" class="ml-auto bg-blue-600 px-10 py-3 rounded-2xl font-bold">Continue</button>
+                <div class="flex justify-between mt-8 pt-6 border-t border-gray-200">
+                    <button id="prev-btn" class="hidden px-6 py-2.5 rounded-md border border-gray-300 text-gray-700 font-bold hover:bg-gray-50">Back</button>
+                    <button id="next-btn" class="ml-auto bg-blue-800 hover:bg-blue-900 text-white px-8 py-2.5 rounded-md font-bold">Continue</button>
                 </div>
             </div>
         </div>
 
         <!-- Results Modal -->
-        <div id="results-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-6">
-            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
-                <button onclick="closeModal('results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <div id="results-modal" class="fixed inset-0 bg-gray-900/60 hidden z-[100] flex items-center justify-center p-6">
+            <div class="bg-white border border-gray-300 w-full max-w-4xl rounded-md p-10 overflow-hidden relative max-h-[90vh] flex flex-col shadow-2xl">
+                <button onclick="closeModal('results-modal')" class="absolute top-6 right-6 text-gray-500 hover:text-gray-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
-                <h2 class="text-2xl font-black mb-2" id="results-title">Test Results</h2>
-                <p class="text-slate-600 mb-8 text-sm" id="results-subtitle">Loading...</p>
+                <h2 class="text-2xl font-black text-gray-900 mb-2" id="results-title">Test Results</h2>
+                <p class="text-gray-500 mb-8 text-sm font-medium" id="results-subtitle">Loading...</p>
                 <div class="overflow-x-auto">
                     <div id="live-results-section" class="mb-8 hidden">
-                        <h4 class="text-xs font-black text-green-400 uppercase tracking-widest mb-4">Live Students (Currently Testing)</h4>
+                        <h4 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-4">Live Students (Currently Testing)</h4>
                         <table class="w-full text-left border-collapse mb-8">
                             <thead>
-                                <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-gray-200">
+                                <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200">
                                     <th class="py-4">Student Name</th>
                                     <th>Roll No</th>
                                     <th>Progress</th>
                                     <th class="text-right">Joined At</th>
                                 </tr>
                             </thead>
-                            <tbody id="live-results-table-body" class="divide-y divide-white/5"></tbody>
+                            <tbody id="live-results-table-body" class="divide-y divide-gray-100"></tbody>
                         </table>
                     </div>
                     
-                    <h4 class="text-xs font-black text-slate-600 uppercase tracking-widest mb-4">Submitted Results</h4>
+                    <h4 class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-4">Submitted Results</h4>
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-gray-200">
+                            <tr class="text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-200">
                                 <th class="py-4">Student Name</th>
                                 <th>Roll No</th>
                                 <th>Score</th>
@@ -148,41 +147,41 @@
                                 <th class="text-right">Details</th>
                             </tr>
                         </thead>
-                        <tbody id="results-table-body" class="divide-y divide-white/5"></tbody>
+                        <tbody id="results-table-body" class="divide-y divide-gray-100"></tbody>
                     </table>
                 </div>
             </div>
         </div>
 
         <!-- Manual Select Modal -->
-        <div id="manual-select-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[120] flex items-center justify-center p-6">
-            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-5xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
-                <button onclick="closeModal('manual-select-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <div id="manual-select-modal" class="fixed inset-0 bg-gray-900/60 hidden z-[120] flex items-center justify-center p-6">
+            <div class="bg-white border border-gray-300 w-full max-w-5xl rounded-md p-10 overflow-hidden relative max-h-[90vh] flex flex-col shadow-2xl">
+                <button onclick="closeModal('manual-select-modal')" class="absolute top-6 right-6 text-gray-500 hover:text-gray-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
-                <h2 class="text-2xl font-black mb-2">Select Questions</h2>
-                <p class="text-slate-600 mb-6 text-sm" id="manual-select-topic">Topic Name</p>
+                <h2 class="text-2xl font-black text-gray-900 mb-2">Select Questions</h2>
+                <p class="text-gray-500 mb-6 text-sm font-medium" id="manual-select-topic">Topic Name</p>
                 
-                <div class="flex justify-between items-center mb-4">
-                    <button onclick="selectAllManual()" class="text-xs bg-gray-50 text-slate-700 px-3 py-1 rounded hover:bg-slate-700">Select All</button>
-                    <span class="text-sm font-bold text-blue-400" id="manual-selected-count">0 Selected</span>
+                <div class="flex justify-between items-center mb-4 border-b border-gray-200 pb-4">
+                    <button onclick="selectAllManual()" class="text-xs font-bold bg-blue-50 text-blue-800 border border-blue-100 px-4 py-2 rounded-md hover:bg-blue-100 transition-all">Select All</button>
+                    <span class="text-sm font-bold text-gray-900" id="manual-selected-count">0 Selected</span>
                 </div>
                 
                 <div id="manual-questions-list" class="overflow-y-auto flex-1 pr-4 space-y-3 mb-6">
                     <!-- QnAs -->
                 </div>
                 
-                <div class="flex justify-end mt-4">
-                    <button onclick="saveManualSelection()" class="bg-blue-600 px-8 py-3 rounded-2xl font-bold">Save Selection</button>
+                <div class="flex justify-end pt-6 border-t border-gray-200 mt-4">
+                    <button onclick="saveManualSelection()" class="bg-blue-800 hover:bg-blue-900 text-white px-8 py-2.5 rounded-md font-bold">Save Selection</button>
                 </div>
             </div>
         </div>
         <!-- Detailed Results Modal -->
-        <div id="detailed-results-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[120] flex items-center justify-center p-6">
-            <div class="bg-white border border-gray-200 shadow-sm w-full max-w-4xl rounded-[3rem] p-10 overflow-hidden relative max-h-[90vh] flex flex-col">
-                <button onclick="closeModal('detailed-results-modal')" class="absolute top-8 right-8 text-slate-500 hover:text-slate-900"><i data-lucide="x" class="w-6 h-6"></i></button>
+        <div id="detailed-results-modal" class="fixed inset-0 bg-gray-900/60 hidden z-[120] flex items-center justify-center p-6">
+            <div class="bg-white border border-gray-300 w-full max-w-4xl rounded-md p-10 overflow-hidden relative max-h-[90vh] flex flex-col shadow-2xl">
+                <button onclick="closeModal('detailed-results-modal')" class="absolute top-6 right-6 text-gray-500 hover:text-gray-900"><i data-lucide="x" class="w-6 h-6"></i></button>
                 
-                <h2 class="text-2xl font-black mb-2" id="detailed-student-name">Student Name</h2>
-                <p class="text-slate-600 mb-6 text-sm" id="detailed-student-score">Score: 0 / 0</p>
+                <h2 class="text-2xl font-black text-gray-900 mb-2" id="detailed-student-name">Student Name</h2>
+                <p class="text-gray-500 mb-6 text-sm font-medium border-b border-gray-200 pb-4" id="detailed-student-score">Score: 0 / 0</p>
                 
                 <div id="detailed-questions-list" class="overflow-y-auto flex-1 pr-4 space-y-4">
                     <!-- QnAs -->

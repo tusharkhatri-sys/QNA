@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trainee Portal Authentication - QNA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-white text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
+    <!-- Main Container -->
+    <div class="bg-white border border-gray-300 w-full max-w-4xl flex flex-col md:flex-row rounded-sm overflow-hidden">
+        
+        <!-- Left Side: Login -->
+        <div class="w-full md:w-1/2 p-10 border-b md:border-b-0 md:border-r border-gray-300">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-1">Trainee Login</h2>
+                <p class="text-sm font-medium text-gray-700">Access the examination portal.</p>
+            </div>
+            
+            <div id="login-alert" class="hidden mb-6 p-4 border-l-4 text-sm font-bold"></div>
+
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Email Address</label>
+                    <input type="email" id="login-email" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Password</label>
+                    <input type="password" id="login-password" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                </div>
+                <button type="submit" id="login-btn" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-sm mt-4">Sign In</button>
+            </form>
+        </div>
+
+        <!-- Right Side: Registration -->
+        <div class="w-full md:w-1/2 p-10 bg-white">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-1">New Trainee Registration</h2>
+                <p class="text-sm font-medium text-gray-700">Create your official credentials.</p>
+            </div>
+
+            <div id="register-alert" class="hidden mb-6 p-4 border-l-4 text-sm font-bold"></div>
+
+            <form id="register-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Full Name</label>
+                    <input type="text" id="reg-name" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Session</label>
+                    <select id="reg-session-select" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 font-medium outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                        <option value="" disabled selected>Loading sessions...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Trade</label>
+                    <select id="reg-trade" required class="w-full bg-gray-100 border border-gray-300 rounded-sm py-2.5 px-3 text-gray-700 font-medium outline-none cursor-not-allowed" disabled>
+                        <option value="COPA" selected>COPA (Computer Operator and Programming Assistant)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Email Address</label>
+                    <input type="email" id="reg-email" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-900 mb-2">Password (Min 8 characters)</label>
+                    <input type="password" id="reg-password" minlength="8" required class="w-full bg-white border border-gray-300 rounded-sm py-2.5 px-3 text-gray-900 outline-none focus:border-blue-800 focus:ring-1 focus:ring-blue-800">
+                </div>
+                <button type="submit" id="register-btn" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 rounded-sm mt-4">Register</button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Supabase Core and Logic -->
+    <script src="shared.js"></script>
+    <script src="student-auth.js"></script>
+</body>
+</html>
