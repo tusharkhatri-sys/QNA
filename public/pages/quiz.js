@@ -471,10 +471,8 @@ function renderPalette() {
             btn.classList.add('status-marked');
         } else if (isAnswered) {
             btn.classList.add('status-answered');
-        } else if (isVisited) {
-            btn.classList.add('status-not-answered');
         } else {
-            // Not visited yet - uses default gray style from CSS
+            // Unanswered/Not Visited - uses default gray style from CSS
         }
         
         // Highlight current question
