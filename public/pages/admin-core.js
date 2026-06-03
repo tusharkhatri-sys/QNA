@@ -1119,3 +1119,21 @@ async function deleteSession(sessionId) {
         alert('Failed to delete session. It might be in use.');
     }
 }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
+    if (path.includes('admin-dashboard')) initDashboard();
+    else if (path.includes('admin-students')) initStudentsList();
+    else if (path.includes('admin-tests')) initTestManager();
+});
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const path = window.location.pathname;
+    const sf = document.getElementById('session-filter');
+    if(sf && typeof populateSessionDropdown === 'function') { await populateSessionDropdown('session-filter'); }
+    if (path.includes('admin-dashboard')) initDashboard();
+    else if (path.includes('admin-students')) initStudentsList();
+    else if (path.includes('admin-tests')) initTestManager();
+});
