@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful - QNA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white border border-gray-300 w-full max-w-2xl rounded-md shadow-2xl p-10 relative overflow-hidden text-center">
+        
+        <!-- Header -->
+        <div class="mb-8 border-b border-gray-200 pb-6">
+            <div class="flex justify-center mb-4 text-emerald-600">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-black tracking-tight text-gray-900 uppercase">Registration Successful & Trainee Verification Pending</h2>
+        </div>
+        
+        <!-- Body Content -->
+        <div class="space-y-6 text-left">
+            <p class="text-base text-gray-700 font-medium">
+                A confirmation link has been sent to your registered email address. Please click the link to verify your identity.
+            </p>
+            
+            <div class="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-md">
+                <p class="text-sm text-red-800 font-bold uppercase tracking-wider mb-1">Critical Notice</p>
+                <p class="text-sm text-red-700 font-medium leading-relaxed">
+                    For exam integrity, terminal access via standard web browsers is blocked. To log in and access your training panel, you must launch our official Windows (.EXE) Desktop App or Android (.APK) Secure Browser Wrapper.
+                </p>
+            </div>
+        </div>
+
+        <!-- Download Links -->
+        <div class="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/QNA-Safe-Browser-Setup-1.0.0.exe" class="flex-1 flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-bold py-3.5 px-6 rounded-md transition-colors shadow-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download EXE App
+            </a>
+            <a href="https://github.com/tusharkhatri-sys/QNA/releases/latest/download/app-debug.apk" class="flex-1 flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3.5 px-6 rounded-md transition-colors shadow-sm">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+                Download APK App
+            </a>
+        </div>
+    </div>
+</body>
+</html>
