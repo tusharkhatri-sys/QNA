@@ -68,7 +68,6 @@ async function initDashboard() {
                 }
             });
             document.getElementById('stat-live').textContent = Object.keys(activeProctoring).length;
-            renderLiveGrid();
 
             // Populate Recent Feed
             const feed = document.getElementById('recent-tests');
@@ -150,7 +149,7 @@ async function initDashboard() {
             
             const statLive = document.getElementById('stat-live');
             if (statLive) statLive.textContent = Object.keys(activeProctoring).length;
-            renderLiveGrid();
+            renderLiveTable();
         }).subscribe();
 
     // Memory Leak Prevention: Cleanup when leaving page/closing dashboard
@@ -159,37 +158,125 @@ async function initDashboard() {
     });
 }
 
-function renderLiveGrid() {
-    const grid = document.getElementById('live-grid');
-    if (!grid) return;
-    
+function renderLiveTable() {
+    const tbody = document.getElementById('live-monitoring-tbody');
+    if (!tbody) return;
+
     const entries = Object.values(activeProctoring);
     if (entries.length === 0) {
-        grid.innerHTML = '<p class="text-xs text-slate-500">No active students.</p>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No active test sessions found.</td></tr>';
         return;
     }
 
-    grid.innerHTML = entries.map(s => `
-        <div class="glass-card p-4 rounded-2xl border ${s.isMinimized ? 'border-red-500/50 bg-red-500/5' : 'border-white/5'}">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <p class="font-bold text-sm">${s.name || 'Unknown'}</p>
-                    <p class="text-[10px] text-slate-500 uppercase">${s.email || ''}</p>
-                    <p class="text-[10px] text-blue-400 font-bold mt-1">Answered: ${s.answered} / ${s.total}</p>
-                </div>
-                ${s.isMinimized ? '<span class="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-black">MINIMIZED</span>' : '<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>'}
-            </div>
-            <div class="space-y-2">
-                <div class="flex justify-between text-[10px] font-bold">
-                    <span>PROGRESS</span>
-                    <span>${s.total > 0 ? Math.round((s.answered/s.total)*100) : 0}%</span>
-                </div>
-                <div class="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                    <div class="h-full bg-blue-500 transition-all duration-500" style="width: ${s.total > 0 ? (s.answered/s.total)*100 : 0}%"></div>
-                </div>
-            </div>
-        </div>
-    `).join('');
+    tbody.innerHTML = entries.map(s => {
+        const statusBadge = s.isMinimized 
+            ? '<span class="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-sm border border-red-200">MINIMIZED WARNING</span>'
+            : '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-sm border border-emerald-200">ACTIVE & SECURE</span>';
+        
+        const progressColor = s.progress >= 100 ? 'bg-emerald-600' : 'bg-blue-600';
+
+        return `
+            <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
+                <td class="px-8 py-4">
+                    <div class="font-bold text-slate-900">${s.name}</div>
+                    <div class="text-[11px] text-slate-500">${s.email}</div>
+                </td>
+                <td class="px-8 py-4">
+                    <span class="font-mono text-xs bg-gray-100 border border-gray-200 px-2 py-1 rounded-sm text-slate-700">${s.testCode}</span>
+                </td>
+                <td class="px-8 py-4 text-xs font-medium text-slate-600">
+                    ${new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </td>
+                <td class="px-8 py-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-32 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full ${progressColor}" style="width: ${s.progress}%"></div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-700">${s.progress}%</span>
+                    </div>
+                </td>
+                <td class="px-8 py-4">${statusBadge}</td>
+                <td class="px-8 py-4 text-right">
+                    <button onclick="forceCloseApp('${s.email}', '${s.testCode}')" class="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg font-bold text-xs flex items-center gap-2 ml-auto transition-colors">
+                        <i data-lucide="shield-off" class="w-3.5 h-3.5"></i> Terminate
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+async function loadLiveSessions() {
+    const tbody = document.getElementById('live-monitoring-tbody');
+    if (!tbody) return;
+
+    try {
+        const { data: tests, error } = await supabaseClient.from('tests').select('*');
+        if (error) throw error;
+
+        activeProctoring = {};
+        if (tests) {
+            tests.forEach(t => {
+                if (t.data && t.data.liveStudents) {
+                    Object.keys(t.data.liveStudents).forEach(emailKey => {
+                        const s = t.data.liveStudents[emailKey];
+                        if (s === null || s === 'null') return;
+                        
+                        activeProctoring[emailKey] = {
+                            name: s.studentName || s.name || 'Unknown',
+                            email: emailKey,
+                            testCode: t.code,
+                            answered: s.answered || 0,
+                            total: s.total || 0,
+                            progress: s.total > 0 ? Math.round((s.answered/s.total)*100) : 0,
+                            isMinimized: s.isMinimized || false,
+                            startTime: s.startTime || new Date().toISOString()
+                        };
+                    });
+                }
+            });
+        }
+        
+        renderLiveTable();
+
+        // 3. Setup Realtime Subscription for Live Monitoring
+        if (window.liveMonitoringSub) supabaseClient.removeChannel(window.liveMonitoringSub);
+        window.liveMonitoringSub = supabaseClient.channel('live_monitoring_realtime')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests' }, payload => {
+                const data = payload.new.data;
+                const tCode = payload.new.code;
+                
+                Object.keys(activeProctoring).forEach(k => {
+                    if (activeProctoring[k].testCode === tCode) delete activeProctoring[k];
+                });
+                
+                if (data && data.liveStudents) {
+                    Object.keys(data.liveStudents).forEach(emailKey => {
+                        const s = data.liveStudents[emailKey];
+                        if (s === null || s === 'null') return; 
+                        
+                        activeProctoring[emailKey] = {
+                            name: s.studentName || s.name || 'Unknown',
+                            email: emailKey,
+                            testCode: tCode,
+                            answered: s.answered || 0,
+                            total: s.total || 0,
+                            progress: s.total > 0 ? Math.round((s.answered/s.total)*100) : 0,
+                            isMinimized: s.isMinimized || false,
+                            startTime: s.startTime || new Date().toISOString()
+                        };
+                    });
+                }
+                
+                renderLiveTable();
+            }).subscribe();
+
+    } catch (err) {
+        console.error("Live Monitoring Error:", err);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-500">Failed to load live telemetry. Check console.</td></tr>';
+    }
 }
 
 // --- TEST MANAGER LOGIC ---
@@ -1120,20 +1207,13 @@ async function deleteSession(sessionId) {
     }
 }
 
-
-document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    if (path.includes('admin-dashboard')) initDashboard();
-    else if (path.includes('admin-students')) initStudentsList();
-    else if (path.includes('admin-tests')) initTestManager();
-});
-
-
 document.addEventListener('DOMContentLoaded', async () => {
     const path = window.location.pathname;
     const sf = document.getElementById('session-filter');
     if(sf && typeof populateSessionDropdown === 'function') { await populateSessionDropdown('session-filter'); }
+    
     if (path.includes('admin-dashboard')) initDashboard();
     else if (path.includes('admin-students')) initStudentsList();
     else if (path.includes('admin-tests')) initTestManager();
+    else if (path.includes('admin-live')) loadLiveSessions();
 });
