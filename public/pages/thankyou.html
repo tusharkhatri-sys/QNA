@@ -18,12 +18,12 @@
                     <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
             </div>
-            <h2 class="text-2xl font-black tracking-tight text-gray-900 uppercase">Registration Successful & Trainee Verification Pending</h2>
+            <h2 id="status-title" class="text-2xl font-black tracking-tight text-gray-900 uppercase">Registration Successful & Trainee Verification Pending</h2>
         </div>
         
         <!-- Body Content -->
         <div class="space-y-6 text-left">
-            <p class="text-base text-gray-700 font-medium">
+            <p id="status-msg" class="text-base text-gray-700 font-medium">
                 A confirmation link has been sent to your registered email address. Please click the link to verify your identity.
             </p>
             
@@ -54,5 +54,16 @@
             </a>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash;
+            // Supabase appends #access_token=...&type=signup or type=recovery on email confirmation
+            if (hash && hash.includes('access_token')) {
+                document.getElementById('status-title').textContent = "Email Verified Successfully!";
+                document.getElementById('status-msg').innerHTML = "Your identity is now verified. For exam integrity, you cannot log in from a standard browser.<br><br>Please download and install the secure application below to log in and access your training panel.";
+            }
+        });
+    </script>
 </body>
 </html>
