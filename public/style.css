@@ -44,7 +44,8 @@ html, body {
     font-size: 14px;
     line-height: 1.5;
     height: 100vh;
-    overflow: hidden; /* App layout controls scroll internally */
+    overflow-x: hidden;
+    overflow-y: auto; /* Allow scrolling for pages without fixed internal layouts */
     -webkit-font-smoothing: antialiased;
 }
 
@@ -184,6 +185,8 @@ html, body {
 .status-answered { background-color: var(--color-answered); color: white; border-color: #16A34A; }
 .status-not-answered { background-color: var(--color-not-answered); color: white; border-color: #DC2626; }
 .status-marked { background-color: var(--color-marked); color: white; border-color: #9333EA; }
+.status-answered-marked { background-color: var(--color-marked); color: white; border-color: #9333EA; position: relative; }
+.status-answered-marked::after { content: ''; position: absolute; bottom: 4px; right: 4px; width: 8px; height: 8px; background-color: #16A34A; border-radius: 50%; border: 1px solid white; }
 
 /* Typography Utilites */
 .text-danger { color: var(--color-not-answered); }

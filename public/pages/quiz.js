@@ -13,7 +13,7 @@ const student = getLoggedInStudent();
 let currentQuiz = [];
 let currentIndex = 0;
 let userAnswers = {};
-let visitedQuestions = new Set([0]);
+let visitedQuestions = new Set();
 let markedQuestions = new Set();
 let score = 0;
 let timeRemaining = 0;
@@ -359,9 +359,6 @@ function renderQuestion() {
         grid.appendChild(div);
     });
     
-    // Auto-visit tracking
-    visitedQuestions.add(currentIndex);
-    
     // Always render palette
     renderPalette();
     
@@ -422,6 +419,7 @@ function toggleMarkForReview() {
 
 function jumpToQuestion(idx) {
     if (isSubmitting) return;
+    visitedQuestions.add(currentIndex); // Mark previous as visited before jumping
     currentIndex = idx;
     renderQuestion();
 }
@@ -441,7 +439,9 @@ function renderPalette() {
         const isMarked = markedQuestions.has(i);
         const isVisited = visitedQuestions.has(i);
         
-        if (isMarked) {
+        if (isMarked && isAnswered) {
+            btn.classList.add('status-answered-marked');
+        } else if (isMarked) {
             btn.classList.add('status-marked');
         } else if (isAnswered) {
             btn.classList.add('status-answered');
@@ -469,8 +469,8 @@ function nextQuestion() {
     }
     
     if (currentIndex < currentQuiz.length - 1) {
+        visitedQuestions.add(currentIndex); // Mark as visited when leaving
         currentIndex++;
-        visitedQuestions.add(currentIndex);
         saveExamState();
         renderQuestion();
     }
@@ -478,8 +478,8 @@ function nextQuestion() {
 
 function prevQuestion() {
     if (currentIndex > 0) {
+        visitedQuestions.add(currentIndex); // Mark as visited when leaving
         currentIndex--;
-        visitedQuestions.add(currentIndex);
         saveExamState();
         renderQuestion();
     }
