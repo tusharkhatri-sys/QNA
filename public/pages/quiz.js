@@ -162,11 +162,37 @@ function debounce(func, timeout = 1000) {
 }
 
 function initQuiz() {
-    if (testData) {
-        initLiveTest();
-    } else {
-        initPracticeMode();
-    }
+    showCustomModal(
+        "Fullscreen Required",
+        "To ensure a distraction-free environment, this examination must be taken in Full Screen mode. Click below to enter Full Screen and start the exam.",
+        false,
+        async () => {
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    await document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    await document.documentElement.msRequestFullscreen();
+                }
+            } catch (err) {
+                console.warn("Fullscreen request failed:", err);
+            }
+            
+            // Revert button text for future modals
+            const btnConfirm = document.getElementById('custom-modal-confirm');
+            if (btnConfirm) btnConfirm.textContent = "Acknowledge";
+
+            if (testData) {
+                initLiveTest();
+            } else {
+                initPracticeMode();
+            }
+        }
+    );
+    
+    const btnConfirm = document.getElementById('custom-modal-confirm');
+    if (btnConfirm) btnConfirm.textContent = "Enter Full Screen & Start";
 }
 
 function initLiveTest() {

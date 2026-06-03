@@ -1,6 +1,6 @@
-// ===== SAFE BROWSER DETECTION =====
 function isSafeBrowser() {
-    return navigator.userAgent.includes('Electron') || window.electronAPI;
+    // ALWAYS ALLOW: Removed strict User-Agent/Kiosk locks to support standard PC browsers and Mobile WebViews
+    return true;
 }
 
 // ===== INITIALIZATION =====
