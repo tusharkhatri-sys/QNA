@@ -258,6 +258,10 @@ async function loadLiveSessions() {
     const tbody = document.getElementById('live-monitoring-tbody');
     if (!tbody) return;
 
+    // Visual feedback for refresh button
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-blue-500 font-bold"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>Refreshing live telemetry...</td></tr>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
     try {
         const { data: tests, error } = await supabaseClient.from('tests').select('*').eq('data->>isActive', 'active');
         if (error) throw error;
