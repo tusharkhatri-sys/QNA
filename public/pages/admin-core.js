@@ -1287,7 +1287,7 @@ async function initResultsPage() {
         const { data: tests, error } = await supabaseClient
             .from('tests')
             .select('id, code, data')
-            .order('created_at', { ascending: false });
+            .order('id', { ascending: false });
 
         if (error) throw error;
 
@@ -1304,9 +1304,9 @@ async function initResultsPage() {
         });
 
         sessionDropdown.addEventListener('change', (e) => {
-            const tbody = document.getElementById('results-table-body');
+            const tbody = document.getElementById('results-tbody');
             if (!tbody) {
-                console.warn("CRITICAL: 'results-table-body' not found in the DOM.");
+                console.warn("CRITICAL: 'results-tbody' not found in the DOM.");
                 return;
             }
 
