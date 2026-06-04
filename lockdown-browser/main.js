@@ -90,7 +90,7 @@ function createLockdownWindow() {
 
     // ─── LOAD EXAM URL ──────────────────────────────────────
     if (DEV_MODE) {
-        mainWindow.loadFile(path.join(__dirname, '../public/pages/landing.html'));
+        mainWindow.loadFile(path.join(__dirname, '../public/pages/student-auth.html'));
     } else {
         mainWindow.loadURL(EXAM_URL);
     }
@@ -171,7 +171,7 @@ function createLockdownWindow() {
     mainWindow.webContents.on('render-process-gone', function (event, details) {
         dialog.showErrorBox('QNA Safe Browser Error', 'The browser encountered an error. Restarting...');
         if (DEV_MODE) {
-            mainWindow.loadFile(path.join(__dirname, '../public/pages/landing.html'));
+            mainWindow.loadFile(path.join(__dirname, '../public/pages/student-auth.html'));
         } else {
             mainWindow.loadURL(EXAM_URL);
         }
