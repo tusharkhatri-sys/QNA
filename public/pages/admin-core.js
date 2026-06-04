@@ -256,7 +256,7 @@ async function loadLiveSessions() {
     if (!tbody) return;
 
     try {
-        const { data: tests, error } = await supabaseClient.from('tests').select('*');
+        const { data: tests, error } = await supabaseClient.from('tests').select('*').eq('data->>isActive', 'active');
         if (error) throw error;
 
         activeProctoring = {};
