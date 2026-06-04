@@ -125,6 +125,20 @@ if (registerForm) {
                 throw error;
             }
 
+            // Also insert into public.students table so admin can see them
+            const { error: dbError } = await supabaseClient.from('students').insert([{
+                name: name,
+                email: email,
+                password: password, // Note: Storing plain text because admin panel requires it
+                trade: trade,
+                session: session_id
+            }]);
+
+            if (dbError) {
+                console.error('Warning: Failed to insert into students table', dbError);
+                // We won't block registration, but this means admin won't see them in the custom table
+            }
+
             // On successful registration
             window.location.href = 'thankyou.html';
 

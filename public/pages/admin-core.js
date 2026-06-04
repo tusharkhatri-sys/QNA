@@ -528,7 +528,7 @@ async function viewResults(code) {
                             <p class="font-bold text-gray-900">${escapeHTML(s.studentName || 'Unknown')}</p>
                         </td>
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">${escapeHTML(s.studentEmail || '')}</td>
-                        <td class="py-4 border-b border-gray-100 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-emerald-600' : 'text-red-600'}">${s.score} / ${s.total}</td>
+                        <td class="py-4 border-b border-gray-100 font-bold ${ (s.score / (s.total || 1)) * 100 >= (dbData.data.passScore || 40) ? 'text-emerald-600' : 'text-red-600'}">${s.score} / ${s.total}</td>
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${new Date(s.submittedAt).toLocaleString()}</td>
                         <td class="py-4 border-b border-gray-100 text-right">
                             ${s.detailedResults ? `<button onclick="viewStudentDetailedResults(${index})" class="text-xs px-4 py-1 bg-blue-50 text-blue-800 rounded hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
@@ -895,7 +895,7 @@ async function exportTestResultsCSV() {
     try {
         let csv = "Student Name,Roll No/Email,Score,Total,Pass Status,Submitted At\n";
         window.currentTestStudents.forEach(s => {
-            const isPass = (s.score || 0) >= (window.currentTestPassScore || 40) ? "PASS" : "FAIL";
+            const isPass = (s.score / (s.total || 1)) * 100 >= (window.currentTestPassScore || 40) ? "PASS" : "FAIL";
             csv += `"${s.studentName || 'Unknown'}","${s.studentEmail || ''}",${s.score || 0},${s.total || 0},"${isPass}","${s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'N/A'}"\n`;
         });
         
@@ -1513,6 +1513,9 @@ function viewDetailedResults(testCode, testNameEncoded) {
     testDetailView.style.display = 'block';
 
     let students = test.data?.students || [];
+    window.currentTestStudents = students;
+    window.currentTestCode = testCode;
+    window.currentTestPassScore = test.data?.passScore || 40;
     let isPub = test.is_published;
 
     // Publish Button Logic
@@ -1558,9 +1561,13 @@ function viewDetailedResults(testCode, testNameEncoded) {
     // Sort students by score descending
     students.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    tbody.innerHTML = students.map(s => {
-        const passClass = s.passed ? 'badge-green' : 'badge-red';
-        const passText = s.passed ? 'PASSED' : 'FAILED';
+    tbody.innerHTML = students.map((s, index) => {
+        const passPercent = test.data?.passScore || 40;
+        const studentPercent = (s.score / (s.total || 1)) * 100;
+        const isPassed = studentPercent >= passPercent;
+        
+        const passClass = isPassed ? 'badge-green' : 'badge-red';
+        const passText = isPassed ? 'PASSED' : 'FAILED';
         const submitTime = s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'Unknown';
         
         return `
@@ -1573,9 +1580,7 @@ function viewDetailedResults(testCode, testNameEncoded) {
                 <td class="p-4 font-bold text-gray-900">${s.score} / ${s.total || '?'}</td>
                 <td class="p-4"><span class="badge ${passClass}">${passText}</span></td>
         <td class="p-4">
-            <button onclick="alert('Detailed scorecard view for individual students is coming soon!')" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1">
-                <i data-lucide="eye" class="w-4 h-4"></i> View
-            </button>
+            ${s.detailedResults ? `<button onclick="viewStudentDetailedResults(${index})" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> View</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
         </td>
     </tr>
 `;
