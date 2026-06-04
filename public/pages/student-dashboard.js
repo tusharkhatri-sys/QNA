@@ -112,6 +112,16 @@ window.joinLiveTest = async function(code) {
         }
         
         const testData = { code, ...dbTest.data };
+        
+        // Block Re-joining
+        const hasSubmitted = testData.students && testData.students.some(s => s.studentEmail === studentData.email || s.studentName === studentData.email);
+        const inLive = testData.liveStudents && testData.liveStudents[studentData.email];
+        
+        if (hasSubmitted || inLive) {
+            alert("You have already started or submitted this test. If you need to retest, ask the admin to allow a retest.");
+            return;
+        }
+
         localStorage.removeItem('practiceMode');
         localStorage.removeItem('practiceTopic');
         localStorage.setItem('activeTest', JSON.stringify(testData));

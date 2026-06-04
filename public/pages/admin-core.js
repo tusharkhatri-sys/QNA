@@ -243,6 +243,9 @@ function renderLiveTable() {
                     <button onclick="forceCloseApp('${s.email}', '${s.testCode}')" class="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg font-bold text-xs flex items-center gap-2 ml-auto transition-colors">
                         <i data-lucide="shield-off" class="w-3.5 h-3.5"></i> Terminate
                     </button>
+                    <button onclick="allowRetest('${s.testCode}', '${s.email}')" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg font-bold text-xs flex items-center gap-2 ml-auto mt-2 transition-colors">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Retest
+                    </button>
                 </td>
             </tr>
         `;
@@ -479,6 +482,9 @@ async function viewResults(code) {
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">${escapeHTML(s.studentEmail || '')}</td>
                         <td class="py-4 border-b border-gray-100 font-bold text-emerald-600">${s.answered || 0} / ${s.total || 0} <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-2">Attempted</span></td>
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${s.joinedAt ? new Date(s.joinedAt).toLocaleTimeString() : 'N/A'}</td>
+                        <td class="py-4 border-b border-gray-100 text-right">
+                            <button onclick="allowRetest('${code}', '${s.studentEmail || s.name}')" class="text-[10px] px-3 py-1 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Remove from live & allow retest">Clear</button>
+                        </td>
                     </tr>
                 `).join('');
             }
@@ -510,7 +516,8 @@ async function viewResults(code) {
                         <td class="py-4 border-b border-gray-100 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-emerald-600' : 'text-red-600'}">${s.score} / ${s.total}</td>
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${new Date(s.submittedAt).toLocaleString()}</td>
                         <td class="py-4 border-b border-gray-100 text-right">
-                            ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-4 py-1.5 bg-blue-50 text-blue-800 rounded-md hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
+                            ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-4 py-1 bg-blue-50 text-blue-800 rounded hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
+                            <button onclick="allowRetest('${code}', '${s.studentEmail || s.studentName}')" class="ml-1 text-[10px] px-3 py-1.5 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Erase result & allow retest">Retest</button>
                         </td>
                     </tr>
                 `).join('');
