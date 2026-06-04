@@ -1282,122 +1282,275 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- RESULTS PAGE LOGIC ---
+let currentSessionTests = [];
+
 async function initResultsPage() {
-    const sessionDropdown = document.getElementById('session-select-dropdown');
-    if (!sessionDropdown) return;
+    const activeBadge = document.getElementById('active-session-badge');
+    const testsGrid = document.getElementById('tests-grid');
+    const testsListView = document.getElementById('tests-list-view');
+    const testDetailView = document.getElementById('test-detail-view');
+    const backBtn = document.getElementById('back-to-tests-btn');
+    const declareTopperBtn = document.getElementById('declare-topper-btn');
+
+    if (!testsGrid) return;
 
     try {
+        const activeSessionName = await fetchActiveSession();
+        if (activeBadge) {
+            activeBadge.innerHTML = `<i data-lucide="calendar" class="w-4 h-4"></i> Active Session: ${activeSessionName}`;
+        }
+
         const { data: tests, error } = await supabaseClient
             .from('tests')
-            .select('code, data, session, is_published');
+            .select('code, data, session, is_published')
+            .eq('session', activeSessionName)
+            .order('id', { ascending: false });
 
         if (error) throw error;
+        currentSessionTests = tests || [];
 
-        tests.forEach(test => {
-            const name = test.data?.name || 'Untitled Session';
-            const studentsCount = test.data?.students ? test.data.students.length : 0;
-            const option = document.createElement('option');
-            option.value = test.code; // code instead of id since id doesnt exist
-            option.textContent = `${name} [${test.code}] (${studentsCount} submissions)`;
-            // Store stringified submissions for instant access without re-querying
-            option.dataset.students = JSON.stringify(test.data?.students || []);
-            option.dataset.code = test.code;
-            option.dataset.published = test.is_published ? 'true' : 'false';
-            sessionDropdown.appendChild(option);
-        });
-
-        const publishBtn = document.getElementById('publish-results-btn');
-
-        sessionDropdown.addEventListener('change', (e) => {
-            const tbody = document.getElementById('results-tbody');
-            if (!tbody) {
-                console.warn("CRITICAL: 'results-tbody' not found in the DOM.");
-                return;
-            }
-
-            if (!e.target.value) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Select a test session to load results...</td></tr>';
-                if(publishBtn) publishBtn.style.display = 'none';
-                return;
-            }
-
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            
-            if(publishBtn) {
-                const isPub = selectedOption.dataset.published === 'true';
-                publishBtn.style.display = 'flex';
-                publishBtn.innerHTML = isPub 
-                    ? `<i data-lucide="x-circle" class="w-4 h-4"></i> Unpublish Results` 
-                    : `<i data-lucide="send" class="w-4 h-4"></i> Publish Results`;
-                publishBtn.className = isPub 
-                    ? "bg-red-600 text-white px-4 py-2 flex items-center gap-2 rounded-sm font-medium text-sm hover:bg-red-700 border border-red-800"
-                    : "bg-blue-600 text-white px-4 py-2 flex items-center gap-2 rounded-sm font-medium text-sm hover:bg-blue-700 border border-blue-800";
-                
-                publishBtn.onclick = async () => {
-                    const newStatus = !isPub;
-                    publishBtn.disabled = true;
-                    publishBtn.innerHTML = "Processing...";
-                    try {
-                        const { error } = await supabaseClient.from('tests').update({ is_published: newStatus }).eq('code', selectedOption.dataset.code);
-                        if(error) throw error;
-                        
-                        selectedOption.dataset.published = newStatus.toString();
-                        // Trigger change event to re-render button
-                        sessionDropdown.dispatchEvent(new Event('change'));
-                        showCustomAlert(`Results ${newStatus ? 'Published' : 'Unpublished'} Successfully!`, 'success');
-                    } catch(err) {
-                        console.error('Publish Error:', err);
-                        alert('Error updating publish status.');
-                        sessionDropdown.dispatchEvent(new Event('change')); // reset button
-                    }
-                    if (typeof lucide !== 'undefined') lucide.createIcons();
-                };
-            }
-
-            let students = [];
-            
-            try {
-                students = JSON.parse(selectedOption.dataset.students || '[]');
-            } catch (err) {
-                console.error("Failed to parse student data", err);
-            }
-
-            if (students.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No submissions found for this session.</td></tr>';
-                return;
-            }
-
-            // Sort students by score descending
-            students.sort((a, b) => (b.score || 0) - (a.score || 0));
-
-            tbody.innerHTML = students.map(s => {
-                const passClass = s.passed ? 'badge-green' : 'badge-red';
-                const passText = s.passed ? 'PASSED' : 'FAILED';
-                const submitTime = s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'Unknown';
-                
-                return `
-                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
-                        <td class="p-4">
-                            <p class="font-bold text-gray-900">${s.studentName || 'Unknown'}</p>
-                            <p class="text-xs text-gray-500">${s.studentEmail || 'N/A'}</p>
-                        </td>
-                        <td class="p-4 font-mono text-sm text-gray-600 font-bold">${selectedOption.dataset.code}</td>
-                        <td class="p-4 text-gray-500 text-sm font-medium">${submitTime}</td>
-                        <td class="p-4 font-bold text-gray-900">${s.score} / ${s.total || '?'}</td>
-                        <td class="p-4"><span class="badge ${passClass}">${passText}</span></td>
-                        <td class="p-4">
-                            <button onclick="alert('Detailed scorecard view hook goes here')" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1">
-                                <i data-lucide="eye" class="w-4 h-4"></i> View
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-            
+        if (currentSessionTests.length === 0) {
+            testsGrid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 font-bold">No tests found for the active session.</div>';
             if (typeof lucide !== 'undefined') lucide.createIcons();
-        });
+            return;
+        }
+
+        // Render Tests Grid
+        testsGrid.innerHTML = currentSessionTests.map(test => {
+            const name = test.data?.name || 'Untitled Session';
+            const students = test.data?.students || [];
+            const studentsCount = students.length;
+            
+            let passCount = 0;
+            let totalScore = 0;
+            let totalMax = 0;
+
+            students.forEach(s => {
+                if (s.passed) passCount++;
+                totalScore += (s.score || 0);
+                totalMax += (s.total || 0);
+            });
+
+            const passPercent = studentsCount > 0 ? Math.round((passCount / studentsCount) * 100) : 0;
+            const avgScore = studentsCount > 0 && totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0;
+            const isPub = test.is_published;
+
+            return `
+                <div class="bg-white border ${isPub ? 'border-green-200 shadow-green-50' : 'border-gray-200'} shadow-sm rounded-md p-6 hover:shadow-md transition-shadow relative">
+                    ${isPub ? '<div class="absolute top-0 right-0 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-md rounded-tr-md uppercase">Published</div>' : ''}
+                    <h3 class="text-lg font-bold text-gray-900 mb-1 pr-16 truncate" title="${name}">${name}</h3>
+                    <p class="text-xs font-mono text-gray-500 font-bold mb-4">Code: ${test.code}</p>
+                    
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <div class="bg-gray-50 p-2 rounded-sm text-center border border-gray-100">
+                            <p class="text-xl font-black text-blue-700">${studentsCount}</p>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mt-1">Trainees</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-sm text-center border border-gray-100">
+                            <p class="text-xl font-black ${passPercent >= 50 ? 'text-green-600' : 'text-amber-600'}">${passPercent}%</p>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mt-1">Passed</p>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded-sm text-center border border-gray-100">
+                            <p class="text-xl font-black text-purple-700">${avgScore}%</p>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mt-1">Avg Score</p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="viewDetailedResults('${test.code}', '${encodeURIComponent(name)}')" class="w-full bg-white border border-gray-300 text-gray-800 font-bold py-2 rounded-sm hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <i data-lucide="list" class="w-4 h-4"></i> View Results
+                    </button>
+                </div>
+            `;
+        }).join('');
+
+        // Back Button
+        if (backBtn) {
+            backBtn.onclick = () => {
+                testDetailView.style.display = 'none';
+                testsListView.style.display = 'block';
+            };
+        }
+
+        // Declare Topper Button Logic
+        if (declareTopperBtn) {
+            declareTopperBtn.onclick = async () => {
+                if (currentSessionTests.length === 0) {
+                    alert("No tests in the active session to evaluate.");
+                    return;
+                }
+
+                // Aggregate scores by student email
+                const studentMap = {};
+                
+                currentSessionTests.forEach(test => {
+                    const students = test.data?.students || [];
+                    students.forEach(s => {
+                        const key = s.studentEmail || s.studentName;
+                        if (!key) return;
+                        
+                        if (!studentMap[key]) {
+                            studentMap[key] = {
+                                name: s.studentName,
+                                email: s.studentEmail,
+                                totalScore: 0,
+                                totalMax: 0,
+                                testsTaken: 0
+                            };
+                        }
+                        studentMap[key].totalScore += (s.score || 0);
+                        studentMap[key].totalMax += (s.total || 0);
+                        studentMap[key].testsTaken += 1;
+                    });
+                });
+
+                const aggregatedStudents = Object.values(studentMap);
+                if (aggregatedStudents.length === 0) {
+                    alert("No student submissions found in this session.");
+                    return;
+                }
+
+                // Calculate percentage and find the topper
+                let topStudent = null;
+                let highestPercent = -1;
+
+                aggregatedStudents.forEach(s => {
+                    const percent = s.totalMax > 0 ? (s.totalScore / s.totalMax) * 100 : 0;
+                    if (percent > highestPercent) {
+                        highestPercent = percent;
+                        topStudent = s;
+                    }
+                });
+
+                if (!topStudent) {
+                    alert("Could not determine a topper.");
+                    return;
+                }
+
+                const confirmMsg = `Top Student Found!\n\nName: ${topStudent.name}\nEmail: ${topStudent.email}\nPercentage: ${highestPercent.toFixed(2)}%\nTests Taken: ${topStudent.testsTaken}\n\nDo you want to publish this student to the Wall of Fame (Hamare Sitaare)?`;
+                
+                if (confirm(confirmMsg)) {
+                    declareTopperBtn.disabled = true;
+                    declareTopperBtn.innerHTML = "Publishing...";
+                    try {
+                        const badgeStr = `Session Topper (${activeSessionName})`;
+                        const photo = 'https://ui-avatars.com/api/?background=random&color=fff&name=' + encodeURIComponent(topStudent.name);
+                        
+                        const { error: insertError } = await supabaseClient.from('toppers_wall').insert({
+                            student_name: topStudent.name,
+                            session: activeSessionName,
+                            ncvt_percentage: parseFloat(highestPercent.toFixed(2)),
+                            achievement_tag: badgeStr,
+                            photo_url: photo
+                        });
+                        
+                        if (insertError) throw insertError;
+                        
+                        showCustomAlert(`${topStudent.name} is now the Session Topper!`, 'success');
+                    } catch (e) {
+                        console.error("Topper publishing error:", e);
+                        alert("Failed to publish to Wall of Fame.");
+                    } finally {
+                        declareTopperBtn.disabled = false;
+                        declareTopperBtn.innerHTML = `<i data-lucide="star" class="w-4 h-4"></i> Declare Session Topper`;
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    }
+                }
+            };
+        }
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
 
     } catch (err) {
-        console.error("Failed to fetch session list from Supabase:", err);
+        console.error("Failed to initialize results page:", err);
     }
+}
+
+// Called when "View Results" is clicked on a test card
+function viewDetailedResults(testCode, testNameEncoded) {
+    const testName = decodeURIComponent(testNameEncoded);
+    const test = currentSessionTests.find(t => t.code === testCode);
+    if (!test) return;
+
+    const testsListView = document.getElementById('tests-list-view');
+    const testDetailView = document.getElementById('test-detail-view');
+    const titleEl = document.getElementById('detail-test-title');
+    const tbody = document.getElementById('results-tbody');
+    const publishBtn = document.getElementById('publish-results-btn');
+
+    titleEl.textContent = `${testName} [${testCode}]`;
+    
+    // Toggle views
+    testsListView.style.display = 'none';
+    testDetailView.style.display = 'block';
+
+    let students = test.data?.students || [];
+    let isPub = test.is_published;
+
+    // Publish Button Logic
+    if (publishBtn) {
+        publishBtn.style.display = 'flex';
+        publishBtn.innerHTML = isPub 
+            ? `<i data-lucide="x-circle" class="w-4 h-4"></i> Unpublish Results` 
+            : `<i data-lucide="send" class="w-4 h-4"></i> Publish Results`;
+        publishBtn.className = isPub 
+            ? "bg-red-600 text-white px-4 py-2 flex items-center gap-2 rounded-sm font-medium text-sm hover:bg-red-700 border border-red-800 transition-colors"
+            : "bg-blue-600 text-white px-4 py-2 flex items-center gap-2 rounded-sm font-medium text-sm hover:bg-blue-700 border border-blue-800 transition-colors";
+        
+        publishBtn.onclick = async () => {
+            const newStatus = !isPub;
+            publishBtn.disabled = true;
+            publishBtn.innerHTML = "Processing...";
+            try {
+                const { error } = await supabaseClient.from('tests').update({ is_published: newStatus }).eq('code', testCode);
+                if(error) throw error;
+                
+                // Update local state
+                test.is_published = newStatus;
+                
+                // Re-render UI
+                showCustomAlert(`Results ${newStatus ? 'Published' : 'Unpublished'} Successfully!`, 'success');
+                initResultsPage(); // Refresh the list view to show correct badges
+                viewDetailedResults(testCode, testNameEncoded); // Re-open this view with updated state
+            } catch(err) {
+                console.error('Publish Error:', err);
+                alert('Error updating publish status.');
+                publishBtn.disabled = false;
+                publishBtn.innerHTML = isPub ? 'Unpublish Results' : 'Publish Results';
+            }
+        };
+    }
+
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500 font-bold">No submissions found for this session.</td></tr>';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
+    // Sort students by score descending
+    students.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    tbody.innerHTML = students.map(s => {
+        const passClass = s.passed ? 'badge-green' : 'badge-red';
+        const passText = s.passed ? 'PASSED' : 'FAILED';
+        const submitTime = s.submittedAt ? new Date(s.submittedAt).toLocaleString() : 'Unknown';
+        
+        return `
+            <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+                <td class="p-4">
+                    <p class="font-bold text-gray-900">${s.studentName || 'Unknown'}</p>
+                    <p class="text-xs text-gray-500">${s.studentEmail || 'N/A'}</p>
+                </td>
+                <td class="p-4 text-gray-500 text-sm font-medium">${submitTime}</td>
+                <td class="p-4 font-bold text-gray-900">${s.score} / ${s.total || '?'}</td>
+                <td class="p-4"><span class="badge ${passClass}">${passText}</span></td>
+                <td class="p-4">
+                    <button onclick="alert('Detailed scorecard view hook goes here')" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1">
+                        <i data-lucide="eye" class="w-4 h-4"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
