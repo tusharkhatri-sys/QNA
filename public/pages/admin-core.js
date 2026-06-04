@@ -1303,8 +1303,7 @@ async function initResultsPage() {
         const { data: tests, error } = await supabaseClient
             .from('tests')
             .select('code, data, session, is_published')
-            .eq('session', activeSessionName)
-            .order('id', { ascending: false });
+            .eq('session', activeSessionName);
 
         if (error) throw error;
         currentSessionTests = tests || [];
@@ -1544,7 +1543,7 @@ function viewDetailedResults(testCode, testNameEncoded) {
                 <td class="p-4 font-bold text-gray-900">${s.score} / ${s.total || '?'}</td>
                 <td class="p-4"><span class="badge ${passClass}">${passText}</span></td>
                 <td class="p-4">
-                    <button onclick="alert('Detailed scorecard view hook goes here')" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1">
+                    <button onclick="alert('Detailed scorecard view for individual students is coming soon!')" class="text-blue-700 hover:text-blue-900 font-bold text-sm transition-colors flex items-center gap-1">
                         <i data-lucide="eye" class="w-4 h-4"></i> View
                     </button>
                 </td>
