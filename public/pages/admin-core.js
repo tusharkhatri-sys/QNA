@@ -516,7 +516,7 @@ async function viewResults(code) {
                         <td class="py-4 border-b border-gray-100 font-bold ${s.score >= (dbData.data.passScore || 40) ? 'text-emerald-600' : 'text-red-600'}">${s.score} / ${s.total}</td>
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${new Date(s.submittedAt).toLocaleString()}</td>
                         <td class="py-4 border-b border-gray-100 text-right">
-                            ${s.detailedResults ? `<button onclick="viewDetailedResults(${index})" class="text-xs px-4 py-1 bg-blue-50 text-blue-800 rounded hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
+                            ${s.detailedResults ? `<button onclick="viewStudentDetailedResults(${index})" class="text-xs px-4 py-1 bg-blue-50 text-blue-800 rounded hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
                             <button onclick="allowRetest('${code}', '${s.studentEmail || s.studentName}')" class="ml-1 text-[10px] px-3 py-1.5 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Erase result & allow retest">Retest</button>
                         </td>
                     </tr>
@@ -532,7 +532,7 @@ async function viewResults(code) {
     }
 }
 
-function viewDetailedResults(studentIndex) {
+function viewStudentDetailedResults(studentIndex) {
     if (!window.currentTestStudents) return;
     const s = window.currentTestStudents[studentIndex];
     if (!s || !s.detailedResults) return;
@@ -1568,3 +1568,52 @@ function viewDetailedResults(testCode, testNameEncoded) {
     
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
+ w i n d o w . a l l o w R e t e s t   =   a s y n c   f u n c t i o n ( t e s t C o d e ,   s t u d e n t E m a i l )   { 
+         i f   ( ! c o n f i r m ( ' A r e   y o u   s u r e   y o u   w a n t   t o   a l l o w   a   r e t e s t   f o r   '   +   s t u d e n t E m a i l   +   ' ?   T h i s   w i l l   e r a s e   t h e i r   p r e v i o u s   a n s w e r s   a n d   p r o g r e s s . ' ) )   r e t u r n ; 
+         
+         s h o w C u s t o m A l e r t ( ' P r o c e s s i n g   r e t e s t   r e q u e s t . . . ' ,   ' s u c c e s s ' ) ; 
+         t r y   { 
+                 c o n s t   {   d a t a :   d b T e s t ,   e r r o r   }   =   a w a i t   s u p a b a s e C l i e n t . f r o m ( ' t e s t s ' ) . s e l e c t ( ' d a t a ' ) . e q ( ' c o d e ' ,   t e s t C o d e ) . s i n g l e ( ) ; 
+                 i f   ( e r r o r )   t h r o w   e r r o r ; 
+                 
+                 l e t   t e s t D a t a   =   d b T e s t . d a t a ; 
+                 l e t   m o d i f i e d   =   f a l s e ; 
+                 
+                 / /   1 .   R e m o v e   f r o m   l i v e S t u d e n t s 
+                 i f   ( t e s t D a t a . l i v e S t u d e n t s   & &   t e s t D a t a . l i v e S t u d e n t s [ s t u d e n t E m a i l ] )   { 
+                         d e l e t e   t e s t D a t a . l i v e S t u d e n t s [ s t u d e n t E m a i l ] ; 
+                         m o d i f i e d   =   t r u e ; 
+                 } 
+                 
+                 / /   2 .   R e m o v e   f r o m   s t u d e n t s   a r r a y 
+                 i f   ( t e s t D a t a . s t u d e n t s )   { 
+                         c o n s t   i n i t i a l L e n   =   t e s t D a t a . s t u d e n t s . l e n g t h ; 
+                         t e s t D a t a . s t u d e n t s   =   t e s t D a t a . s t u d e n t s . f i l t e r ( s   = >   s . s t u d e n t E m a i l   ! = =   s t u d e n t E m a i l   & &   s . s t u d e n t N a m e   ! = =   s t u d e n t E m a i l ) ; 
+                         i f   ( t e s t D a t a . s t u d e n t s . l e n g t h   ! = =   i n i t i a l L e n )   { 
+                                 m o d i f i e d   =   t r u e ; 
+                         } 
+                 } 
+                 
+                 i f   ( m o d i f i e d )   { 
+                         c o n s t   {   e r r o r :   u p d a t e E r r   }   =   a w a i t   s u p a b a s e C l i e n t . f r o m ( ' t e s t s ' ) . u p d a t e ( {   d a t a :   t e s t D a t a   } ) . e q ( ' c o d e ' ,   t e s t C o d e ) ; 
+                         i f   ( u p d a t e E r r )   t h r o w   u p d a t e E r r ; 
+                         s h o w C u s t o m A l e r t ( ' R e t e s t   a l l o w e d .   T h e y   c a n   n o w   r e j o i n   t h e   t e s t . ' ,   ' s u c c e s s ' ) ; 
+                         
+                         / /   R e f r e s h   v i e w s   i f   t h e y   a r e   o p e n 
+                         i f   ( ! d o c u m e n t . g e t E l e m e n t B y I d ( ' r e s u l t s - m o d a l ' ) . c l a s s L i s t . c o n t a i n s ( ' h i d d e n ' ) )   { 
+                                 s h o w T e s t D e t a i l s ( t e s t C o d e ) ; 
+                         } 
+                         i f   ( t y p e o f   l o a d L i v e S e s s i o n s   = = =   ' f u n c t i o n ' )   { 
+                                 l o a d L i v e S e s s i o n s ( ) ; 
+                         } 
+                 }   e l s e   { 
+                         s h o w C u s t o m A l e r t ( ' S t u d e n t   d a t a   n o t   f o u n d .   T h e y   m i g h t   n o t   h a v e   j o i n e d   y e t . ' ,   ' e r r o r ' ) ; 
+                 } 
+         }   c a t c h ( e r r )   { 
+                 s h o w C u s t o m A l e r t ( ' E r r o r   a l l o w i n g   r e t e s t .   C h e c k   c o n s o l e . ' ,   ' e r r o r ' ) ; 
+                 c o n s o l e . e r r o r ( e r r ) ; 
+         } 
+ } ; 
+  
+ 
