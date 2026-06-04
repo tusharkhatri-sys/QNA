@@ -21,7 +21,8 @@ const APP_TITLE = 'QNA Safe Browser';
 // Paths where the user is allowed to completely close the safe browser
 const ALLOWED_EXIT_PATHS = [
     '/pages/landing.html', '/pages/auth.html', '/auth.html', '/landing.html',
-    '/pages/landing', '/pages/auth', '/auth', '/landing', '/pages/student.html', '/student.html'
+    '/pages/landing', '/pages/auth', '/auth', '/landing', '/pages/student.html', '/student.html',
+    '/pages/student-auth.html', '/student-auth.html', '/pages/student-register.html', '/student-register.html'
 ];
 
 // ─── AUTO-UPDATER (Ready to enable) ─────────────────────────
@@ -274,11 +275,13 @@ function setupSessionSecurity() {
             return;
         }
 
-        // Allow CDN resources (fonts, Supabase, etc.)
+        // Allow CDN resources (fonts, Supabase, Tailwind, Lucide, etc.)
         var allowedDomains = [
             'fonts.googleapis.com',
             'fonts.gstatic.com',
             'cdn.jsdelivr.net',
+            'cdn.tailwindcss.com',
+            'unpkg.com',
             'supabase.co',
             'supabase.in',
             'vercel.app',

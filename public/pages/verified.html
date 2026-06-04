@@ -67,7 +67,9 @@
                     const { data: { session }, error } = await supabaseClient.auth.getSession();
                     
                     if (error || !session) {
-                        showError("Verification Link Invalid or Expired", "We could not verify your email. Please try registering again or request a new link.");
+                        showError("Link Expired or Already Used", "This verification link is invalid, expired, or has already been used. If your account is already verified, you can safely log in via the secure app.");
+                        document.getElementById('download-links').classList.remove('hidden');
+                        document.getElementById('download-links').classList.add('flex');
                         return;
                     }
                     

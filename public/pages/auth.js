@@ -179,7 +179,7 @@ async function startExam() {
         // Set a flag indicating they bypassed Supabase Auth
         localStorage.setItem('authBypass', 'true');
 
-        window.location.replace('student.html');
+        window.location.replace('student-dashboard.html');
 
     } catch (err) {
         console.error('Start Exam Error:', err);

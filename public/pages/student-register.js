@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (session) {
-            window.location.href = 'student.html';
+            window.location.href = 'student-dashboard.html';
         }
     } catch(err) {
         console.error("Session check error:", err);

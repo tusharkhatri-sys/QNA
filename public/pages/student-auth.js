@@ -139,3 +139,18 @@ if (loginForm) {
         }
     });
 }
+
+// ===== SAFE BROWSER EXIT =====
+window.exitSafeBrowser = function() {
+    if (window.electronAPI && window.electronAPI.exitApp) {
+        window.electronAPI.exitApp();
+    } else {
+        window.close();
+        // Fallback for mobile/webviews
+        if (navigator.app) {
+            navigator.app.exitApp();
+        } else if (navigator.device) {
+            navigator.device.exitApp();
+        }
+    }
+}

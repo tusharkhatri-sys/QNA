@@ -5,7 +5,7 @@ try {
 } catch (e) {
     console.error("Corrupted activeTest in localStorage", e);
     localStorage.removeItem('activeTest');
-    window.location.href = 'student.html';
+    window.location.href = 'student-dashboard.html';
 }
 
 const studentName = localStorage.getItem('activeTestStudentName');
@@ -104,7 +104,7 @@ window.addEventListener('online', async () => {
 });
 
 if (!testData && !localStorage.getItem('practiceMode')) {
-    window.location.href = 'student.html';
+    window.location.href = 'student-dashboard.html';
 }
 
 // --- Custom Non-Blocking Modal ---
@@ -668,7 +668,7 @@ async function submitQuiz(force = false) {
                         false,
                         () => {
                             // Let the user exit safely. Background sync will handle it.
-                            window.location.href = 'student.html';
+                            window.location.href = 'student-dashboard.html';
                         }
                     );
                     return; // Halt regular logic, modal handles redirect
@@ -729,11 +729,11 @@ async function submitQuiz(force = false) {
         localStorage.removeItem('activeTestStudentName');
         localStorage.removeItem(`exam_state_${testData.code}`);
         
-        window.location.replace('student.html');
+        window.location.replace('student-dashboard.html');
     } else {
         localStorage.removeItem('practiceMode');
         localStorage.removeItem('practiceTopic');
-        window.location.replace('student.html');
+        window.location.replace('student-dashboard.html');
     }
 }
 
