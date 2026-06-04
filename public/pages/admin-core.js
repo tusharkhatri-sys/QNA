@@ -201,51 +201,58 @@ async function initDashboard() {
     });
 }
 
+// Maps testCode -> test name, populated by loadLiveSessions
+window.activeTestNames = {};
+
 function renderLiveTable() {
     const tbody = document.getElementById('live-monitoring-tbody');
     if (!tbody) return;
 
     const entries = Object.values(activeProctoring);
     if (entries.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No active test sessions found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No active students found. Waiting for students to join...</td></tr>';
         return;
     }
 
     tbody.innerHTML = entries.map(s => {
         const statusBadge = s.isMinimized 
-            ? '<span class="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-sm border border-red-200">MINIMIZED WARNING</span>'
-            : '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-sm border border-emerald-200">ACTIVE & SECURE</span>';
+            ? '<span class="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-sm border border-red-200">⚠ FOCUS LOST</span>'
+            : '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-sm border border-emerald-200">✓ ACTIVE</span>';
         
         const progressColor = s.progress >= 100 ? 'bg-emerald-600' : 'bg-blue-600';
+        const testName = window.activeTestNames[s.testCode] || s.testCode;
 
         return `
             <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
-                <td class="px-8 py-4">
-                    <div class="font-bold text-slate-900">${s.name}</div>
-                    <div class="text-[11px] text-slate-500">${s.email}</div>
+                <td class="px-6 py-4">
+                    <div class="font-bold text-gray-900">${s.name}</div>
+                    <div class="text-[11px] text-gray-500">${s.email}</div>
                 </td>
-                <td class="px-8 py-4">
-                    <span class="font-mono text-xs bg-gray-100 border border-gray-200 px-2 py-1 rounded-sm text-slate-700">${s.testCode}</span>
+                <td class="px-6 py-4">
+                    <div class="font-medium text-gray-800 text-sm">${testName}</div>
+                    <div class="text-[10px] text-gray-400 font-mono">${s.testCode}</div>
                 </td>
-                <td class="px-8 py-4 text-xs font-medium text-slate-600">
+                <td class="px-6 py-4 text-xs font-medium text-gray-600">
                     ${new Date(s.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </td>
-                <td class="px-8 py-4">
+                <td class="px-6 py-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-32 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                            <div class="h-full ${progressColor}" style="width: ${s.progress}%"></div>
+                        <div class="w-28 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full ${progressColor} rounded-full" style="width: ${s.progress}%"></div>
                         </div>
-                        <span class="text-xs font-bold text-slate-700">${s.progress}%</span>
+                        <span class="text-xs font-bold text-gray-700">${s.answered}/${s.total} (${s.progress}%)</span>
                     </div>
                 </td>
-                <td class="px-8 py-4">${statusBadge}</td>
-                <td class="px-8 py-4 text-right">
-                    <button onclick="forceCloseApp('${s.email}', '${s.testCode}')" class="px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg font-bold text-xs flex items-center gap-2 ml-auto transition-colors">
-                        <i data-lucide="shield-off" class="w-3.5 h-3.5"></i> Terminate
-                    </button>
-                    <button onclick="allowRetest('${s.testCode}', '${s.email}')" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg font-bold text-xs flex items-center gap-2 ml-auto mt-2 transition-colors">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Retest
-                    </button>
+                <td class="px-6 py-4">${statusBadge}</td>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex flex-col gap-1 items-end">
+                        <button onclick="forceCloseApp('${s.email}', '${s.testCode}')" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded font-bold text-xs flex items-center gap-1 transition-colors">
+                            <i data-lucide="shield-off" class="w-3 h-3"></i> Terminate
+                        </button>
+                        <button onclick="allowRetest('${s.testCode}', '${s.email}')" class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 rounded font-bold text-xs flex items-center gap-1 transition-colors">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Retest
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -254,37 +261,112 @@ function renderLiveTable() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+function renderSubmittedTable(submittedList) {
+    const tbody = document.getElementById('submitted-results-tbody');
+    if (!tbody) return;
+    
+    if (!submittedList || submittedList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No submissions yet for active tests.</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = submittedList.map((s, index) => {
+        const passPercent = s.passScore || 40;
+        const studentPercent = (s.score / (s.total || 1)) * 100;
+        const isPassed = studentPercent >= passPercent;
+        const passClass = isPassed ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200';
+        const passText = isPassed ? 'PASSED' : 'FAILED';
+        const submitTime = s.submittedAt ? new Date(s.submittedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'N/A';
+        
+        return `
+            <tr class="hover:bg-gray-50 transition-colors border-b border-gray-100">
+                <td class="px-6 py-4">
+                    <div class="font-bold text-gray-900">${s.studentName || 'Unknown'}</div>
+                </td>
+                <td class="px-6 py-4 text-xs text-gray-500">${s.studentEmail || 'N/A'}</td>
+                <td class="px-6 py-4">
+                    <div class="font-medium text-gray-800 text-sm">${s.testName || s.testCode}</div>
+                    <div class="text-[10px] text-gray-400 font-mono">${s.testCode}</div>
+                </td>
+                <td class="px-6 py-4 font-bold text-gray-900">${s.score} / ${s.total}</td>
+                <td class="px-6 py-4">
+                    <span class="px-2 py-1 text-[10px] font-bold rounded-sm border ${passClass}">${passText}</span>
+                </td>
+                <td class="px-6 py-4 text-xs text-gray-500">${submitTime}</td>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex gap-1 justify-end">
+                        ${s.detailedResults ? `<button onclick="viewLiveDetailedResult(${index})" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded font-bold text-xs flex items-center gap-1 transition-colors"><i data-lucide="eye" class="w-3 h-3"></i> View</button>` : '<span class="text-xs text-gray-400">N/A</span>'}
+                        <button onclick="allowRetest('${s.testCode}', '${s.studentEmail}')" class="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 rounded font-bold text-xs flex items-center gap-1 transition-colors"><i data-lucide="rotate-ccw" class="w-3 h-3"></i> Retest</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+// Store submitted students globally for View button access
+window.livePageSubmittedStudents = [];
+
+window.viewLiveDetailedResult = function(index) {
+    const s = window.livePageSubmittedStudents[index];
+    if (!s || !s.detailedResults) return;
+    window.currentTestStudents = window.livePageSubmittedStudents;
+    viewStudentDetailedResults(index);
+};
+
 async function loadLiveSessions() {
     const tbody = document.getElementById('live-monitoring-tbody');
     if (!tbody) return;
 
-    // Visual feedback for refresh button
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-blue-500 font-bold"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>Refreshing live telemetry...</td></tr>';
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-blue-500 font-bold">Refreshing live telemetry...</td></tr>';
 
     try {
         const { data: tests, error } = await supabaseClient.from('tests').select('*').eq('data->>isActive', 'active');
         if (error) throw error;
 
         activeProctoring = {};
+        window.activeTestNames = {};
+        const allSubmitted = [];
+
         if (tests) {
             tests.forEach(t => {
+                const testName = t.data?.name || t.code;
+                window.activeTestNames[t.code] = testName;
+                const passScore = t.data?.passScore || 40;
+
+                // Collect submitted students from this test
+                if (t.data && t.data.students) {
+                    t.data.students.forEach(s => {
+                        allSubmitted.push({
+                            ...s,
+                            testCode: t.code,
+                            testName: testName,
+                            passScore: passScore
+                        });
+                    });
+                }
+
+                // Collect live students
                 if (t.data && t.data.liveStudents) {
                     Object.keys(t.data.liveStudents).forEach(emailKey => {
                         const s = t.data.liveStudents[emailKey];
                         if (s === null || s === 'null') return;
-                        
-                        // Check if student has already submitted
-                        const hasSubmitted = t.data.students && t.data.students.some(sub => sub.studentEmail === emailKey || sub.studentName === emailKey);
-                        if (hasSubmitted) return; // Skip if already submitted
-                        
+
+                        const hasSubmitted = t.data.students && t.data.students.some(
+                            sub => sub.studentEmail === emailKey || sub.studentName === emailKey
+                        );
+                        if (hasSubmitted) return;
+
                         activeProctoring[emailKey] = {
                             name: s.studentName || s.name || 'Unknown',
                             email: emailKey,
                             testCode: t.code,
+                            testName: testName,
                             answered: s.answered || 0,
                             total: s.total || 0,
-                            progress: s.total > 0 ? Math.round((s.answered/s.total)*100) : 0,
+                            progress: s.total > 0 ? Math.round((s.answered / s.total) * 100) : 0,
                             isMinimized: s.isMinimized || false,
                             startTime: s.startTime || new Date().toISOString()
                         };
@@ -292,43 +374,20 @@ async function loadLiveSessions() {
                 }
             });
         }
-        
-        renderLiveTable();
 
-        // 3. Setup Realtime Subscription for Live Monitoring
+        // Sort submitted by most recent first
+        allSubmitted.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+        window.livePageSubmittedStudents = allSubmitted;
+
+        renderLiveTable();
+        renderSubmittedTable(allSubmitted);
+
+        // Setup Realtime Subscription
         if (window.liveMonitoringSub) supabaseClient.removeChannel(window.liveMonitoringSub);
         window.liveMonitoringSub = supabaseClient.channel('live_monitoring_realtime')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests' }, payload => {
-                const data = payload.new.data;
-                const tCode = payload.new.code;
-                
-                Object.keys(activeProctoring).forEach(k => {
-                    if (activeProctoring[k].testCode === tCode) delete activeProctoring[k];
-                });
-                
-                if (data && data.isActive === 'active' && data.liveStudents) {
-                    Object.keys(data.liveStudents).forEach(emailKey => {
-                        const s = data.liveStudents[emailKey];
-                        if (s === null || s === 'null') return; 
-                        
-                        // Check if student has already submitted
-                        const hasSubmitted = data.students && data.students.some(sub => sub.studentEmail === emailKey || sub.studentName === emailKey);
-                        if (hasSubmitted) return; // Skip if already submitted
-                        
-                        activeProctoring[emailKey] = {
-                            name: s.studentName || s.name || 'Unknown',
-                            email: emailKey,
-                            testCode: tCode,
-                            answered: s.answered || 0,
-                            total: s.total || 0,
-                            progress: s.total > 0 ? Math.round((s.answered/s.total)*100) : 0,
-                            isMinimized: s.isMinimized || false,
-                            startTime: s.startTime || new Date().toISOString()
-                        };
-                    });
-                }
-                
-                renderLiveTable();
+                // Reload full data on any change for accuracy
+                loadLiveSessions();
             }).subscribe();
 
     } catch (err) {
@@ -464,86 +523,64 @@ async function deleteTest(code) {
 }
 
 async function viewResults(code) {
-    document.getElementById('results-title').textContent = `Results for ${code}`;
-    document.getElementById('results-subtitle').textContent = 'Loading...';
-    document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500">Loading...</td></tr>';
-    document.getElementById('live-results-section').classList.add('hidden');
+    // Open a simplified modal showing only test controls
+    // (Live tracking and submitted results are now exclusively on admin-live.html)
+    const titleEl = document.getElementById('results-title');
+    const subtitleEl = document.getElementById('results-subtitle');
+    const liveSection = document.getElementById('live-results-section');
+    const tableBody = document.getElementById('results-table-body');
+
+    if (titleEl) titleEl.textContent = 'Loading Test Info...';
+    if (subtitleEl) subtitleEl.textContent = '';
+    if (liveSection) liveSection.classList.add('hidden');
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Loading...</td></tr>';
     openModal('results-modal');
 
     try {
-        const { data: dbData } = await supabaseClient.from('tests').select('data').eq('code', code).single();
-        if (dbData) {
-            // Render Live Students
-            let liveStudents = [];
-            if (dbData.data.liveStudents) {
-                Object.keys(dbData.data.liveStudents).forEach(emailKey => {
-                    const s = dbData.data.liveStudents[emailKey];
-                    if (s === null || s === 'null') return;
-                    
-                    // Filter out if already submitted
-                    const hasSubmitted = dbData.data.students && dbData.data.students.some(sub => sub.studentEmail === emailKey || sub.studentName === emailKey);
-                    if (!hasSubmitted) {
-                        s._emailKey = emailKey; // Keep track for the allowRetest button
-                        liveStudents.push(s);
-                    }
-                });
-            }
-                
-            if (liveStudents.length > 0) {
-                document.getElementById('live-results-section').classList.remove('hidden');
-                document.getElementById('live-results-table-body').innerHTML = liveStudents.map(s => `
-                    <tr class="group hover:bg-gray-50 transition-all">
-                        <td class="py-4 border-b border-gray-100 font-bold text-gray-900">${escapeHTML(s.studentName || s.name || 'Unknown')}</td>
-                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">${escapeHTML(s.studentEmail || '')}</td>
-                        <td class="py-4 border-b border-gray-100 font-bold text-emerald-600">${s.answered || 0} / ${s.total || 0} <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-2">Attempted</span></td>
-                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${s.joinedAt ? new Date(s.joinedAt).toLocaleTimeString() : 'N/A'}</td>
-                        <td class="py-4 border-b border-gray-100 text-right">
-                            <button onclick="allowRetest('${code}', '${s._emailKey || s.studentEmail || s.name}')" class="text-[10px] px-3 py-1 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Remove from live & allow retest">Clear</button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
+        const { data: dbData } = await supabaseClient.from('tests').select('*').eq('code', code).single();
+        if (!dbData) { if (titleEl) titleEl.textContent = 'Test not found'; return; }
 
-            // Render Submitted Students
-            if (dbData.data.students) {
-                const students = dbData.data.students;
-                window.currentTestStudents = students;
-                window.currentTestCode = code;
-                window.currentTestPassScore = dbData.data.passScore || 40;
-                
-                if (students.length === 0) {
-                    document.getElementById('results-subtitle').textContent = `0 submissions found.`;
-                    document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-slate-500 italic">No submissions yet.</td></tr>';
-                    return;
-                }
+        const testName = dbData.data?.name || code;
+        const status = dbData.data?.isActive || 'unknown';
+        const submittedCount = (dbData.data?.students || []).length;
+        const liveCount = Object.keys(dbData.data?.liveStudents || {}).length;
+        const testLink = `${window.location.origin}/pages/quiz.html?code=${code}`;
 
-                document.getElementById('results-subtitle').innerHTML = `${students.length} submissions found. <button onclick="exportTestResultsCSV()" class="ml-4 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-200 hover:bg-emerald-100 transition-all inline-flex items-center gap-1 shadow-sm"><i data-lucide="download" class="w-3 h-3"></i> Export</button>`;
-                setTimeout(() => lucide.createIcons(), 50);
+        if (titleEl) titleEl.textContent = testName;
+        if (subtitleEl) subtitleEl.innerHTML = `Code: <span class="font-mono font-bold">${code}</span> &bull; Status: <span class="font-bold uppercase">${status}</span> &bull; ${submittedCount} Submitted &bull; ${liveCount} Live`;
 
-                students.sort((a, b) => (b.score || 0) - (a.score || 0));
+        if (tableBody) tableBody.innerHTML = `
+            <tr><td colspan="5" class="py-8">
+                <div class="flex flex-col gap-4 items-start px-4">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Test Controls</h4>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="toggleTestStatus('${code}', '${status}')" 
+                            class="px-5 py-2.5 ${status === 'active' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} rounded-md font-bold flex items-center gap-2">
+                            <i data-lucide="${status === 'active' ? 'square' : 'play'}" class="w-4 h-4"></i>
+                            ${status === 'active' ? 'Stop Test' : 'Start / Resume Test'}
+                        </button>
+                        <button onclick="navigator.clipboard.writeText('${testLink}').then(()=>showCustomAlert('Link copied!','success'))" 
+                            class="px-5 py-2.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-md font-bold flex items-center gap-2 hover:bg-blue-100">
+                            <i data-lucide="link" class="w-4 h-4"></i> Copy Test Link
+                        </button>
+                        <a href="admin-live.html" 
+                            class="px-5 py-2.5 bg-gray-100 border border-gray-200 text-gray-700 rounded-md font-bold flex items-center gap-2 hover:bg-gray-200">
+                            <i data-lucide="activity" class="w-4 h-4"></i> View Live Tracking
+                        </a>
+                        ${status !== 'archived' ? `<button onclick="deleteTest('${code}')" 
+                            class="px-5 py-2.5 bg-gray-50 border border-gray-200 text-gray-600 rounded-md font-bold flex items-center gap-2 hover:bg-red-50 hover:text-red-700 hover:border-red-200">
+                            <i data-lucide="archive" class="w-4 h-4"></i> Archive Test
+                        </button>` : ''}
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">To view live students and submitted results, go to <strong>Live Tracking</strong>.</p>
+                </div>
+            </td></tr>
+        `;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
 
-                document.getElementById('results-table-body').innerHTML = students.map((s, index) => `
-                    <tr class="group hover:bg-gray-50 transition-all">
-                        <td class="py-4 border-b border-gray-100">
-                            <p class="font-bold text-gray-900">${escapeHTML(s.studentName || 'Unknown')}</p>
-                        </td>
-                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">${escapeHTML(s.studentEmail || '')}</td>
-                        <td class="py-4 border-b border-gray-100 font-bold ${ (s.score / (s.total || 1)) * 100 >= (dbData.data.passScore || 40) ? 'text-emerald-600' : 'text-red-600'}">${s.score} / ${s.total}</td>
-                        <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${new Date(s.submittedAt).toLocaleString()}</td>
-                        <td class="py-4 border-b border-gray-100 text-right">
-                            ${s.detailedResults ? `<button onclick="viewStudentDetailedResults(${index})" class="text-xs px-4 py-1 bg-blue-50 text-blue-800 rounded hover:bg-blue-100 border border-blue-200 transition-all font-bold">Details</button>` : `<span class="text-xs text-gray-400 font-bold">N/A</span>`}
-                            <button onclick="allowRetest('${code}', '${s.studentEmail || s.studentName}')" class="ml-1 text-[10px] px-3 py-1.5 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Erase result & allow retest">Retest</button>
-                        </td>
-                    </tr>
-                `).join('');
-                lucide.createIcons();
-            } else {
-                document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-500 font-medium italic">No submissions yet.</td></tr>';
-            }
-        }
     } catch (err) {
-        console.error('Results fetch error:', err);
-        document.getElementById('results-table-body').innerHTML = '<tr><td colspan="5" class="py-10 text-center text-red-500 italic">Error loading results.</td></tr>';
+        console.error('viewResults error:', err);
+        if (tableBody) tableBody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-red-500">Error loading test info.</td></tr>';
     }
 }
 

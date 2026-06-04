@@ -118,6 +118,16 @@
             </div>
         </main>
     </div>
+
+    <!-- Detailed Student Results Modal -->
+    <div id="detailed-results-modal" class="fixed inset-0 bg-gray-900/60 hidden z-[120] flex items-center justify-center p-6">
+        <div class="bg-white border border-gray-300 w-full max-w-4xl rounded-md p-10 overflow-hidden relative max-h-[90vh] flex flex-col shadow-2xl">
+            <button onclick="closeModal('detailed-results-modal')" class="absolute top-6 right-6 text-gray-500 hover:text-gray-900"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h2 class="text-2xl font-black text-gray-900 mb-2" id="detailed-student-name">Student Name</h2>
+            <p class="text-gray-500 mb-6 text-sm font-medium border-b border-gray-200 pb-4" id="detailed-student-score">Score: 0 / 0</p>
+            <div id="detailed-questions-list" class="overflow-y-auto flex-1 pr-4 space-y-4"><!-- QnAs --></div>
+        </div>
+    </div>
     
     <script src="../questions.js"></script>
     <script src="shared.js"></script>

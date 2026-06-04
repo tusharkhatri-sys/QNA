@@ -75,12 +75,17 @@
                 </button>
             </div>
 
-            <div class="bg-white border border-gray-200 shadow-sm rounded-sm overflow-x-auto">
+            <!-- LIVE STUDENTS TABLE -->
+            <h3 class="text-xs font-bold text-emerald-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                Currently Testing (Live)
+            </h3>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-sm overflow-x-auto mb-10">
                 <table class="w-full min-w-[800px]">
                     <thead>
                         <tr>
                             <th>Candidate Details</th>
-                            <th>Test Session</th>
+                            <th>Test Name</th>
                             <th>Start Time</th>
                             <th>Progress</th>
                             <th>Status</th>
@@ -94,7 +99,43 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- SUBMITTED RESULTS TABLE -->
+            <h3 class="text-xs font-bold text-blue-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4 text-blue-600"></i>
+                Submitted Results (Active Sessions)
+            </h3>
+            <div class="bg-white border border-gray-200 shadow-sm rounded-sm overflow-x-auto">
+                <table class="w-full min-w-[900px]">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Test Name</th>
+                            <th>Score</th>
+                            <th>Status</th>
+                            <th>Submitted At</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="submitted-results-tbody">
+                        <tr>
+                            <td colspan="7" class="text-center py-8 text-gray-500">Loading submitted results...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </main>
+    </div>
+
+    <!-- Detailed Student Results Modal -->
+    <div id="detailed-results-modal" class="fixed inset-0 bg-gray-900/60 hidden z-[120] flex items-center justify-center p-6">
+        <div class="bg-white border border-gray-300 w-full max-w-4xl rounded-md p-10 overflow-hidden relative max-h-[90vh] flex flex-col shadow-2xl">
+            <button onclick="closeModal('detailed-results-modal')" class="absolute top-6 right-6 text-gray-500 hover:text-gray-900"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h2 class="text-2xl font-black text-gray-900 mb-2" id="detailed-student-name">Student Name</h2>
+            <p class="text-gray-500 mb-6 text-sm font-medium border-b border-gray-200 pb-4" id="detailed-student-score">Score: 0 / 0</p>
+            <div id="detailed-questions-list" class="overflow-y-auto flex-1 pr-4 space-y-4"><!-- QnAs --></div>
+        </div>
     </div>
     
     <script src="../questions.js"></script>
@@ -102,9 +143,8 @@
     <script src="admin-core.js"></script>
     <script>
         if(typeof lucide !== 'undefined') { lucide.createIcons(); }
-        // Attempt to auto-load live sessions if function exists in admin-core.js
         if(typeof loadLiveSessions === 'function') {
-            document.addEventListener('DOMContentLoaded', loadLiveSessions);
+            loadLiveSessions();
         }
     </script>
 </body>

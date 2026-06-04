@@ -25,46 +25,36 @@ let strikeTimer = null;
 let currentTestEndTime = 0;
 
 // === 1. KIOSK VISIBILITY/FOCUS DETECTOR ===
+// MAX_VIOLATIONS = 3 warnings allowed. On 4th violation, instant auto-submit.
+const MAX_VIOLATIONS = 3;
+
 function handleVisibilityLoss() {
     if (isSubmitting || !testData) return;
-    if (strikeTimer) return; // Prevent overlapping rapid blurs from Android OS from instant-terminating
-    
-    violationCount++;
-    debouncedReportLiveProgress(); // Sync violation to Supabase
+    if (strikeTimer) return; // Prevent overlapping rapid blurs from stacking
 
-    if (violationCount >= 2) {
-        showCustomModal("Exam Terminated", "You have repeatedly lost focus from the secure environment. Your exam is being submitted automatically.", false);
-        setTimeout(() => submitQuiz(true), 2000);
+    violationCount++;
+    debouncedReportLiveProgress(); // Sync violation count to Supabase
+
+    if (violationCount > MAX_VIOLATIONS) {
+        // 4th+ violation: terminate immediately, no warning
+        showCustomModal("Exam Terminated", "You have exceeded the maximum allowed violations. Your exam is being submitted automatically.", false);
+        setTimeout(() => submitQuiz(true), 1500);
     } else {
-        let countdown = 10;
-        const timerEl = document.getElementById('custom-modal-timer');
-        if (timerEl) {
-            timerEl.classList.remove('hidden');
-            timerEl.style.display = 'block';
-            timerEl.textContent = `Auto-submitting in ${countdown}s...`;
-        }
-        
+        // 1st, 2nd, 3rd violation: show warning, no timer, student must acknowledge
+        const remaining = MAX_VIOLATIONS - violationCount;
+        const warningMsg = remaining > 0
+            ? `Warning ${violationCount} of ${MAX_VIOLATIONS}: Do NOT leave the exam window. You have ${remaining} warning(s) left before auto-submit.`
+            : `Final Warning! This is your last chance. One more violation will immediately submit your exam.`;
+
+        strikeTimer = true; // Block further triggers until acknowledged
         showCustomModal(
-            "System Focus Lost", 
-            "Please do not attempt to look outside the exam window. Return immediately.", 
-            false, // Hide Cancel button
+            `⚠️ Security Alert — Warning ${violationCount}/${MAX_VIOLATIONS}`,
+            warningMsg,
+            false,
             () => {
-                clearInterval(strikeTimer);
-                strikeTimer = null; // Reset for future blurs
-                if(timerEl) { timerEl.classList.add('hidden'); timerEl.style.display = 'none'; }
+                strikeTimer = null; // Allow future detections after acknowledgement
             }
         );
-        
-        strikeTimer = setInterval(() => {
-            countdown--;
-            if(timerEl) timerEl.textContent = `Auto-submitting in ${countdown}s...`;
-            if (countdown <= 0) {
-                clearInterval(strikeTimer);
-                strikeTimer = null;
-                if(timerEl) { timerEl.classList.add('hidden'); timerEl.style.display = 'none'; }
-                submitQuiz(true);
-            }
-        }, 1000);
     }
 }
 
