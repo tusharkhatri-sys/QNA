@@ -61,9 +61,10 @@ async function fetchLiveAssessments() {
             
         if (error) throw error;
         
-        // Filter tests by session if needed. Show tests that belong to the global active session or have no session set.
+        // Filter tests by session if needed. Show tests that belong to the student's session, global active session, or all sessions.
         const activeSessionName = await window.fetchActiveSession();
-        const relevantTests = tests.filter(t => !t.session || t.session === activeSessionName);
+        const targetSession = studentData.session_id || activeSessionName;
+        const relevantTests = tests.filter(t => !t.session || t.session === targetSession || t.session === 'All Sessions' || t.session === activeSessionName);
 
         if (relevantTests.length === 0) {
             container.innerHTML = '<div class="text-center text-sm font-bold text-gray-500 py-6 border border-dashed border-gray-300 rounded-sm">No live assessments assigned to your session.</div>';

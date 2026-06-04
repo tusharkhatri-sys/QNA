@@ -267,6 +267,10 @@ async function loadLiveSessions() {
                         const s = t.data.liveStudents[emailKey];
                         if (s === null || s === 'null') return;
                         
+                        // Check if student has already submitted
+                        const hasSubmitted = t.data.students && t.data.students.some(sub => sub.studentEmail === emailKey || sub.studentName === emailKey);
+                        if (hasSubmitted) return; // Skip if already submitted
+                        
                         activeProctoring[emailKey] = {
                             name: s.studentName || s.name || 'Unknown',
                             email: emailKey,
@@ -295,10 +299,14 @@ async function loadLiveSessions() {
                     if (activeProctoring[k].testCode === tCode) delete activeProctoring[k];
                 });
                 
-                if (data && data.liveStudents) {
+                if (data && data.isActive === 'active' && data.liveStudents) {
                     Object.keys(data.liveStudents).forEach(emailKey => {
                         const s = data.liveStudents[emailKey];
                         if (s === null || s === 'null') return; 
+                        
+                        // Check if student has already submitted
+                        const hasSubmitted = data.students && data.students.some(sub => sub.studentEmail === emailKey || sub.studentName === emailKey);
+                        if (hasSubmitted) return; // Skip if already submitted
                         
                         activeProctoring[emailKey] = {
                             name: s.studentName || s.name || 'Unknown',

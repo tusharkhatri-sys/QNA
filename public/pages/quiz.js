@@ -300,6 +300,8 @@ function initLiveTest() {
             }
         }).subscribe();
     renderQuestion();
+    
+    // Add student to live tracking immediately
     debouncedReportLiveProgress();
 }
 
@@ -525,8 +527,7 @@ const debouncedReportLiveProgress = debounce(async () => {
             p_student_name: studentName,
             p_student_email: student ? student.email : '',
             p_answered: answered,
-            p_total: currentQuiz.length,
-            p_violation_count: violationCount // Add violation count if RPC supports it, else ignore
+            p_total: currentQuiz.length
         });
         
         if (error) throw error;
