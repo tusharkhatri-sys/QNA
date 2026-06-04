@@ -47,7 +47,7 @@ function handleVisibilityLoss() {
         showCustomModal(
             "System Focus Lost", 
             "Please do not attempt to look outside the exam window. Return immediately.", 
-            true, 
+            false, // Hide Cancel button
             () => {
                 clearInterval(strikeTimer);
                 strikeTimer = null; // Reset for future blurs
