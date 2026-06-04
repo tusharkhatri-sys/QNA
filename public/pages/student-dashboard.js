@@ -194,19 +194,20 @@ async function processLastResults() {
 
 // 5. Render History Table
 async function renderHistory() {
-    const tbody = document.getElementById('history-table-body');
+    const instTbody = document.getElementById('institutional-table-body');
+    const pracTbody = document.getElementById('practice-table-body');
+    
     let history = [];
     try {
         history = JSON.parse(localStorage.getItem('studentTestHistory') || '[]');
     } catch(e) {}
 
-    if (history.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">No past attempts found.</td></tr>';
-        return;
-    }
+    // Separate tests
+    const practiceTests = history.filter(h => h.isPractice);
+    const instTests = history.filter(h => !h.isPractice);
 
     // Dynamic publish check for Institutional Exams
-    const nonPracticeCodes = history.filter(h => !h.isPractice && h.testCode).map(h => h.testCode);
+    const nonPracticeCodes = instTests.filter(h => h.testCode).map(h => h.testCode);
     let publishedMap = {};
     if (nonPracticeCodes.length > 0) {
         const { data: dbTests } = await supabaseClient.from('tests').select('code, is_published').in('code', [...new Set(nonPracticeCodes)]);
@@ -215,31 +216,58 @@ async function renderHistory() {
         }
     }
 
-    tbody.innerHTML = history.reverse().map((h, index) => {
-        const d = new Date(h.date);
-        const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        const typeStr = h.isPractice ? 'Self Practice Mock' : `Institutional Exam (${h.testCode || 'N/A'})`;
-        
-        let isPublished = h.isPractice ? true : (publishedMap[h.testCode] !== undefined ? publishedMap[h.testCode] : h.is_published);
-        
-        let actionBtn = '';
-        if (isPublished) {
-            // Adjust the reverse index for the click handler
-            const originalIndex = history.length - 1 - index;
-            actionBtn = `<button onclick="viewScorecard(${originalIndex})" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-900 font-bold py-2 px-4 rounded-sm text-xs uppercase transition-colors whitespace-nowrap shadow-sm">View Scorecard</button>`;
-        } else {
-            actionBtn = `<span class="bg-gray-100 text-gray-500 border border-gray-300 font-bold py-2 px-4 rounded-sm text-xs uppercase whitespace-nowrap flex items-center justify-end gap-2"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Pending Publish</span>`;
-        }
-        
-        return `
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="py-4 px-4 text-sm font-bold text-gray-600">${dateStr}</td>
-                <td class="py-4 px-4 text-sm font-bold text-gray-900">${typeStr}</td>
-                <td class="py-4 px-4 font-black ${isPublished ? (h.percent >= 50 ? 'text-green-700' : 'text-red-600') : 'text-gray-400'}">${isPublished ? h.percent + '%' : 'Hidden'}</td>
-                <td class="py-4 px-4 text-right flex justify-end">${actionBtn}</td>
-            </tr>
-        `;
-    }).join('');
+    // Render Institutional Exams
+    if (instTests.length === 0) {
+        instTbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">No institutional exams found.</td></tr>';
+    } else {
+        instTbody.innerHTML = instTests.reverse().map((h, index) => {
+            const d = new Date(h.date);
+            const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            // Map index back to original history array for scorecard mapping
+            const originalIndex = history.findIndex(orig => orig.date === h.date);
+            
+            let isPublished = publishedMap[h.testCode] !== undefined ? publishedMap[h.testCode] : h.is_published;
+            
+            let actionBtn = '';
+            if (isPublished) {
+                actionBtn = `<button onclick="viewScorecard(${originalIndex})" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-sm text-xs uppercase transition-colors whitespace-nowrap shadow-sm">Check Result</button>`;
+            } else {
+                actionBtn = `<span class="bg-yellow-50 text-yellow-700 border border-yellow-300 font-bold py-2 px-4 rounded-sm text-xs uppercase whitespace-nowrap flex items-center justify-end gap-2"><i data-lucide="clock" class="w-3.5 h-3.5"></i> Result Pending</span>`;
+            }
+            
+            return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-4 px-4 text-sm font-bold text-gray-600">${dateStr}</td>
+                    <td class="py-4 px-4 text-sm font-bold text-gray-900">${h.testCode || 'N/A'}</td>
+                    <td class="py-4 px-4 font-black ${isPublished ? (h.percent >= 50 ? 'text-green-700' : 'text-red-600') : 'text-gray-400'}">${isPublished ? h.percent + '%' : 'Pending Publish'}</td>
+                    <td class="py-4 px-4 text-right flex justify-end">${actionBtn}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // Render Practice Tests
+    if (practiceTests.length === 0) {
+        pracTbody.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">No practice attempts found.</td></tr>';
+    } else {
+        pracTbody.innerHTML = practiceTests.reverse().map((h, index) => {
+            const d = new Date(h.date);
+            const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            const originalIndex = history.findIndex(orig => orig.date === h.date);
+            const actionBtn = `<button onclick="viewScorecard(${originalIndex})" class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-900 font-bold py-2 px-4 rounded-sm text-xs uppercase transition-colors whitespace-nowrap shadow-sm">View Scorecard</button>`;
+            
+            return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-4 px-4 text-sm font-bold text-gray-600">${dateStr}</td>
+                    <td class="py-4 px-4 text-sm font-bold text-gray-900">Self Practice Mock</td>
+                    <td class="py-4 px-4 font-black ${h.percent >= 50 ? 'text-green-700' : 'text-red-600'}">${h.percent}%</td>
+                    <td class="py-4 px-4 text-right flex justify-end">${actionBtn}</td>
+                </tr>
+            `;
+        }).join('');
+    }
     
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }

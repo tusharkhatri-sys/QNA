@@ -691,9 +691,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
                 try {
+                    const activeSessionName = await fetchActiveSession();
                     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
                     const payload = {
                         code: code,
+                        session: activeSessionName,
+                        is_published: false,
                         data: {
                             name: testConfig.name || 'Untitled Test',
                             duration: parseInt(testConfig.duration) || 60,
@@ -1286,8 +1289,7 @@ async function initResultsPage() {
     try {
         const { data: tests, error } = await supabaseClient
             .from('tests')
-            .select('id, code, data')
-            .order('id', { ascending: false });
+            .select('code, data, session, is_published');
 
         if (error) throw error;
 
@@ -1295,13 +1297,16 @@ async function initResultsPage() {
             const name = test.data?.name || 'Untitled Session';
             const studentsCount = test.data?.students ? test.data.students.length : 0;
             const option = document.createElement('option');
-            option.value = test.id;
+            option.value = test.code; // code instead of id since id doesnt exist
             option.textContent = `${name} [${test.code}] (${studentsCount} submissions)`;
             // Store stringified submissions for instant access without re-querying
             option.dataset.students = JSON.stringify(test.data?.students || []);
             option.dataset.code = test.code;
+            option.dataset.published = test.is_published ? 'true' : 'false';
             sessionDropdown.appendChild(option);
         });
+
+        const publishBtn = document.getElementById('publish-results-btn');
 
         sessionDropdown.addEventListener('change', (e) => {
             const tbody = document.getElementById('results-tbody');
@@ -1312,10 +1317,43 @@ async function initResultsPage() {
 
             if (!e.target.value) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Select a test session to load results...</td></tr>';
+                if(publishBtn) publishBtn.style.display = 'none';
                 return;
             }
 
             const selectedOption = e.target.options[e.target.selectedIndex];
+            
+            if(publishBtn) {
+                const isPub = selectedOption.dataset.published === 'true';
+                publishBtn.style.display = 'flex';
+                publishBtn.innerHTML = isPub 
+                    ? `<i data-lucide="x-circle" class="w-4 h-4"></i> Unpublish Results` 
+                    : `<i data-lucide="send" class="w-4 h-4"></i> Publish Results`;
+                publishBtn.className = isPub 
+                    ? "bg-red-600 text-white px-4 py-2 flex items-center gap-2 rounded-sm font-medium text-sm hover:bg-red-700 border border-red-800"
+                    : "bg-blue-600 text-white px-4 py-2 flex items-center gap-2 rounded-sm font-medium text-sm hover:bg-blue-700 border border-blue-800";
+                
+                publishBtn.onclick = async () => {
+                    const newStatus = !isPub;
+                    publishBtn.disabled = true;
+                    publishBtn.innerHTML = "Processing...";
+                    try {
+                        const { error } = await supabaseClient.from('tests').update({ is_published: newStatus }).eq('code', selectedOption.dataset.code);
+                        if(error) throw error;
+                        
+                        selectedOption.dataset.published = newStatus.toString();
+                        // Trigger change event to re-render button
+                        sessionDropdown.dispatchEvent(new Event('change'));
+                        showCustomAlert(`Results ${newStatus ? 'Published' : 'Unpublished'} Successfully!`, 'success');
+                    } catch(err) {
+                        console.error('Publish Error:', err);
+                        alert('Error updating publish status.');
+                        sessionDropdown.dispatchEvent(new Event('change')); // reset button
+                    }
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                };
+            }
+
             let students = [];
             
             try {

@@ -98,11 +98,37 @@
 
         </div>
 
-        <!-- PAST RESULTS & MARKSHEETS -->
+        <!-- INSTITUTIONAL EXAMS RESULTS -->
+        <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-6 mb-8">
+            <div class="flex items-center gap-3 border-b border-gray-200 pb-4 mb-6">
+                <i data-lucide="building" class="w-6 h-6 text-gray-800"></i>
+                <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Institutional Exams</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-gray-100 border-y border-gray-300 text-xs font-black text-gray-600 uppercase tracking-wider">
+                            <th class="py-3 px-4">Date</th>
+                            <th class="py-3 px-4">Exam Code</th>
+                            <th class="py-3 px-4">Score</th>
+                            <th class="py-3 px-4 text-right">Action / Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="institutional-table-body" class="divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">Loading institutional exams...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PAST RESULTS & MARKSHEETS (SELF PRACTICE) -->
         <div class="bg-white border border-gray-300 rounded-sm shadow-sm p-6">
             <div class="flex items-center gap-3 border-b border-gray-200 pb-4 mb-6">
                 <i data-lucide="clipboard-list" class="w-6 h-6 text-gray-800"></i>
-                <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Past Results & Marksheets</h2>
+                <h2 class="text-xl font-black text-gray-900 uppercase tracking-tight">Self Practice Mock Tests</h2>
             </div>
             
             <div class="overflow-x-auto">
@@ -112,12 +138,12 @@
                             <th class="py-3 px-4">Date</th>
                             <th class="py-3 px-4">Exam Type</th>
                             <th class="py-3 px-4">Score</th>
-                            <th class="py-3 px-4 text-right">Action / Status</th>
+                            <th class="py-3 px-4 text-right">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="history-table-body" class="divide-y divide-gray-200">
+                    <tbody id="practice-table-body" class="divide-y divide-gray-200">
                         <tr>
-                            <td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">Loading history...</td>
+                            <td colspan="4" class="py-8 text-center text-sm font-bold text-gray-500">Loading practice history...</td>
                         </tr>
                     </tbody>
                 </table>
