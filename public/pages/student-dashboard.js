@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         studentData.name = session.user.user_metadata?.full_name || 'Trainee';
         studentData.trade = session.user.user_metadata?.trade || 'COPA';
         studentData.session_id = session.user.user_metadata?.session_id || '';
+        
+        // Save to localStorage for quiz.js to use
+        localStorage.setItem('studentData', JSON.stringify(studentData));
 
         // Render Header
         document.getElementById('header-name').textContent = studentData.name;
@@ -114,8 +117,13 @@ window.joinLiveTest = async function(code) {
         const testData = { code, ...dbTest.data };
         
         // Block Re-joining
-        const hasSubmitted = testData.students && testData.students.some(s => s.studentEmail === studentData.email || s.studentName === studentData.email);
-        const inLive = testData.liveStudents && testData.liveStudents[studentData.email];
+        const hasSubmitted = testData.students && testData.students.some(s => 
+            s.studentEmail === studentData.email || 
+            s.studentName === studentData.email ||
+            s.studentEmail === studentData.name ||
+            s.studentName === studentData.name
+        );
+        const inLive = testData.liveStudents && (testData.liveStudents[studentData.email] || testData.liveStudents[studentData.name]);
         
         if (hasSubmitted || inLive) {
             alert("You have already started or submitted this test. If you need to retest, ask the admin to allow a retest.");

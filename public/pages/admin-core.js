@@ -1609,7 +1609,7 @@ window.allowRetest = async function(testCode, studentEmail) {
             
             // Refresh views if they are open
             if (document.getElementById('results-modal') && !document.getElementById('results-modal').classList.contains('hidden')) {
-                showTestDetails(testCode);
+                viewResults(testCode);
             }
             if (typeof loadLiveSessions === 'function') {
                 loadLiveSessions();
