@@ -142,8 +142,8 @@ if (loginForm) {
 
 // ===== SAFE BROWSER EXIT =====
 window.exitSafeBrowser = function() {
-    if (window.electronAPI && window.electronAPI.exitApp) {
-        window.electronAPI.exitApp();
+    if (window.qnaBrowser && window.qnaBrowser.closeApp) {
+        window.qnaBrowser.closeApp();
     } else {
         window.close();
         // Fallback for mobile/webviews
