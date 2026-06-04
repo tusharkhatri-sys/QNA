@@ -110,11 +110,48 @@ html, body {
     .exam-layout {
         display: flex;
         flex-direction: column;
+        height: 100dvh; /* Better for mobile browsers */
     }
-    .exam-header { height: auto; padding: 10px; flex-wrap: wrap; }
-    .exam-question-area { flex: 1; border-right: none; border-bottom: 2px solid var(--border-color); }
-    .exam-palette-area { height: 150px; overflow-y: auto; }
-    .exam-footer { height: auto; padding: 10px; flex-wrap: wrap; }
+    .exam-header { 
+        height: auto; 
+        padding: 10px; 
+        flex-direction: column; 
+        align-items: flex-start; 
+        gap: 10px; 
+    }
+    .exam-question-area { 
+        flex: 1; 
+        border-right: none; 
+        border-bottom: 2px solid var(--border-color); 
+        padding: 15px; 
+    }
+    .exam-palette-area { 
+        height: auto; 
+        max-height: 180px; 
+        overflow-y: auto; 
+        padding: 10px; 
+    }
+    .exam-footer { 
+        height: auto; 
+        padding: 10px; 
+        flex-direction: column; 
+        gap: 10px; 
+        align-items: stretch;
+    }
+    .exam-footer > div {
+        display: flex;
+        width: 100%;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .exam-footer .btn {
+        flex: 1;
+        min-width: 120px;
+        font-size: 12px;
+        padding: 8px 4px;
+        text-align: center;
+        white-space: normal;
+    }
 }
 
 /* ==========================================================================
