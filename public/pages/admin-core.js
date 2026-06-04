@@ -474,9 +474,20 @@ async function viewResults(code) {
         const { data: dbData } = await supabaseClient.from('tests').select('data').eq('code', code).single();
         if (dbData) {
             // Render Live Students
-            const liveStudents = dbData.data.liveStudents 
-                ? Object.values(dbData.data.liveStudents).filter(s => s !== null && s !== 'null') 
-                : [];
+            let liveStudents = [];
+            if (dbData.data.liveStudents) {
+                Object.keys(dbData.data.liveStudents).forEach(emailKey => {
+                    const s = dbData.data.liveStudents[emailKey];
+                    if (s === null || s === 'null') return;
+                    
+                    // Filter out if already submitted
+                    const hasSubmitted = dbData.data.students && dbData.data.students.some(sub => sub.studentEmail === emailKey || sub.studentName === emailKey);
+                    if (!hasSubmitted) {
+                        s._emailKey = emailKey; // Keep track for the allowRetest button
+                        liveStudents.push(s);
+                    }
+                });
+            }
                 
             if (liveStudents.length > 0) {
                 document.getElementById('live-results-section').classList.remove('hidden');
@@ -487,7 +498,7 @@ async function viewResults(code) {
                         <td class="py-4 border-b border-gray-100 font-bold text-emerald-600">${s.answered || 0} / ${s.total || 0} <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider ml-2">Attempted</span></td>
                         <td class="py-4 border-b border-gray-100 text-sm text-gray-500 font-medium text-right">${s.joinedAt ? new Date(s.joinedAt).toLocaleTimeString() : 'N/A'}</td>
                         <td class="py-4 border-b border-gray-100 text-right">
-                            <button onclick="allowRetest('${code}', '${s.studentEmail || s.name}')" class="text-[10px] px-3 py-1 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Remove from live & allow retest">Clear</button>
+                            <button onclick="allowRetest('${code}', '${s._emailKey || s.studentEmail || s.name}')" class="text-[10px] px-3 py-1 bg-red-50 text-red-700 rounded border border-red-200 hover:bg-red-100 font-bold uppercase tracking-wider" title="Remove from live & allow retest">Clear</button>
                         </td>
                     </tr>
                 `).join('');
