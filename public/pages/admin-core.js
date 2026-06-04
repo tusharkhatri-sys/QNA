@@ -411,7 +411,7 @@ async function initTestManager() {
 
 async function toggleTestStatus(code, currentStatus) {
     if (currentStatus === 'archived') {
-        alert('Archived tests cannot be toggled.');
+        showCustomAlert('Archived tests cannot be toggled.', 'error');
         return;
     }
 
@@ -428,7 +428,7 @@ async function toggleTestStatus(code, currentStatus) {
             initTestManager();
         }
     } catch (err) {
-        alert('Failed to update status');
+        showCustomAlert('Failed to update status', 'error');
         console.error(err);
     }
 }
@@ -443,7 +443,7 @@ async function deleteTest(code) {
             initTestManager();
         }
     } catch (err) {
-        alert('Failed to archive test');
+        showCustomAlert('Failed to archive test', 'error');
         console.error(err);
     }
 }
@@ -680,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     
                     if (totalQ === 0) {
-                        alert('Please select at least 1 question from topics OR enter an Auto-Generate Total.');
+                        showCustomAlert('Please select at least 1 question from topics OR enter an Auto-Generate Total.', 'error');
                         return;
                     }
                 }
@@ -823,7 +823,7 @@ async function forceCloseApp(email, testCode) {
                 }
             }
         }
-        alert('Kill signal sent via database.');
+        showCustomAlert('Kill signal sent to candidate device.', 'success');
     } catch(e) {
         console.error('Failed to force close:', e);
     }
@@ -855,7 +855,7 @@ async function exportStudentsCSV() {
         URL.revokeObjectURL(url);
     } catch (e) {
         console.error("Export failed", e);
-        alert("Failed to export CSV.");
+        showCustomAlert("Failed to export CSV.", "error");
     }
     if (btn) btn.textContent = "Export CSV";
 }
@@ -878,7 +878,7 @@ async function exportTestResultsCSV() {
         URL.revokeObjectURL(url);
     } catch (e) {
         console.error("Export test results failed", e);
-        alert("Failed to export test results CSV.");
+        showCustomAlert("Failed to export test results CSV.", "error");
     }
 }
 
@@ -967,7 +967,7 @@ async function broadcastNotice() {
     const message = msgEl.value.trim();
     const session = sessionEl.value;
     
-    if (!message) return alert("Please type a message first.");
+    if (!message) return showCustomAlert("Please type a message first.", "error");
     
     btn.textContent = "Sending...";
     btn.disabled = true;
@@ -1031,10 +1031,10 @@ async function broadcastNotice() {
         }
         
         msgEl.value = "";
-        alert("Broadcast sent successfully!");
+        showCustomAlert("Broadcast sent successfully!", "success");
     } catch (e) {
         console.error("Notice broadcast failed:", e);
-        alert("Failed to broadcast notice.");
+        showCustomAlert("Failed to broadcast notice.", "error");
     } finally {
         btn.textContent = "Broadcast";
         btn.disabled = false;
@@ -1048,7 +1048,7 @@ async function addToWallOfFame() {
     const badge = document.getElementById('wof-badge').value.trim();
     const photo = document.getElementById('wof-photo').value.trim() || 'https://ui-avatars.com/api/?background=random&color=fff&name=' + encodeURIComponent(name);
     
-    if (!name || !session || !percent || !badge) return alert("Please fill all required fields.");
+    if (!name || !session || !percent || !badge) return showCustomAlert("Please fill all required fields.", "error");
     
     const btn = document.getElementById('btn-wof');
     btn.textContent = "Publishing...";
@@ -1065,14 +1065,14 @@ async function addToWallOfFame() {
         
         if (error) throw error;
         
-        alert(`Successfully added ${name} to Wall of Fame!`);
+        showCustomAlert(`Successfully added ${name} to Wall of Fame!`, 'success');
         document.getElementById('wof-name').value = '';
         document.getElementById('wof-percent').value = '';
         document.getElementById('wof-badge').value = '';
         document.getElementById('wof-photo').value = '';
     } catch (e) {
         console.error("Wall of fame error:", e);
-        alert("Failed to add to Wall of Fame.");
+        showCustomAlert("Failed to add to Wall of Fame.", "error");
     } finally {
         btn.textContent = "Publish to Dashboard";
         btn.disabled = false;
@@ -1143,7 +1143,7 @@ async function submitSessionForm() {
     const end = document.getElementById('new-session-end').value;
 
     if (!name || !start || !end) {
-        return alert("Please fill in all fields (Name, Start Date, End Date).");
+        return showCustomAlert("Please fill in all fields (Name, Start Date, End Date).", "error");
     }
 
     try {
@@ -1151,7 +1151,7 @@ async function submitSessionForm() {
             // Check update count first
             const { data: session } = await supabaseClient.from('sessions').select('update_count').eq('id', editId).single();
             if (session.update_count >= 2) {
-                alert("Update limit reached (max 2 times).");
+                showCustomAlert("Update limit reached (max 2 times).", "error");
                 return;
             }
             
@@ -1184,7 +1184,7 @@ async function submitSessionForm() {
         }
     } catch (err) {
         console.error('Error submitting session:', err);
-        alert('Failed to save session. ' + err.message);
+        showCustomAlert('Failed to save session. ' + err.message, 'error');
     }
 }
 
@@ -1248,7 +1248,7 @@ async function setActiveSession(sessionId) {
         await initSessionManager();
     } catch (err) {
         console.error('Error setting active session:', err);
-        alert('Failed to set active session.');
+        showCustomAlert('Failed to set active session.', 'error');
     }
 }
 
@@ -1265,7 +1265,7 @@ async function deleteSession(sessionId) {
         await initSessionManager();
     } catch (err) {
         console.error('Error deleting session:', err);
-        alert('Failed to delete session. It might be in use.');
+        showCustomAlert('Failed to delete session. It might be in use.', 'error');
     }
 }
 
@@ -1374,7 +1374,7 @@ async function initResultsPage() {
         if (declareTopperBtn) {
             declareTopperBtn.onclick = async () => {
                 if (currentSessionTests.length === 0) {
-                    alert("No tests in the active session to evaluate.");
+                    showCustomAlert("No tests in the active session to evaluate.", "error");
                     return;
                 }
 
@@ -1404,7 +1404,7 @@ async function initResultsPage() {
 
                 const aggregatedStudents = Object.values(studentMap);
                 if (aggregatedStudents.length === 0) {
-                    alert("No student submissions found in this session.");
+                    showCustomAlert("No student submissions found in this session.", "error");
                     return;
                 }
 
@@ -1421,7 +1421,7 @@ async function initResultsPage() {
                 });
 
                 if (!topStudent) {
-                    alert("Could not determine a topper.");
+                    showCustomAlert("Could not determine a topper.", "error");
                     return;
                 }
 
@@ -1447,7 +1447,7 @@ async function initResultsPage() {
                         showCustomAlert(`${topStudent.name} is now the Session Topper!`, 'success');
                     } catch (e) {
                         console.error("Topper publishing error:", e);
-                        alert("Failed to publish to Wall of Fame.");
+                        showCustomAlert("Failed to publish to Wall of Fame.", "error");
                     } finally {
                         declareTopperBtn.disabled = false;
                         declareTopperBtn.innerHTML = `<i data-lucide="star" class="w-4 h-4"></i> Declare Session Topper`;
@@ -1508,11 +1508,11 @@ function viewDetailedResults(testCode, testNameEncoded) {
                 
                 // Re-render UI
                 showCustomAlert(`Results ${newStatus ? 'Published' : 'Unpublished'} Successfully!`, 'success');
-                initResultsPage(); // Refresh the list view to show correct badges
+                await initResultsPage(); // Refresh the list view to show correct badges
                 viewDetailedResults(testCode, testNameEncoded); // Re-open this view with updated state
             } catch(err) {
                 console.error('Publish Error:', err);
-                alert('Error updating publish status.');
+                showCustomAlert('Error updating publish status.', 'error');
                 publishBtn.disabled = false;
                 publishBtn.innerHTML = isPub ? 'Unpublish Results' : 'Publish Results';
             }
