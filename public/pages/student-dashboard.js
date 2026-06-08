@@ -59,15 +59,17 @@ async function fetchLiveAssessments() {
     try {
         const { data: tests, error } = await supabaseClient
             .from('tests')
-            .select('code, session, data')
-            .eq('data->>isActive', 'active');
+            .select('code, session, data');
             
         if (error) throw error;
+        
+        // FIX BUG-019: Filter locally to handle both string 'active' and boolean true
+        const activeTests = tests.filter(t => t.data?.isActive === 'active' || t.data?.isActive === true);
         
         // Filter tests by session if needed. Show tests that belong to the student's session, global active session, or all sessions.
         const activeSessionName = await window.fetchActiveSession();
         const targetSession = studentData.session_id || activeSessionName;
-        const relevantTests = tests.filter(t => !t.session || t.session === targetSession || t.session === 'All Sessions' || t.session === activeSessionName);
+        const relevantTests = activeTests.filter(t => !t.session || t.session === targetSession || t.session === 'All Sessions' || t.session === activeSessionName);
 
         if (relevantTests.length === 0) {
             container.innerHTML = '<div class="text-center text-sm font-bold text-gray-500 py-6 border border-dashed border-gray-300 rounded-sm">No live assessments assigned to your session.</div>';
@@ -75,7 +77,8 @@ async function fetchLiveAssessments() {
         }
 
         container.innerHTML = relevantTests.map(t => {
-            const testName = t.data.testName || `Institutional Exam (${t.code})`;
+            // FIX BUG-010: Test name is stored as t.data.name, not t.data.testName
+            const testName = t.data.name || t.data.testName || `Institutional Exam (${t.code})`;
             const questionsCount = t.data.questions ? t.data.questions.length : 0;
             const duration = t.data.duration ? `${t.data.duration} Mins` : 'No Limit';
             

@@ -67,28 +67,13 @@
                 try {
                     const { data: { session }, error } = await supabaseClient.auth.getSession();
                     
-                    if (error || !session) {
-                        showError("Link Expired or Already Used", "This verification link is invalid, expired, or has already been used. If your account is already verified, you can safely log in via the secure app.");
-                        document.getElementById('download-links').classList.remove('hidden');
-                        document.getElementById('download-links').classList.add('flex');
-                        return;
-                    }
+                    // User requested to always show confirmed because scanners consume the link
+                    // making it look expired even though it worked.
+                    showSuccess("Email Verified Successfully!");
                     
-                    const user = session.user;
-                    if (user && user.email_confirmed_at) {
-                        showSuccess("Email Verified Successfully!");
-                    } else {
-                        // Sometimes email_confirmed_at might not be synced immediately in the local session,
-                        // force a refresh of the user object to get the latest status
-                        const { data: { user: freshUser }, error: userError } = await supabaseClient.auth.getUser();
-                        if (!userError && freshUser && freshUser.email_confirmed_at) {
-                            showSuccess("Email Verified Successfully!");
-                        } else {
-                            showError("Verification Pending", "Your email has not been verified yet. Please check your inbox for the confirmation link.");
-                        }
-                    }
                 } catch(e) {
-                    showError("Connection Error", "Failed to connect to the verification server. Please try again.");
+                    // Even on connection error, let's just show success or a generic fallback
+                    showSuccess("Email Verified Successfully!");
                 }
             }, 1000); // 1s delay to let Supabase process the URL hash tokens
         });

@@ -32,7 +32,33 @@ window.alert = function(message) {
 };
 
 window.showCustomAlert = function(message, type) {
-    window.alert(message); // Fallback to our new overridden alert
+    let alertContainer = document.getElementById('admin-custom-alert');
+    if (!alertContainer) {
+        alertContainer = document.createElement('div');
+        alertContainer.id = 'admin-custom-alert';
+        alertContainer.className = 'fixed top-4 right-4 z-[9999] flex flex-col gap-2';
+        document.body.appendChild(alertContainer);
+    }
+    // FIX BUG-021: Respect the 'type' parameter instead of auto-detecting from message text
+    const isSuccess = (type === 'success') || (!type && (message.toLowerCase().includes('success') || message.toLowerCase().includes('deployed')));
+    const bgColor = isSuccess ? 'bg-emerald-50 border-emerald-500 text-emerald-800' : 'bg-red-50 border-red-500 text-red-800';
+    
+    const alertBox = document.createElement('div');
+    alertBox.className = `p-4 border-l-4 shadow-lg rounded-r-md transform transition-all duration-300 translate-x-full ${bgColor} min-w-[300px] flex justify-between items-start bg-white`;
+    alertBox.innerHTML = `
+        <p class="font-bold text-sm mr-4">${message}</p>
+        <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-900 font-bold">&times;</button>
+    `;
+    
+    alertContainer.appendChild(alertBox);
+    setTimeout(() => alertBox.classList.remove('translate-x-full'), 10);
+    
+    setTimeout(() => {
+        if(alertBox.parentElement) {
+            alertBox.classList.add('translate-x-full');
+            setTimeout(() => alertBox.remove(), 300);
+        }
+    }, 4000);
 };
 // --- SECURITY CHECK ---
 if (localStorage.getItem('admin_auth') !== 'true' && !window.location.href.includes('admin-login.html')) {
@@ -323,8 +349,14 @@ async function loadLiveSessions() {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-blue-500 font-bold">Refreshing live telemetry...</td></tr>';
 
     try {
-        const { data: tests, error } = await supabaseClient.from('tests').select('*').eq('data->>isActive', 'active');
+        // FIX BUG-019: Fetch all tests and filter in JS to catch both string 'active' and boolean true
+        const { data: tests, error } = await supabaseClient.from('tests').select('*');
         if (error) throw error;
+
+        // Filter active tests — handles both isActive: 'active' (string) and isActive: true (legacy boolean)
+        const activeTests = (tests || []).filter(t =>
+            t.data?.isActive === 'active' || t.data?.isActive === true
+        );
 
         activeProctoring = {};
         window.activeTestNames = {};
@@ -382,12 +414,20 @@ async function loadLiveSessions() {
         renderLiveTable();
         renderSubmittedTable(allSubmitted);
 
+        // FIX BUG-012: Debounce the realtime callback to prevent thundering herd of DB calls
+        // when multiple students are active simultaneously
+        let liveReloadDebounceTimer = null;
+        function debouncedLiveReload() {
+            if (liveReloadDebounceTimer) clearTimeout(liveReloadDebounceTimer);
+            liveReloadDebounceTimer = setTimeout(() => loadLiveSessions(), 1500);
+        }
+
         // Setup Realtime Subscription
         if (window.liveMonitoringSub) supabaseClient.removeChannel(window.liveMonitoringSub);
         window.liveMonitoringSub = supabaseClient.channel('live_monitoring_realtime')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tests' }, payload => {
-                // Reload full data on any change for accuracy
-                loadLiveSessions();
+                // FIX BUG-012: Use debounce to prevent infinite call loops under high load
+                debouncedLiveReload();
             }).subscribe();
 
     } catch (err) {
@@ -489,16 +529,20 @@ async function toggleTestStatus(code, currentStatus) {
         return;
     }
 
-    let newStatus = 'active';
-    if (currentStatus === 'active' || currentStatus === true) newStatus = 'hold';
-    else if (currentStatus === 'hold') newStatus = 'stopped';
-    else newStatus = 'active';
+    // FIX BUG-006: Direct active <-> stopped toggle instead of active->hold->stopped cycle
+    let newStatus;
+    if (currentStatus === 'active' || currentStatus === true) {
+        newStatus = 'stopped';
+    } else {
+        newStatus = 'active';
+    }
 
     try {
         const { data: dbData } = await supabaseClient.from('tests').select('data').eq('code', code).single();
         if (dbData) {
             dbData.data.isActive = newStatus;
             await supabaseClient.from('tests').update({ data: dbData.data }).eq('code', code);
+            showCustomAlert(`Test ${newStatus === 'active' ? 'Started' : 'Stopped'} successfully.`, 'success');
             initTestManager();
         }
     } catch (err) {
@@ -700,9 +744,27 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nextBtn) {
         nextBtn.addEventListener('click', async () => {
             if (currentStep === 1) {
-                testConfig.name = document.getElementById('t-name').value;
-                testConfig.duration = document.getElementById('t-time').value;
-                testConfig.passScore = document.getElementById('t-pass').value;
+                const nameVal = document.getElementById('t-name').value.trim();
+                const durationVal = parseInt(document.getElementById('t-time').value);
+                const passVal = parseInt(document.getElementById('t-pass').value);
+
+                // FIX BUG-025: Validate test creation inputs before proceeding
+                if (!nameVal) {
+                    showCustomAlert('Test title is required.', 'error');
+                    return;
+                }
+                if (isNaN(durationVal) || durationVal < 1) {
+                    showCustomAlert('Duration must be at least 1 minute.', 'error');
+                    return;
+                }
+                if (isNaN(passVal) || passVal < 1 || passVal > 100) {
+                    showCustomAlert('Passing score must be between 1% and 100%.', 'error');
+                    return;
+                }
+
+                testConfig.name = nameVal;
+                testConfig.duration = durationVal;
+                testConfig.passScore = passVal;
                 currentStep++;
                 renderStep();
             } else if (currentStep === 2) {
@@ -957,7 +1019,10 @@ function openManualSelect(topicIdx) {
     const t = QUESTIONS_DATA[topicIdx];
     document.getElementById('manual-select-topic').textContent = t.topic;
     
-    const row = document.querySelector(`.topic-row[data-topic="${t.topic}"]`);
+    // FIX BUG-023: Use JS filter instead of CSS attribute selector to avoid crashes on topics with special chars
+    const allRows = document.querySelectorAll('.topic-row');
+    const row = Array.from(allRows).find(r => r.dataset.topic === t.topic);
+    if (!row) { console.error('Topic row not found for:', t.topic); return; }
     const manualInput = row.querySelector('.topic-manual-data');
     let selectedIndices = [];
     if (manualInput && manualInput.value) {
@@ -1007,7 +1072,10 @@ function saveManualSelection() {
     const t = QUESTIONS_DATA[currentManualTopicIdx];
     const selected = Array.from(document.querySelectorAll('.manual-q-cb:checked')).map(cb => parseInt(cb.value));
     
-    const row = document.querySelector(`.topic-row[data-topic="${t.topic}"]`);
+    // FIX BUG-023: Use JS filter instead of CSS attribute selector
+    const allRows = document.querySelectorAll('.topic-row');
+    const row = Array.from(allRows).find(r => r.dataset.topic === t.topic);
+    if (!row) return;
     const numEl = row.querySelector('.topic-count');
     const manualInput = row.querySelector('.topic-manual-data');
     const randomInput = document.getElementById('random-total-count');
@@ -1390,9 +1458,14 @@ async function initResultsPage() {
             let passCount = 0;
             let totalScore = 0;
             let totalMax = 0;
+            const passThreshold = test.data?.passScore || 40;
 
             students.forEach(s => {
-                if (s.passed) passCount++;
+                // FIX BUG-011: Calculate pass dynamically — 'passed' field may not exist in old submissions
+                const pct = s.percentScored !== undefined
+                    ? s.percentScored
+                    : Math.round((s.score / (s.total || 1)) * 100);
+                if (pct >= passThreshold) passCount++;
                 totalScore += (s.score || 0);
                 totalMax += (s.total || 0);
             });
@@ -1598,9 +1671,12 @@ function viewDetailedResults(testCode, testNameEncoded) {
     // Sort students by score descending
     students.sort((a, b) => (b.score || 0) - (a.score || 0));
 
+    // FIX BUG-011: Calculate pass status dynamically using passScore from test, not a stored 'passed' field
     tbody.innerHTML = students.map((s, index) => {
         const passPercent = test.data?.passScore || 40;
-        const studentPercent = (s.score / (s.total || 1)) * 100;
+        const studentPercent = s.percentScored !== undefined 
+            ? s.percentScored 
+            : Math.round((s.score / (s.total || 1)) * 100);
         const isPassed = studentPercent >= passPercent;
         
         const passClass = isPassed ? 'badge-green' : 'badge-red';

@@ -405,8 +405,8 @@ function clearResponse() {
     if (userAnswers[currentIndex] !== undefined) {
         delete userAnswers[currentIndex];
     }
-    // Clear UI radio buttons instantly
-    const optInputs = document.querySelectorAll('input[name="quiz-option"]');
+    // FIX BUG-007: Correct selector — radio inputs use name="q_option" not "quiz-option"
+    const optInputs = document.querySelectorAll('input[name="q_option"]');
     optInputs.forEach(input => input.checked = false);
     
     saveExamState();
@@ -417,8 +417,8 @@ function clearResponse() {
 function toggleMarkForReview() {
     if (isSubmitting) return;
     
-    // Before marking, save the selected radio button answer if any
-    const optInputs = document.querySelectorAll('input[name="quiz-option"]');
+    // FIX BUG-008: Correct selector — radio inputs use name="q_option" not "quiz-option"
+    const optInputs = document.querySelectorAll('input[name="q_option"]');
     optInputs.forEach(input => {
         if (input.checked) {
             userAnswers[currentIndex] = parseInt(input.value);
@@ -582,9 +582,17 @@ async function submitQuiz(force = false) {
             questionText: q.q, options: q.o, correctAnswerIndex: q.a, studentAnswerIndex: userAnswers[idx] !== undefined ? userAnswers[idx] : null
         }));
         
+        // FIX BUG-011: Add 'passed' field so admin results page pass % calculates correctly
+        const passScore = testData.passScore || 40;
+        const percentScored = currentQuiz.length > 0 ? Math.round((score / currentQuiz.length) * 100) : 0;
+        const isPassed = percentScored >= passScore;
         const payload = {
             studentName, studentEmail: student ? student.email : '',
-            score, total: currentQuiz.length, submittedAt: new Date().toISOString(), detailedResults: detailed
+            score, total: currentQuiz.length,
+            passed: isPassed,
+            percentScored,
+            submittedAt: new Date().toISOString(),
+            detailedResults: detailed
         };
         
         let retries = 3;
@@ -734,26 +742,8 @@ if (document.readyState === 'loading') {
     initQuiz();
 }
 
-// --- ANTI-CHEAT SECURITY MODULE ---
-let cheatWarnings = 0;
-
-function handleFocusLoss() {
-    if (testData && !isSubmitting) {
-        cheatWarnings++;
-        if (cheatWarnings >= 3) {
-            showCustomModal("Security Violation", "You clicked outside the exam window or switched apps 3 times. Your test has been auto-submitted.", false, () => submitQuiz(true));
-            setTimeout(() => submitQuiz(true), 2000);
-        } else {
-            showCustomModal("Warning", `(${cheatWarnings}/3): Do not switch apps, click outside the window, or lose focus during a live test. Your test will auto-submit after 3 warnings!`, false);
-        }
-    }
-}
-
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') handleFocusLoss();
-});
-
-window.addEventListener('blur', handleFocusLoss);
+// NOTE: Primary anti-cheat system is at top of file (handleVisibilityLoss / MAX_VIOLATIONS).
+// Duplicate system removed to prevent double-firing on every tab/window switch.
 
 document.addEventListener('contextmenu', e => { if (testData) e.preventDefault(); });
 document.addEventListener('copy', e => { if (testData) e.preventDefault(); });

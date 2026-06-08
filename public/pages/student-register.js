@@ -83,14 +83,15 @@ if (registerForm) {
         hideAlert();
 
         const name = document.getElementById('reg-name').value.trim();
-        const trade = 'COPA'; // Locked to COPA as per requirements
         const session_id = document.getElementById('reg-session-select').value;
+        const trade = document.getElementById('reg-trade').value;
+        const dob = document.getElementById('reg-dob').value;
         const email = document.getElementById('reg-email').value.trim();
         const password = document.getElementById('reg-password').value;
         const btn = document.getElementById('register-btn');
 
-        if (!session_id) {
-            showAlert('Please select an active session.', 'error');
+        if (!name || !session_id || !trade || !email || !password || !dob) {
+            showAlert('All fields including Date of Birth are required.', 'error');
             return;
         }
 
@@ -116,7 +117,8 @@ if (registerForm) {
                     data: {
                         full_name: name,
                         trade: trade,
-                        session_id: session_id
+                        session_id: session_id,
+                        dob: dob
                     }
                 }
             });
@@ -126,12 +128,13 @@ if (registerForm) {
             }
 
             // Also insert into public.students table so admin can see them
+            // FIX BUG-003: Removed plain text password from being stored in the database.
             const { error: dbError } = await supabaseClient.from('students').insert([{
                 name: name,
                 email: email,
-                password: password, // Note: Storing plain text because admin panel requires it
                 trade: trade,
-                session: session_id
+                session: session_id,
+                dob: dob
             }]);
 
             if (dbError) {

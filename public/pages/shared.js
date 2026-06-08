@@ -135,14 +135,14 @@ async function fetchAllSessions() {
             .select('*')
             .order('created_at', { ascending: false });
         if (error) {
-            alert("Error fetching sessions: " + error.message);
-            console.error(error);
+            if (typeof window.showCustomAlert === 'function') window.showCustomAlert("Error fetching sessions: " + error.message, 'error');
+            console.error("Error fetching sessions:", error);
             return [];
         }
         return data || [];
     } catch (e) {
         console.error('Failed to fetch sessions', e);
-        alert('Network or JS Error fetching sessions: ' + e.message);
+        if (typeof window.showCustomAlert === 'function') window.showCustomAlert('Network or JS Error fetching sessions: ' + e.message, 'error');
         return [];
     }
 }

@@ -76,9 +76,8 @@ async function verifyTrainee() {
             return;
         }
 
-        // Check if test is active (assuming status is stored in JSON or implicitly active)
-        // If there's a strict status field in data JSON, check it:
-        if (testData.data && testData.data.status === 'completed') {
+        // FIX BUG-016: Check correct field for test status
+        if (testData.data && testData.data.isActive !== 'active' && testData.data.isActive !== true) {
             errObj.textContent = 'This exam has already concluded.';
             errObj.classList.remove('hidden');
             btn.textContent = 'Verify & Proceed';
